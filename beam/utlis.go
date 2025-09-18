@@ -3,6 +3,7 @@ package beam
 import (
 	"fmt"
 	"net"
+	"os"
 	"path/filepath"
 	"strings"
 	"time"
@@ -70,4 +71,20 @@ func ResolvePath(sharedDir,raw string) (string, error) {
 		return "", fmt.Errorf("invalid path")
 	}
 	return absTarget, nil
+}
+
+func IsDir(path string) bool {
+	info, err := os.Stat(path)
+	if err != nil {
+		return false
+	}
+	return info.IsDir()
+}
+
+func IsFile(path string) bool {
+	info, err := os.Stat(path)
+	if err != nil {
+		return false
+	}
+	return !info.IsDir()
 }

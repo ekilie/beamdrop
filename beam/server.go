@@ -67,6 +67,10 @@ func StartServer(sharedDir string, flags config.Flags) {
 			return
 		}
 
+		if IsFile(target){
+			http.ServeFile(w, r, target)
+			return
+		}
 		files, err := os.ReadDir(target)
 		if err != nil {
 			http.Error(w, fmt.Sprintf(`{"error":"%v"}`, err), http.StatusInternalServerError) //TODO: add better error handling

@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"mime"
-	"net"
 	"net/http"
 	"os"
 	"path"
@@ -59,33 +58,36 @@ func StartServer(sharedDir string, flags config.Flags) {
 	// File APIs
 	http.HandleFunc("/files", func(w http.ResponseWriter, r *http.Request) {
 		logger.Debug("Listing files from directory: %s", sharedDir)
-		files, err := os.ReadDir(sharedDir)
+		w.Header().Set("Content-Type", "application/json")
+
+		reqPath := r.URL.Query().Get("path")
+		target, err := ResolvePath(reqPath)
 		if err != nil {
-			logger.Error("Failed to read directory %s: %v", sharedDir, err)
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusInternalServerError)
-			json.NewEncoder(w).Encode(map[string]string{"error": "Failed to read directory"})
+			http.Error(w, `{"error":"invalid path"}`, http.StatusBadRequest)
+			return
+		}
+
+		files, err := os.ReadDir(target)
+		if err != nil {
+			http.Error(w, fmt.Sprintf(`{"error":"%v"}`, err), http.StatusInternalServerError)
 			return
 		}
 
 		var fileList []File
 		for _, f := range files {
-			fileInfo, err := f.Info()
+			info, err := f.Info()
 			if err != nil {
-				logger.Warn("Failed to get file info for %s: %v", f.Name(), err)
 				continue
 			}
-			file := File{
-				Name:    fileInfo.Name(),
-				IsDir:   fileInfo.IsDir(),
-				Size:    FormatFileSize(fileInfo.Size()),
-				ModTime: FormatModTime(fileInfo.ModTime().Format(time.RFC3339)),
-				Path:    path.Join(sharedDir, fileInfo.Name()),
-			}
-			fileList = append(fileList, file)
+			fileList = append(fileList, File{
+				Name:    info.Name(),
+				IsDir:   info.IsDir(),
+				Size:    FormatFileSize(info.Size()),
+				ModTime: FormatModTime(info.ModTime().Format(time.RFC3339)),
+				Path:    path.Join(reqPath, info.Name()), // relative path for client
+			})
 		}
-		logger.Debug("Found %d files/directories", len(fileList))
-		w.Header().Set("Content-Type", "application/json")
+
 		json.NewEncoder(w).Encode(fileList)
 	})
 
@@ -161,45 +163,4 @@ func StartServer(sharedDir string, flags config.Flags) {
 	if err != nil {
 		logger.Fatal("Server error: %v", err)
 	}
-}
-
-func GetLocalIP() string {
-	logger.Debug("Detecting local IP address")
-	addrs, err := net.InterfaceAddrs()
-	if err != nil {
-		logger.Warn("Failed to get network interfaces: %v", err)
-		return "localhost"
-	}
-
-	for _, addr := range addrs {
-		if ipnet, ok := addr.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
-			if ipnet.IP.To4() != nil {
-				logger.Debug("Found local IP: %s", ipnet.IP.String())
-				return ipnet.IP.String()
-			}
-		}
-	}
-
-	logger.Warn("No local IP found, using localhost")
-	return "localhost"
-}
-
-func FormatFileSize(size int64) string {
-	if size < 1024 {
-		return fmt.Sprintf("%d B", size)
-	} else if size < 1024*1024 {
-		return fmt.Sprintf("%.2f KB", float64(size)/1024)
-	} else if size < 1024*1024*1024 {
-		return fmt.Sprintf("%.2f MB", float64(size)/(1024*1024))
-	} else {
-		return fmt.Sprintf("%.2f GB", float64(size)/(1024*1024*1024))
-	}
-}
-
-func FormatModTime(modTime string) string {
-	t, err := time.Parse(time.RFC3339, modTime)
-	if err != nil {
-		return modTime
-	}
-	return t.Format("2006-01-02 15:04:05")
 }

@@ -61,7 +61,7 @@ func StartServer(sharedDir string, flags config.Flags) {
 		w.Header().Set("Content-Type", "application/json")
 
 		reqPath := r.URL.Query().Get("path")
-		target, err := ResolvePath(reqPath)
+		target, err := ResolvePath(sharedDir, reqPath)
 		if err != nil {
 			http.Error(w, `{"error":"invalid path"}`, http.StatusBadRequest)
 			return

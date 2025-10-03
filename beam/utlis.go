@@ -11,7 +11,6 @@ import (
 	"github.com/tachRoutine/beamdrop-go/pkg/logger"
 )
 
-
 func GetLocalIP() string {
 	logger.Debug("Detecting local IP address")
 	addrs, err := net.InterfaceAddrs()
@@ -34,14 +33,47 @@ func GetLocalIP() string {
 }
 
 func FormatFileSize(size int64) string {
-	if size < 1024 {
+	const (
+		KB = 1024
+		MB = KB * 1024
+		GB = MB * 1024
+		TB = GB * 1024
+		PB = TB * 1024
+	)
+
+	switch {
+	case size < KB:
 		return fmt.Sprintf("%d B", size)
-	} else if size < 1024*1024 {
-		return fmt.Sprintf("%.2f KB", float64(size)/1024)
-	} else if size < 1024*1024*1024 {
-		return fmt.Sprintf("%.2f MB", float64(size)/(1024*1024))
-	} else {
-		return fmt.Sprintf("%.2f GB", float64(size)/(1024*1024*1024))
+	case size < MB:
+		val := float64(size) / KB
+		if val == float64(int64(val)) {
+			return fmt.Sprintf("%.0f KB", val)
+		}
+		return fmt.Sprintf("%.2f KB", val)
+	case size < GB:
+		val := float64(size) / MB
+		if val == float64(int64(val)) {
+			return fmt.Sprintf("%.0f MB", val)
+		}
+		return fmt.Sprintf("%.2f MB", val)
+	case size < TB:
+		val := float64(size) / GB
+		if val == float64(int64(val)) {
+			return fmt.Sprintf("%.0f GB", val)
+		}
+		return fmt.Sprintf("%.2f GB", val)
+	case size < PB:
+		val := float64(size) / TB
+		if val == float64(int64(val)) {
+			return fmt.Sprintf("%.0f TB", val)
+		}
+		return fmt.Sprintf("%.2f TB", val)
+	default:
+		val := float64(size) / PB
+		if val == float64(int64(val)) {
+			return fmt.Sprintf("%.0f PB", val)
+		}
+		return fmt.Sprintf("%.2f PB", val)
 	}
 }
 
@@ -53,9 +85,8 @@ func FormatModTime(modTime string) string {
 	return t.Format("2006-01-02 15:04:05")
 }
 
-
 // ResolvePath returns the absolute safe path inside sharedDir
-func ResolvePath(sharedDir,raw string) (string, error) {
+func ResolvePath(sharedDir, raw string) (string, error) {
 	clean := filepath.Clean(raw)
 	target := filepath.Join(sharedDir, clean)
 

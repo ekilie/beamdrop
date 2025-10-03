@@ -140,7 +140,7 @@ func StartServer(sharedDir string, flags config.Flags) {
 		defer file.Close()
 
 		filePath := sharedDir + "/" + header.Filename
-		logger.Info("Uploading file: %s (size: %d bytes)", header.Filename, header.Size)
+		logger.Info("Uploading file: %s (size: %s)", header.Filename, FormatFileSize(header.Size))
 
 		out, err := os.Create(filePath)
 		if err != nil {

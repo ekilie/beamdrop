@@ -39,7 +39,7 @@ export function FileUploadDialog({ currentPath = "." }: FileUploadDialogProps) {
           Upload Files
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto bg-card border-2 border-border">
+      <DialogContent className="sm:max-w-[600px] max-h-[80vh] w-[400px] mx-auto overflow-y-auto bg-card border-2 border-border">
         <DialogHeader>
           <DialogTitle className="text-xl font-bold font-mono uppercase tracking-wide text-foreground flex items-center gap-2">
             <Upload className="h-4 w-4" />
@@ -48,13 +48,15 @@ export function FileUploadDialog({ currentPath = "." }: FileUploadDialogProps) {
           <DialogDescription className="text-muted-foreground font-mono text-sm">
             UPLOAD FILES TO THE SERVER
             {currentPath !== "." && (
-              <span className="block mt-1">Current directory: {currentPath}</span>
+              <span className="block mt-1">
+                Current directory: {currentPath}
+              </span>
             )}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6">
-          <FileUploadModule 
+          <FileUploadModule
             onUploadSuccess={handleUploadSuccess}
             currentPath={currentPath}
           />

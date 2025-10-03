@@ -28,26 +28,29 @@ const Index = () => {
   const [currentPath, setCurrentPath] = useState(".");
   const [previewFile, setPreviewFile] = useState<string | null>(null);
 
-  const fetchFiles = useCallback(async (path: string = currentPath) => {
-    try {
-      setIsLoading(true);
-      const response = await fetch(`/files?path=${encodeURIComponent(path)}`);
-      if (!response.ok) {
-        throw new Error("Failed to fetch files");
+  const fetchFiles = useCallback(
+    async (path: string = currentPath) => {
+      try {
+        setIsLoading(true);
+        const response = await fetch(`/files?path=${encodeURIComponent(path)}`);
+        if (!response.ok) {
+          throw new Error("Failed to fetch files");
+        }
+        const fileList: FileItem[] = await response.json();
+        setFiles(fileList);
+        setFilteredFiles(fileList);
+      } catch (error) {
+        toast({
+          title: "Error",
+          description: "Failed to fetch files",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoading(false);
       }
-      const fileList: FileItem[] = await response.json();
-      setFiles(fileList);
-      setFilteredFiles(fileList);
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to fetch files",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  }, [currentPath]);
+    },
+    [currentPath],
+  );
 
   const handleSearch = (term: string) => {
     setSearchTerm(term);
@@ -55,7 +58,7 @@ const Index = () => {
       setFilteredFiles(files);
     } else {
       const filtered = files.filter((file) =>
-        file.name.toLowerCase().includes(term.toLowerCase())
+        file.name.toLowerCase().includes(term.toLowerCase()),
       );
       setFilteredFiles(filtered);
     }
@@ -75,33 +78,35 @@ const Index = () => {
     const initializeApp = () => {
       fetchFiles();
     };
-    
+
     initializeApp();
-    
+
     // Add keyboard shortcuts
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.ctrlKey || e.metaKey) {
         switch (e.key) {
-          case 'f': {
+          case "f": {
             e.preventDefault();
             // Focus search input
-            const searchInput = document.querySelector('input[placeholder="SEARCH FILES..."]') as HTMLInputElement;
+            const searchInput = document.querySelector(
+              'input[placeholder="SEARCH FILES..."]',
+            ) as HTMLInputElement;
             searchInput?.focus();
             break;
           }
-          case 'r':
+          case "r":
             e.preventDefault();
             fetchFiles();
             break;
         }
       }
-      if (e.key === 'Escape' && searchTerm) {
+      if (e.key === "Escape" && searchTerm) {
         setSearchTerm("");
       }
     };
 
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
   }, [searchTerm, fetchFiles]);
 
   const handleUploadSuccess = () => {
@@ -133,10 +138,10 @@ const Index = () => {
                   </p>
                 </div>
               </div> */}
-              
+
               {/* Breadcrumb Navigation */}
-              <BreadcrumbNav 
-                currentPath={currentPath} 
+              <BreadcrumbNav
+                currentPath={currentPath}
                 onNavigate={handleNavigate}
                 className="max-w-full"
               />
@@ -187,7 +192,7 @@ const Index = () => {
               </div>
             </header>
             <Card className="p-4 sm:p-6 bg-card border-2 border-border shadow-medium">
-              <FileUploadModule 
+              <FileUploadModule
                 onUploadSuccess={handleUploadSuccess}
                 currentPath={currentPath}
               />
@@ -209,7 +214,7 @@ const Index = () => {
                 </p>
               </div>
             </header>
-            <Card className="p-4 sm:p-6 bg-card border-2 border-border shadow-medium min-h-[600px]">
+            <Card className="p-4 sm:p-6 bg-card border-1 border-border shadow-medium min-h-[600px]">
               <FileTable
                 files={filteredFiles}
                 isLoading={isLoading}

@@ -1,5 +1,13 @@
 import { useState } from "react";
-import { Settings, Monitor, Moon, Sun, Info, Server, Palette } from "lucide-react";
+import {
+  Settings,
+  Monitor,
+  Moon,
+  Sun,
+  Info,
+  Server,
+  Palette,
+} from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -35,14 +43,14 @@ export function SettingsDialog() {
           <span className="sr-only">Settings</span>
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[500px] bg-card border-2 border-border">
+      <DialogContent className="sm:max-w-[500px] w-[400px] bg-card border-2 border-border">
         <DialogHeader>
           <DialogTitle className="text-xl font-bold font-mono uppercase tracking-wide text-foreground flex items-center gap-2">
             <Settings className="w-5 h-5" />
             Settings
           </DialogTitle>
           <DialogDescription className="text-muted-foreground font-mono text-sm">
-            CONFIGURE YOUR BEAMDROP EXPERIENCE
+            CONFIGURE
           </DialogDescription>
         </DialogHeader>
 
@@ -55,16 +63,18 @@ export function SettingsDialog() {
                 Appearance
               </h3>
             </div>
-            
+
             <Card className="p-4 bg-card border border-border">
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-mono text-foreground/80">THEME</span>
-                  <Badge variant="outline" className="font-mono text-xs">
+                  <span className="text-sm font-mono text-foreground/80">
+                    THEME
+                  </span>
+                  <Badge variant="outline" className="font-mono  text-xs">
                     {theme.toUpperCase()}
                   </Badge>
                 </div>
-                
+
                 <div className="grid grid-cols-3 gap-2">
                   {themeOptions.map((option) => {
                     const Icon = option.icon;
@@ -76,9 +86,9 @@ export function SettingsDialog() {
                         size="sm"
                         onClick={() => setTheme(option.value as Theme)}
                         className={`flex items-center gap-2 font-mono text-xs ${
-                          isActive 
-                            ? "bg-primary text-primary-foreground border-primary" 
-                            : "hover:bg-accent"
+                          isActive
+                            ? "bg-primary text-primary-foreground border-border "
+                            : "hover:bg-primary"
                         }`}
                       >
                         <Icon className="w-3 h-3" />
@@ -91,8 +101,6 @@ export function SettingsDialog() {
             </Card>
           </div>
 
-          <Separator className="bg-border" />
-
           {/* Server Info */}
           <div className="space-y-4">
             <div className="flex items-center gap-2">
@@ -101,12 +109,17 @@ export function SettingsDialog() {
                 Configurations
               </h3>
             </div>
-            
+
             <Card className="p-4 bg-card border border-border">
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-mono text-foreground/80">SHOW HIDDEN FILES</span>
-                  <Switch checked={showHiddenFiles} onCheckedChange={setShowHiddenFiles} />
+                  <span className="text-sm font-mono text-foreground/80">
+                    SHOW HIDDEN FILES
+                  </span>
+                  <Switch
+                    checked={showHiddenFiles}
+                    onCheckedChange={setShowHiddenFiles}
+                  />
                 </div>
                 {/* <div className="flex items-center justify-between">
                   <span className="text-sm font-mono text-foreground/80">PROTOCOL</span>
@@ -124,8 +137,6 @@ export function SettingsDialog() {
             </Card>
           </div>
 
-          <Separator className="bg-border" />
-
           {/* About */}
           <div className="space-y-4">
             <div className="flex items-center gap-2">
@@ -134,14 +145,22 @@ export function SettingsDialog() {
                 About
               </h3>
             </div>
-            
+
             <Card className="p-4 bg-card border border-border">
               <div className="space-y-2">
                 <h4 className="font-bold font-mono text-sm uppercase tracking-wide text-foreground">
                   Credits
                 </h4>
                 <p className="text-xs font-mono text-muted-foreground leading-relaxed">
-                  Developed by <a href="https://github.com/tacherasasi" target="_blank" className="underline">Tacherasasi</a>.
+                  Developed by{" "}
+                  <a
+                    href="https://github.com/tacherasasi"
+                    target="_blank"
+                    className="underline"
+                  >
+                    Tacherasasi
+                  </a>
+                  .
                 </p>
                 <div className="pt-2">
                   <Badge variant="outline" className="font-mono text-xs">

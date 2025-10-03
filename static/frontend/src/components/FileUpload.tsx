@@ -28,7 +28,7 @@ export const FileUpload = ({ onUploadSuccess }: FileUploadProps) => {
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
-    
+
     const files = Array.from(e.dataTransfer.files);
     if (files.length > 0) {
       setSelectedFile(files[0]);
@@ -50,11 +50,11 @@ export const FileUpload = ({ onUploadSuccess }: FileUploadProps) => {
 
     try {
       const formData = new FormData();
-      formData.append('file', selectedFile);
+      formData.append("file", selectedFile);
 
       const xhr = new XMLHttpRequest();
-      
-      xhr.upload.addEventListener('progress', (e) => {
+
+      xhr.upload.addEventListener("progress", (e) => {
         if (e.lengthComputable) {
           const progress = (e.loaded / e.total) * 100;
           setUploadProgress(progress);
@@ -70,7 +70,7 @@ export const FileUpload = ({ onUploadSuccess }: FileUploadProps) => {
             setUploadProgress(0);
             toast({
               title: "Success",
-              description: result.message || "File uploaded successfully"
+              description: result.message || "File uploaded successfully",
             });
           } catch (e) {
             // Fallback for non-JSON response
@@ -79,7 +79,7 @@ export const FileUpload = ({ onUploadSuccess }: FileUploadProps) => {
             setUploadProgress(0);
             toast({
               title: "Success",
-              description: "File uploaded successfully"
+              description: "File uploaded successfully",
             });
           }
         } else {
@@ -88,13 +88,13 @@ export const FileUpload = ({ onUploadSuccess }: FileUploadProps) => {
             toast({
               title: "Error",
               description: error.error || "Upload failed",
-              variant: "destructive"
+              variant: "destructive",
             });
           } catch (e) {
             toast({
               title: "Error",
               description: "Upload failed",
-              variant: "destructive"
+              variant: "destructive",
             });
           }
         }
@@ -105,18 +105,18 @@ export const FileUpload = ({ onUploadSuccess }: FileUploadProps) => {
         toast({
           title: "Error",
           description: "Upload failed",
-          variant: "destructive"
+          variant: "destructive",
         });
         setIsUploading(false);
       };
 
-      xhr.open('POST', '/upload');
+      xhr.open("POST", "/upload");
       xhr.send(formData);
     } catch (error) {
       toast({
         title: "Error",
         description: "Upload failed",
-        variant: "destructive"
+        variant: "destructive",
       });
       setIsUploading(false);
     }
@@ -133,9 +133,9 @@ export const FileUpload = ({ onUploadSuccess }: FileUploadProps) => {
       <div
         className={cn(
           "relative border-2 border-dashed rounded p-8 text-center transition-smooth bg-background",
-          isDragging 
-            ? "border-primary bg-primary/5" 
-            : "border-border hover:border-primary"
+          isDragging
+            ? "border-primary bg-primary/5"
+            : "border-border hover:border-primary",
         )}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
@@ -145,7 +145,7 @@ export const FileUpload = ({ onUploadSuccess }: FileUploadProps) => {
           <div className="mx-auto w-16 h-16 bg-accent border-2 border-foreground/20 rounded flex items-center justify-center">
             <Target className="w-8 h-8 text-accent-foreground" />
           </div>
-          
+
           <div>
             <h3 className="text-lg font-bold font-mono uppercase tracking-wide text-foreground">
               {isDragging ? "DROP TARGET ACTIVE" : "FILE UPLOAD ZONE"}
@@ -172,7 +172,9 @@ export const FileUpload = ({ onUploadSuccess }: FileUploadProps) => {
                 <FileText className="w-4 h-4 text-primary-foreground" />
               </div>
               <div>
-                <p className="font-bold font-mono text-foreground">{selectedFile.name}</p>
+                <p className="font-bold font-mono text-foreground">
+                  {selectedFile.name}
+                </p>
                 <p className="text-sm text-muted-foreground font-mono">
                   {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
                 </p>
@@ -204,7 +206,7 @@ export const FileUpload = ({ onUploadSuccess }: FileUploadProps) => {
 
       {/* Upload Button */}
       {selectedFile && !isUploading && (
-        <Button 
+        <Button
           onClick={uploadFile}
           variant="utilitarian"
           className="w-full transition-smooth"

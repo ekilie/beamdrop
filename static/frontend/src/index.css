@@ -2,7 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
+/* Definition of the design system. All colors, gradients, fonts, etc should be defined here.
 All colors MUST be HSL.
 */
 
@@ -38,7 +38,7 @@ All colors MUST be HSL.
 
     --shadow-subtle: 0 1px 3px 0 hsl(24 10% 15% / 0.1);
     --shadow-medium: 0 4px 6px -1px hsl(24 10% 15% / 0.1);
-    
+
     --transition-smooth: all 0.2s ease-in-out;
 
     --radius: 0.25rem;
@@ -64,7 +64,7 @@ All colors MUST be HSL.
     --background: 240 5.9% 10%;
     --foreground: 240 4.8% 95.9%;
 
-    --card: 240 3.7% 15.9%;
+    --card: 240 5.9% 10%;
     --card-foreground: 240 4.8% 95.9%;
 
     --popover: 240 3.7% 15.9%;
@@ -88,7 +88,7 @@ All colors MUST be HSL.
     --border: 240 3.7% 15.9%;
     --input: 240 3.7% 15.9%;
     --ring: 24 45% 35%;
-    
+
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
     --sidebar-primary: 24 45% 35%;

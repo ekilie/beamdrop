@@ -6,5 +6,5 @@ import { SettingsProvider } from "@/context/settings.tsx";
 createRoot(document.getElementById("beamdrop")!).render(
   <SettingsProvider>
     <App />
-  </SettingsProvider>
+  </SettingsProvider>,
 );

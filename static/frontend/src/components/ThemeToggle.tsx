@@ -1,15 +1,15 @@
-import { Monitor, Moon, Sun } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { Monitor, Moon, Sun } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { useTheme } from "./ThemeProvider"
+} from "@/components/ui/dropdown-menu";
+import { useTheme } from "./ThemeProvider";
 
 export function ThemeToggle() {
-  const { setTheme, theme } = useTheme()
+  const { setTheme, theme } = useTheme();
 
   return (
     <DropdownMenu>
@@ -21,7 +21,7 @@ export function ThemeToggle() {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="bg-card border border-border">
-        <DropdownMenuItem 
+        <DropdownMenuItem
           onClick={() => setTheme("light")}
           className={`cursor-pointer font-mono text-sm ${
             theme === "light" ? "bg-accent text-accent-foreground" : ""
@@ -30,7 +30,7 @@ export function ThemeToggle() {
           <Sun className="mr-2 h-4 w-4" />
           <span>LIGHT</span>
         </DropdownMenuItem>
-        <DropdownMenuItem 
+        <DropdownMenuItem
           onClick={() => setTheme("dark")}
           className={`cursor-pointer font-mono text-sm ${
             theme === "dark" ? "bg-accent text-accent-foreground" : ""
@@ -39,7 +39,7 @@ export function ThemeToggle() {
           <Moon className="mr-2 h-4 w-4" />
           <span>DARK</span>
         </DropdownMenuItem>
-        <DropdownMenuItem 
+        <DropdownMenuItem
           onClick={() => setTheme("system")}
           className={`cursor-pointer font-mono text-sm ${
             theme === "system" ? "bg-accent text-accent-foreground" : ""
@@ -50,5 +50,5 @@ export function ThemeToggle() {
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
-  )
+  );
 }

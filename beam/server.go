@@ -30,6 +30,10 @@ func StartServer(sharedDir string, flags config.Flags) {
 	logger.Info("Initializing HTTP handlers")
 	db.AutoMigrate()
 
+	if flags.Password != ""{
+		logger.Info("Password is enabled")
+	}
+
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		db.IncrementRequests()
 		urlPath := r.URL.Path

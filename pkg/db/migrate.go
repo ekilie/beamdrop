@@ -4,7 +4,7 @@ import "github.com/tachRoutine/beamdrop-go/pkg/logger"
 
 func AutoMigrate() {
 	logger.Info("Running database migrations")
-	err := db.AutoMigrate(&ServerStats{})
+	err := db.AutoMigrate(&ServerStats{},&Config{})
 	if err != nil {
 		logger.Error("failed to migrate database: %v", err)
 	}

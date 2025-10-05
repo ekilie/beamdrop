@@ -15,6 +15,7 @@ func main() {
 	sharedDir := flag.String("dir", ".", "Directory to share files from")
 	noQR := flag.Bool("no-qr", false, "Disable QR code generation")
 	help := flag.Bool("h", false, "Show help message")
+	password := flag.String("p","","Password authentication")
 	versionFlag := flag.Bool("v", false, "Show version information")
 
 	if *versionFlag {
@@ -27,6 +28,7 @@ func main() {
 		SharedDir: *sharedDir,
 		NoQR:      *noQR,
 		Help:      *help,
+		Password: *password,
 	}
 
 	if flag.NArg() > 0 {

@@ -27,6 +27,7 @@ type Flags struct {
 	SharedDir string
 	NoQR      bool
 	Help      bool
+	Password  string
 }
 
 func GetConfig() Config {

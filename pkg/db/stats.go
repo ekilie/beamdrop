@@ -18,6 +18,13 @@ type ServerStats struct{
 func (ServerStats) TableName() string {
 	return "server_stats"
 }
+func CreateStatsTable() {
+	db := GetDB()
+	err := db.AutoMigrate(&ServerStats{})
+	if err != nil {
+		logger.Error("failed to migrate server stats table: %v", err)
+	}
+}
 
 func ResetStats(){
 	db := GetDB()
@@ -29,19 +36,51 @@ func ResetStats(){
 			return
 		}
 
-		// If no record exists, we create one
-		stats = ServerStats{
-			Downloads: 0,
-			Requests:  0,
-			Uploads:   0,
-			StartTime: time.Now(),
-		}
-		db.Create(&stats)
+		CreateStatsTable()
 		return
 	}
 	stats.Downloads = 0
 	stats.Requests = 0
 	stats.Uploads = 0
 	stats.StartTime = time.Now()
+	db.Save(&stats)
+}
+
+func IncrementDownloads(){
+	db := GetDB()
+	var stats ServerStats
+	err := db.First(&stats).Error
+	if err != nil {
+		// If no record exists, I dont expect this to happen, so there is no need to create one
+		logger.Error("failed to fetch server stats: %v", err)
+		return
+	}
+	stats.Downloads++
+	db.Save(&stats)
+}
+
+func IncrementRequests(){
+	db := GetDB()
+	var stats ServerStats
+	err := db.First(&stats).Error
+	if err != nil {
+		// If no record exists, I also dont expect this to happen, so there is no need to create one
+		logger.Error("failed to fetch server stats: %v", err)
+		return
+	}
+	stats.Requests++
+	db.Save(&stats)
+}
+
+func IncrementUploads(){
+	db := GetDB()
+	var stats ServerStats
+	err := db.First(&stats).Error
+	if err != nil {
+		// If no record exists, I also dont expect this to happen, so there is no need to create one
+		logger.Error("failed to fetch server stats: %v", err)
+		return
+	}
+	stats.Uploads++
 	db.Save(&stats)
 }

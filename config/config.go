@@ -41,14 +41,14 @@ func init() {
 		log.Fatalf("failed to get home directory: %v", err)
 	}
 	ConfigDir = filepath.Join(homeDir, ConfigDirName)
-	ConfigPath = filepath.Join(ConfigDir, "beamdrop.db")
+	ConfigPath = filepath.Join(ConfigDir, "beamdrop.db") //FIXME: will fix this
 
 	createConfigDir()
 
 	if _, err := os.Stat(ConfigPath); os.IsNotExist(err) {
 		createConfigDb()
 	} else {
-		// For now, just log that we're loading the existing config
+		// For now, we just log that we're loading the existing config
 		log.Printf("Loading existing config from: %s", ConfigPath)
 	}
 }

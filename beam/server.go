@@ -108,7 +108,7 @@ func StartServer(sharedDir string, flags config.Flags) {
 	})
 
 	http.HandleFunc("/download", func(w http.ResponseWriter, r *http.Request) {
-		//TODO: allow multiple file download (zip them first)
+		//TODO: allow folder download (zip them first)
 		filename := r.URL.Query().Get("file")
 		filePath := sharedDir + "/" + filename
 
@@ -127,7 +127,6 @@ func StartServer(sharedDir string, flags config.Flags) {
 	})
 
 	http.HandleFunc("/upload", func(w http.ResponseWriter, r *http.Request) {
-		//TODO: allow multiple file upload
 		logger.Info("Upload request received")
 		file, header, err := r.FormFile("file")
 		if err != nil {

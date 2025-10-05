@@ -84,3 +84,26 @@ func IncrementUploads(){
 	stats.Uploads++
 	db.Save(&stats)
 }
+
+func Increment(field string){
+	switch field {
+	case "downloads":
+		IncrementDownloads()
+	case "requests":
+		IncrementRequests()
+	case "uploads":
+		IncrementUploads()
+	default:
+		logger.Warn("Unknown field to increment: %s", field)
+	}
+}
+
+func GetStats() (ServerStats, error){
+	db := GetDB()
+	var stats ServerStats
+	err := db.First(&stats).Error
+	if err != nil {
+		return stats, err
+	}
+	return stats, nil
+}

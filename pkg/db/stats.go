@@ -8,11 +8,11 @@ import (
 	"gorm.io/gorm"
 )
 
-type ServerStats struct{
+type ServerStats struct {
 	Downloads int       `gorm:"column:downloads, default:0" json:"downloads"`
 	Requests  int       `gorm:"column:requests, default:0" json:"requests"`
-    Uploads   int       `gorm:"column:uploads, default:0" json:"uploads"`
-    StartTime time.Time `gorm:"column:start_time, default:CURRENT_TIMESTAMP" json:"startTime"`
+	Uploads   int       `gorm:"column:uploads, default:0" json:"uploads"`
+	StartTime time.Time `gorm:"column:start_time, default:CURRENT_TIMESTAMP" json:"startTime"`
 }
 
 func (ServerStats) TableName() string {
@@ -50,12 +50,12 @@ func InitializeStats() {
 }
 
 // ResetStats resets the server stats to zero and updates the start time to now
-func ResetStats(){
+func ResetStats() {
 	db := GetDB()
 	var stats ServerStats
-	err :=db.First(&stats).Error
+	err := db.First(&stats).Error
 	if err != nil {
-		if !errors.Is(err, gorm.ErrRecordNotFound){
+		if !errors.Is(err, gorm.ErrRecordNotFound) {
 			logger.Error("failed to fetch server stats: %v", err)
 			return
 		}
@@ -71,7 +71,7 @@ func ResetStats(){
 }
 
 // IncrementDownloads increments the download count by 1
-func IncrementDownloads(){
+func IncrementDownloads() {
 	db := GetDB()
 	var stats ServerStats
 	err := db.First(&stats).Error
@@ -85,7 +85,7 @@ func IncrementDownloads(){
 }
 
 // IncrementDownloads increments the download count by 1
-func IncrementRequests(){
+func IncrementRequests() {
 	db := GetDB()
 	var stats ServerStats
 	err := db.First(&stats).Error
@@ -99,7 +99,7 @@ func IncrementRequests(){
 }
 
 // IncrementDownloads increments the download count by 1
-func IncrementUploads(){
+func IncrementUploads() {
 	db := GetDB()
 	var stats ServerStats
 	err := db.First(&stats).Error
@@ -113,7 +113,7 @@ func IncrementUploads(){
 }
 
 // Increment increments the specified field by 1
-func Increment(field string){
+func Increment(field string) {
 	switch field {
 	case "downloads":
 		IncrementDownloads()
@@ -127,7 +127,7 @@ func Increment(field string){
 }
 
 // GetStats retrieves the current server stats
-func GetStats() (ServerStats, error){
+func GetStats() (ServerStats, error) {
 	db := GetDB()
 	var stats ServerStats
 	err := db.First(&stats).Error

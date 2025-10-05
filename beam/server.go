@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/tachRoutine/beamdrop-go/config"
+	"github.com/tachRoutine/beamdrop-go/pkg/db"
 	"github.com/tachRoutine/beamdrop-go/pkg/logger"
 	"github.com/tachRoutine/beamdrop-go/pkg/qr"
 	"github.com/tachRoutine/beamdrop-go/static"
@@ -27,8 +28,10 @@ type File struct {
 
 func StartServer(sharedDir string, flags config.Flags) {
 	logger.Info("Initializing HTTP handlers")
+	db.AutoMigrate()
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		db.IncrementRequests()
 		urlPath := r.URL.Path
 		if urlPath == "/" {
 			urlPath = "/index.html"
@@ -56,19 +59,24 @@ func StartServer(sharedDir string, flags config.Flags) {
 	})
 
 	http.HandleFunc("/stats",func(w http.ResponseWriter, r *http.Request) {
-		stats := ServerStats{ // using these dummy stats for now
-			Requests: 10,
-			Downloads: 7,
-			Uploads: 3,
-			StartTime: time.Now(),
+		db.IncrementRequests()
+	
+		stats, err := db.GetStats()
+		if err != nil {
+			logger.Error("Failed to get server stats: %v", err)
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(map[string]string{"error": "Failed to get server stats"})
+			return
 		}
-
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(stats)
 	})
 
 	// File APIs
 	http.HandleFunc("/files", func(w http.ResponseWriter, r *http.Request) {
+		db.IncrementRequests()
+	
 		logger.Debug("Listing files from directory: %s", sharedDir)
 		w.Header().Set("Content-Type", "application/json")
 
@@ -108,6 +116,8 @@ func StartServer(sharedDir string, flags config.Flags) {
 	})
 
 	http.HandleFunc("/download", func(w http.ResponseWriter, r *http.Request) {
+		db.IncrementRequests()
+	
 		//TODO: allow folder download (zip them first)
 		filename := r.URL.Query().Get("file")
 		filePath := sharedDir + "/" + filename
@@ -123,10 +133,13 @@ func StartServer(sharedDir string, flags config.Flags) {
 
 		logger.Info("Serving download for file: %s", filename)
 		io.Copy(w, f)
+		db.IncrementDownloads()
 		logger.Info("Download completed for file: %s", filename)
 	})
 
 	http.HandleFunc("/upload", func(w http.ResponseWriter, r *http.Request) {
+		db.IncrementRequests()
+
 		logger.Info("Upload request received")
 		file, header, err := r.FormFile("file")
 		if err != nil {
@@ -163,6 +176,7 @@ func StartServer(sharedDir string, flags config.Flags) {
 		logger.Info("File uploaded successfully: %s", header.Filename)
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
+		db.IncrementUploads()
 		json.NewEncoder(w).Encode(map[string]string{"message": "Uploaded", "file": header.Filename})
 	})
 

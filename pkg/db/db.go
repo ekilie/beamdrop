@@ -16,6 +16,7 @@ var (
 
 func init() {
 	once.Do(openDB)
+	CreateStatsTable()
 }
 
 func openDB() {

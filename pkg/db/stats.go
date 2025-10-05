@@ -26,6 +26,29 @@ func CreateStatsTable() {
 	}
 }
 
+// InitializeStats creates an initial stats record if one doesn't exist
+func InitializeStats() {
+	db := GetDB()
+	var stats ServerStats
+	err := db.First(&stats).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		stats = ServerStats{
+			Downloads: 0,
+			Requests:  0,
+			Uploads:   0,
+			StartTime: time.Now(),
+		}
+		err = db.Create(&stats).Error
+		if err != nil {
+			logger.Error("failed to create initial server stats: %v", err)
+		} else {
+			logger.Info("Initialized server stats record")
+		}
+	} else if err != nil {
+		logger.Error("failed to check for existing server stats: %v", err)
+	}
+}
+
 // ResetStats resets the server stats to zero and updates the start time to now
 func ResetStats(){
 	db := GetDB()

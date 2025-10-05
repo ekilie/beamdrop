@@ -15,6 +15,8 @@ const (
 var (
 	ConfigDir  string
 	ConfigPath string
+	DBName     = "beamdrop.db"
+	DBPath     = filepath.Join(ConfigDir, DBName)
 )
 
 type Config struct {
@@ -66,4 +68,3 @@ func createConfigDb() {
 	// TODO: Load initial settings
 	log.Printf("Created default config file at: %s", ConfigPath)
 }
-

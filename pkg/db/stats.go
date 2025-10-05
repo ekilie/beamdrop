@@ -9,10 +9,11 @@ import (
 )
 
 type ServerStats struct {
-	Downloads int       `gorm:"column:downloads, default:0" json:"downloads"`
-	Requests  int       `gorm:"column:requests, default:0" json:"requests"`
-	Uploads   int       `gorm:"column:uploads, default:0" json:"uploads"`
-	StartTime time.Time `gorm:"column:start_time, default:CURRENT_TIMESTAMP" json:"startTime"`
+	ID        uint      `gorm:"primaryKey" json:"id"`
+	Downloads int       `gorm:"column:downloads;default:0" json:"downloads"`
+	Requests  int       `gorm:"column:requests;default:0" json:"requests"`
+	Uploads   int       `gorm:"column:uploads;default:0" json:"uploads"`
+	StartTime time.Time `gorm:"column:start_time;default:CURRENT_TIMESTAMP" json:"startTime"`
 }
 
 func (ServerStats) TableName() string {
@@ -76,7 +77,6 @@ func IncrementDownloads() {
 	var stats ServerStats
 	err := db.First(&stats).Error
 	if err != nil {
-		// If no record exists, I dont expect this to happen, so there is no need to create one
 		logger.Error("failed to fetch server stats: %v", err)
 		return
 	}
@@ -84,13 +84,12 @@ func IncrementDownloads() {
 	db.Save(&stats)
 }
 
-// IncrementDownloads increments the download count by 1
+// IncrementRequests increments the request count by 1
 func IncrementRequests() {
 	db := GetDB()
 	var stats ServerStats
 	err := db.First(&stats).Error
 	if err != nil {
-		// If no record exists, I also dont expect this to happen, so there is no need to create one
 		logger.Error("failed to fetch server stats: %v", err)
 		return
 	}
@@ -98,13 +97,12 @@ func IncrementRequests() {
 	db.Save(&stats)
 }
 
-// IncrementDownloads increments the download count by 1
+// IncrementUploads increments the upload count by 1
 func IncrementUploads() {
 	db := GetDB()
 	var stats ServerStats
 	err := db.First(&stats).Error
 	if err != nil {
-		// If no record exists, I also dont expect this to happen, so there is no need to create one
 		logger.Error("failed to fetch server stats: %v", err)
 		return
 	}

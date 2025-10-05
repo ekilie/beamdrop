@@ -26,6 +26,7 @@ func CreateStatsTable() {
 	}
 }
 
+// ResetStats resets the server stats to zero and updates the start time to now
 func ResetStats(){
 	db := GetDB()
 	var stats ServerStats
@@ -46,6 +47,7 @@ func ResetStats(){
 	db.Save(&stats)
 }
 
+// IncrementDownloads increments the download count by 1
 func IncrementDownloads(){
 	db := GetDB()
 	var stats ServerStats
@@ -59,6 +61,7 @@ func IncrementDownloads(){
 	db.Save(&stats)
 }
 
+// IncrementDownloads increments the download count by 1
 func IncrementRequests(){
 	db := GetDB()
 	var stats ServerStats
@@ -72,6 +75,7 @@ func IncrementRequests(){
 	db.Save(&stats)
 }
 
+// IncrementDownloads increments the download count by 1
 func IncrementUploads(){
 	db := GetDB()
 	var stats ServerStats
@@ -85,6 +89,7 @@ func IncrementUploads(){
 	db.Save(&stats)
 }
 
+// Increment increments the specified field by 1
 func Increment(field string){
 	switch field {
 	case "downloads":
@@ -98,6 +103,7 @@ func Increment(field string){
 	}
 }
 
+// GetStats retrieves the current server stats
 func GetStats() (ServerStats, error){
 	db := GetDB()
 	var stats ServerStats

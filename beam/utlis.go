@@ -29,6 +29,7 @@ func GetLocalIP() string {
 	}
 
 	logger.Warn("No local IP found, using localhost")
+	logger.Info("This might be due to no active network connection.")
 	return "localhost"
 }
 

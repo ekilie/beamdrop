@@ -42,5 +42,6 @@ func ResetStats(){
 	stats.Downloads = 0
 	stats.Requests = 0
 	stats.Uploads = 0
+	stats.StartTime = time.Now()
 	db.Save(&stats)
 }

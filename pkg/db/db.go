@@ -1,7 +1,6 @@
 package db
 
 import (
-	"log"
 	"sync"
 
 	"github.com/tachRoutine/beamdrop-go/config"

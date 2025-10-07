@@ -175,7 +175,7 @@ const Index = () => {
 
       {/* Main Content */}
       <main className="flex-1 container mx-auto px-4 sm:px-6 py-6">
-        <div className="grid gap-6 lg:gap-8 h-full">
+        <div className="flex flex-col gap-6 lg:gap-8 h-full">
           {/* Upload Section */}
           {/* <section className="xl:col-span-1 space-y-4">
             <header className="flex items-center gap-3 pb-4 border-b border-border">
@@ -200,7 +200,7 @@ const Index = () => {
           </section> */}
 
           {/* Files Section */}
-          <section className="xl:col-span-2 space-y-4">
+          <section className="space-y-4">
             <header className="flex items-center gap-3 pb-4 border-b border-border">
               <div className="bg-primary p-2 rounded border border-primary">
                 <Download className="w-5 h-5 text-primary-foreground" />

@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback } from "react";
 import { FileUpload } from "@/components/FileUpload";
 import { Card } from "@/components/ui/card";
-import { Upload, Download, Server, Search } from "lucide-react";
+import { Upload, Download, Server, Search, Grid3x3, List } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
 import Footer from "@/components/Footer";
 import FileList from "@/components/FileList";
@@ -11,6 +12,9 @@ import FileTable from "@/components/FileTable";
 import { BreadcrumbNav } from "@/components/BreadcrumbNav";
 import { FilePreview } from "@/components/FilePreview";
 import { FileUploadModule } from "@/components/FileUploadModule";
+import { EmptyState } from "@/components/EmptyState";
+import { FileGridView } from "@/components/FileGridView";
+import { DropZone } from "@/components/DropZone";
 
 export interface FileItem {
   name: string;
@@ -27,6 +31,9 @@ const Index = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPath, setCurrentPath] = useState(".");
   const [previewFile, setPreviewFile] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<"table" | "grid">("table");
+  const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
+  const [starredFiles, setStarredFiles] = useState<Set<string>>(new Set());
 
   const fetchFiles = useCallback(
     async (path: string = currentPath) => {
@@ -117,10 +124,110 @@ const Index = () => {
     });
   };
 
+  const handleDrop = async (droppedFiles: File[]) => {
+    const formData = new FormData();
+    droppedFiles.forEach((file) => {
+      formData.append("files", file);
+    });
+    formData.append("path", currentPath);
+
+    try {
+      const response = await fetch("/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (response.ok) {
+        handleUploadSuccess();
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to upload files",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to upload files",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const downloadFile = async (fileName: string, event: React.MouseEvent) => {
+    event.stopPropagation();
+    try {
+      const link = document.createElement('a');
+      const filePath = currentPath === "." ? fileName : `${currentPath}/${fileName}`;
+      link.href = `/download?file=${encodeURIComponent(filePath)}`;
+      link.download = fileName;
+      link.style.display = 'none';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      toast({
+        title: "Download Started",
+        description: `${fileName} download initiated.`,
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to download file",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const deleteFile = async (fileName: string, event: React.MouseEvent) => {
+    event.stopPropagation();
+    try {
+      const filePath = currentPath === "." ? fileName : `${currentPath}/${fileName}`;
+      const response = await fetch(`/delete?file=${encodeURIComponent(filePath)}`, {
+        method: 'DELETE',
+      });
+      
+      if (response.ok) {
+        fetchFiles();
+        toast({
+          title: "File Deleted",
+          description: `${fileName} has been deleted.`,
+        });
+      } else {
+        const error = await response.json();
+        toast({
+          title: "Error",
+          description: error.error || "Failed to delete file",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to delete file",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const toggleStar = (fileName: string, event: React.MouseEvent) => {
+    event.stopPropagation();
+    setStarredFiles(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(fileName)) {
+        newSet.delete(fileName);
+      } else {
+        newSet.add(fileName);
+      }
+      return newSet;
+    });
+  };
+
   return (
-    <div className="bg-background min-h-screen flex flex-col">
+    <DropZone onDrop={handleDrop} className="bg-background min-h-screen flex flex-col">
       {/* Modern Header */}
-      <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-40">
+      <header className="border-b border-border bg-card backdrop-blur-sm sticky top-0 z-40">
         <div className="container mx-auto px-4 sm:px-6 py-4">
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
             {/* Logo and Breadcrumb */}
@@ -167,7 +274,27 @@ const Index = () => {
                   </button>
                 )}
               </div>
-              <FileUploadDialog />
+              <div className="flex items-center gap-2">
+                <div className="flex items-center border border-border rounded-lg p-1 bg-muted/30">
+                  <Button
+                    variant={viewMode === "table" ? "default" : "ghost"}
+                    size="icon"
+                    className="h-7 w-7"
+                    onClick={() => setViewMode("table")}
+                  >
+                    <List className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    variant={viewMode === "grid" ? "default" : "ghost"}
+                    size="icon"
+                    className="h-7 w-7"
+                    onClick={() => setViewMode("grid")}
+                  >
+                    <Grid3x3 className="w-4 h-4" />
+                  </Button>
+                </div>
+                <FileUploadDialog />
+              </div>
             </div>
           </div>
         </div>
@@ -214,16 +341,58 @@ const Index = () => {
                 </p>
               </div>
             </header>
-            <Card className="p-4 sm:p-6 bg-card border-1 border-border shadow-medium min-h-[600px]">
-              <FileTable
-                files={filteredFiles}
-                isLoading={isLoading}
-                onRefresh={() => fetchFiles()}
-                onNavigate={handleNavigate}
-                onPreview={handlePreview}
-                searchTerm={searchTerm}
-                currentPath={currentPath}
-              />
+            <Card className="p-4 sm:p-6 bg-card border border-border min-h-[600px]">
+              {isLoading ? (
+                <div className="space-y-4">
+                  {viewMode === "table" ? (
+                    <FileTable
+                      files={[]}
+                      isLoading={true}
+                      onRefresh={() => fetchFiles()}
+                      onNavigate={handleNavigate}
+                      onPreview={handlePreview}
+                      searchTerm={searchTerm}
+                      currentPath={currentPath}
+                    />
+                  ) : (
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+                      {[1, 2, 3, 4, 5, 6].map((i) => (
+                        <div key={i} className="animate-pulse">
+                          <div className="aspect-square bg-muted rounded-lg mb-2" />
+                          <div className="h-4 bg-muted rounded w-3/4 mb-1" />
+                          <div className="h-3 bg-muted rounded w-1/2" />
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ) : filteredFiles.length === 0 ? (
+                <EmptyState 
+                  searchTerm={searchTerm} 
+                  onUploadClick={() => setUploadDialogOpen(true)}
+                />
+              ) : viewMode === "table" ? (
+                <FileTable
+                  files={filteredFiles}
+                  isLoading={false}
+                  onRefresh={() => fetchFiles()}
+                  onNavigate={handleNavigate}
+                  onPreview={handlePreview}
+                  searchTerm={searchTerm}
+                  currentPath={currentPath}
+                />
+              ) : (
+                <FileGridView
+                  files={filteredFiles}
+                  onNavigate={handleNavigate}
+                  onPreview={handlePreview}
+                  onDownload={downloadFile}
+                  onDelete={deleteFile}
+                  onStar={toggleStar}
+                  starredFiles={starredFiles}
+                  currentPath={currentPath}
+                />
+              )}
             </Card>
           </section>
         </div>
@@ -240,7 +409,7 @@ const Index = () => {
       )}
 
       <Footer />
-    </div>
+    </DropZone>
   );
 };
 

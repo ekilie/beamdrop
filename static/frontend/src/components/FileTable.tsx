@@ -251,4 +251,148 @@ const FileTable: React.FC<FileTableProps> = ({
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="font-mono text-sm font-bold uppercase tracking-wide text-foreground">
-          {sortedFiles.length} ITEM{sortedFiles.length !== 1 ? "S" : ""}{
+          {sortedFiles.length} ITEM{sortedFiles.length !== 1 ? "S" : ""}
+          {searchTerm && (
+            <span className="text-muted-foreground ml-2">matching "{searchTerm}"</span>
+          )}
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={onRefresh}
+          className="gap-2"
+        >
+          <RefreshCw className="w-4 h-4" />
+          <span className="font-mono text-xs font-bold uppercase tracking-wide">
+            REFRESH
+          </span>
+        </Button>
+      </div>
+
+      {/* Table */}
+      <div className="border-t border-b border-border">
+        <Table>
+          <TableHeader>
+            <TableRow className="hover:bg-transparent border-b border-border">
+              <TableHead
+                className="cursor-pointer select-none font-mono font-bold uppercase tracking-wide"
+                onClick={() => handleSort("name")}
+              >
+                <div className="flex items-center gap-2">
+                  Name
+                  {getSortIcon("name")}
+                </div>
+              </TableHead>
+              <TableHead
+                className="cursor-pointer select-none font-mono font-bold uppercase tracking-wide hidden md:table-cell"
+                onClick={() => handleSort("size")}
+              >
+                <div className="flex items-center gap-2">
+                  Size
+                  {getSortIcon("size")}
+                </div>
+              </TableHead>
+              <TableHead
+                className="cursor-pointer select-none font-mono font-bold uppercase tracking-wide hidden lg:table-cell"
+                onClick={() => handleSort("modTime")}
+              >
+                <div className="flex items-center gap-2">
+                  Modified
+                  {getSortIcon("modTime")}
+                </div>
+              </TableHead>
+              <TableHead className="w-[80px]"></TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {sortedFiles.map((file) => {
+              const isStarred = starredFiles.has(file.name);
+              return (
+                <TableRow
+                  key={`${file.name}-${file.modTime}`}
+                  className="cursor-pointer border-b border-border hover:bg-muted/50 transition-colors group"
+                  onClick={() => handleFileClick(file)}
+                >
+                  <TableCell className="font-medium">
+                    <div className="flex items-center gap-3">
+                      <div className="flex-shrink-0">
+                        {file.isDir ? (
+                          <FolderOpen className="w-5 h-5 text-primary" />
+                        ) : (
+                          <div className="text-muted-foreground">
+                            {getFileIcon(file.name, "w-5 h-5")}
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 min-w-0 flex-1">
+                        <span className="font-mono truncate">{file.name}</span>
+                        {isStarred && (
+                          <Star className="w-4 h-4 text-primary fill-primary flex-shrink-0" />
+                        )}
+                      </div>
+                    </div>
+                  </TableCell>
+                  <TableCell className="font-mono text-sm text-muted-foreground hidden md:table-cell">
+                    {file.size}
+                  </TableCell>
+                  <TableCell className="font-mono text-sm text-muted-foreground hidden lg:table-cell">
+                    {file.modTime}
+                  </TableCell>
+                  <TableCell onClick={(e) => e.stopPropagation()}>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <MoreHorizontal className="w-4 h-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (file.isDir) {
+                              const newPath = currentPath === "." ? file.name : `${currentPath}/${file.name}`;
+                              onNavigate(newPath);
+                            } else {
+                              onPreview(file.name);
+                            }
+                          }}
+                        >
+                          <Eye className="w-4 h-4 mr-2" />
+                          {file.isDir ? "Open" : "Preview"}
+                        </DropdownMenuItem>
+                        {!file.isDir && (
+                          <DropdownMenuItem onClick={(e) => downloadFile(file.name, e)}>
+                            <Download className="w-4 h-4 mr-2" />
+                            Download
+                          </DropdownMenuItem>
+                        )}
+                        <DropdownMenuItem onClick={(e) => toggleStar(file.name, e)}>
+                          <Star className={cn("w-4 h-4 mr-2", isStarred && "fill-primary")} />
+                          {isStarred ? "Unstar" : "Star"}
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          onClick={(e) => deleteFile(file.name, e)}
+                          className="text-destructive focus:text-destructive"
+                        >
+                          <Trash2 className="w-4 h-4 mr-2" />
+                          Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
+      </div>
+    </div>
+  );
+};
+
+export default FileTable;

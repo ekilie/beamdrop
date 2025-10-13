@@ -120,3 +120,46 @@ func IsFile(path string) bool {
 	}
 	return !info.IsDir()
 }
+
+// searchFiles recursively searches for files matching the query in the given directory
+func searchFiles(rootPath, query, relativePath string, results *[]File) error {
+	return filepath.Walk(rootPath, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			logger.Warn("Error accessing path %s: %v", path, err)
+			return nil // Continue searching other files
+		}
+
+		// Get relative path from the search root
+		relPath, err := filepath.Rel(rootPath, path)
+		if err != nil {
+			return nil
+		}
+
+		// Construct the path relative to the shared directory
+		var fullRelPath string
+		if relativePath == "" {
+			fullRelPath = relPath
+		} else {
+			fullRelPath = filepath.Join(relativePath, relPath)
+		}
+
+		// Skip the root directory itself
+		if relPath == "." {
+			return nil
+		}
+
+		// Check if filename contains the search query (case-insensitive)
+		if strings.Contains(strings.ToLower(info.Name()), strings.ToLower(query)) {
+			file := File{
+				Name:    info.Name(),
+				IsDir:   info.IsDir(),
+				Size:    FormatFileSize(info.Size()),
+				ModTime: FormatModTime(info.ModTime().Format(time.RFC3339)),
+				Path:    strings.ReplaceAll(fullRelPath, "\\", "/"), // Normalize path separators
+			}
+			*results = append(*results, file)
+		}
+
+		return nil
+	})
+}

@@ -393,6 +393,194 @@ func StartServer(sharedDir string, flags config.Flags) {
 		})
 	})
 
+	// Create directories endpoint
+	http.HandleFunc("/mkdir", func(w http.ResponseWriter, r *http.Request) {
+		db.IncrementRequests()
+
+		if r.Method != "POST" {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusMethodNotAllowed)
+			json.NewEncoder(w).Encode(map[string]string{"error": "Method not allowed"})
+			return
+		}
+
+		var req struct {
+			DirPath string `json:"dirPath"`
+		}
+
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			logger.Error("Invalid mkdir request: %v", err)
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(map[string]string{"error": "Invalid request body"})
+			return
+		}
+
+		targetPath, err := ResolvePath(sharedDir, req.DirPath)
+		if err != nil {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(map[string]string{"error": "Invalid directory path"})
+			return
+		}
+
+		if _, err := os.Stat(targetPath); !os.IsNotExist(err) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusConflict)
+			json.NewEncoder(w).Encode(map[string]string{"error": "Directory already exists"})
+			return
+		}
+
+		if err := os.MkdirAll(targetPath, 0755); err != nil {
+			logger.Error("Failed to create directory %s: %v", targetPath, err)
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(map[string]string{"error": "Failed to create directory"})
+			return
+		}
+
+		logger.Info("Directory created: %s", req.DirPath)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(map[string]string{
+			"message": "Directory created successfully",
+			"path":    req.DirPath,
+		})
+	})
+
+	// Rename files/folders endpoint
+	http.HandleFunc("/rename", func(w http.ResponseWriter, r *http.Request) {
+		db.IncrementRequests()
+
+		if r.Method != "POST" {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusMethodNotAllowed)
+			json.NewEncoder(w).Encode(map[string]string{"error": "Method not allowed"})
+			return
+		}
+
+		var req struct {
+			OldPath string `json:"oldPath"`
+			NewName string `json:"newName"`
+		}
+
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			logger.Error("Invalid rename request: %v", err)
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(map[string]string{"error": "Invalid request body"})
+			return
+		}
+
+		oldPath, err := ResolvePath(sharedDir, req.OldPath)
+		if err != nil {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(map[string]string{"error": "Invalid old path"})
+			return
+		}
+
+		if _, err := os.Stat(oldPath); os.IsNotExist(err) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusNotFound)
+			json.NewEncoder(w).Encode(map[string]string{"error": "File or directory not found"})
+			return
+		}
+
+		// Get the parent directory and create new path
+		parentDir := path.Dir(req.OldPath)
+		var newPath string
+		if parentDir == "." || parentDir == "" {
+			newPath = req.NewName
+		} else {
+			newPath = path.Join(parentDir, req.NewName)
+		}
+
+		newFullPath, err := ResolvePath(sharedDir, newPath)
+		if err != nil {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(map[string]string{"error": "Invalid new name"})
+			return
+		}
+
+		if _, err := os.Stat(newFullPath); !os.IsNotExist(err) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusConflict)
+			json.NewEncoder(w).Encode(map[string]string{"error": "Target name already exists"})
+			return
+		}
+
+		if err := os.Rename(oldPath, newFullPath); err != nil {
+			logger.Error("Failed to rename %s to %s: %v", oldPath, newFullPath, err)
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(map[string]string{"error": "Failed to rename"})
+			return
+		}
+
+		logger.Info("Renamed %s to %s", req.OldPath, newPath)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(map[string]string{
+			"message": "Renamed successfully",
+			"oldPath": req.OldPath,
+			"newPath": newPath,
+		})
+	})
+
+	// Search files by name/content endpoint
+	http.HandleFunc("/search", func(w http.ResponseWriter, r *http.Request) {
+		db.IncrementRequests()
+
+		if r.Method != "GET" {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusMethodNotAllowed)
+			json.NewEncoder(w).Encode(map[string]string{"error": "Method not allowed"})
+			return
+		}
+
+		query := r.URL.Query().Get("q")
+		if query == "" {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(map[string]string{"error": "Search query is required"})
+			return
+		}
+
+		searchPath := r.URL.Query().Get("path")
+		if searchPath == "" {
+			searchPath = ""
+		}
+
+		targetPath, err := ResolvePath(sharedDir, searchPath)
+		if err != nil {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(map[string]string{"error": "Invalid search path"})
+			return
+		}
+
+		var results []File
+		err = searchFiles(targetPath, query, searchPath, &results)
+		if err != nil {
+			logger.Error("Search failed: %v", err)
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(map[string]string{"error": "Search failed"})
+			return
+		}
+
+		logger.Info("Search completed for query '%s' in path '%s', found %d results", query, searchPath, len(results))
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"query":   query,
+			"path":    searchPath,
+			"results": results,
+			"count":   len(results),
+		})
+	})
+
 	ip := GetLocalIP()
 	url := fmt.Sprintf("http://%s:%d", ip, config.GetConfig().PORT)
 

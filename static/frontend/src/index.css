@@ -111,6 +111,7 @@ All colors MUST be HSL.
 }
 
 @layer utilities {
+
   /* Custom scrollbar styles for better UI */
   .scrollbar-thin {
     scrollbar-width: thin;

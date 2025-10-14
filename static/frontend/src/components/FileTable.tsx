@@ -20,9 +20,6 @@ import {
 import {
   Download,
   RefreshCw,
-  Archive,
-  Folder,
-  Clock,
   MoreHorizontal,
   Eye,
   Trash2,
@@ -31,11 +28,16 @@ import {
   FolderOpen,
   ChevronUp,
   ChevronDown,
+  Edit,
+  Copy,
+  Move,
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { getFileIcon } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 import { useSettings } from "@/context/settings";
+import { RenameDialog } from "./RenameDialog";
+import { MoveDialog } from "./MoveDialog";
 
 interface FileItem {
   name: string;
@@ -53,6 +55,8 @@ interface FileTableProps {
   onPreview: (fileName: string) => void;
   searchTerm?: string;
   currentPath?: string;
+  starredFiles: Set<string>;
+  onToggleStar: (fileName: string, event: React.MouseEvent) => Promise<void>;
 }
 
 type SortField = "name" | "size" | "modTime";
@@ -66,11 +70,25 @@ const FileTable: React.FC<FileTableProps> = ({
   onPreview,
   searchTerm,
   currentPath = ".",
+  starredFiles,
+  onToggleStar,
 }) => {
   const [sortField, setSortField] = useState<SortField>("name");
   const [sortOrder, setSortOrder] = useState<SortOrder>("asc");
-  const [starredFiles, setStarredFiles] = useState<Set<string>>(new Set());
   const { showHiddenFiles } = useSettings();
+  const [renameDialog, setRenameDialog] = useState<{ open: boolean; fileName: string }>({
+    open: false,
+    fileName: "",
+  });
+  const [moveDialog, setMoveDialog] = useState<{
+    open: boolean;
+    fileName: string;
+    mode: "move" | "copy";
+  }>({
+    open: false,
+    fileName: "",
+    mode: "move",
+  });
 
   if (!showHiddenFiles) {
     files = files.filter(file => !file.name.startsWith('.'));
@@ -184,18 +202,6 @@ const FileTable: React.FC<FileTableProps> = ({
     }
   };
 
-  const toggleStar = (fileName: string, event: React.MouseEvent) => {
-    event.stopPropagation();
-    setStarredFiles(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(fileName)) {
-        newSet.delete(fileName);
-      } else {
-        newSet.add(fileName);
-      }
-      return newSet;
-    });
-  };
 
   const getSortIcon = (field: SortField) => {
     if (sortField !== field) {
@@ -247,7 +253,8 @@ const FileTable: React.FC<FileTableProps> = ({
   }
 
   return (
-    <div className="space-y-4">
+    <>
+      <div className="space-y-4">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="font-mono text-sm font-bold uppercase tracking-wide text-foreground">
@@ -370,9 +377,37 @@ const FileTable: React.FC<FileTableProps> = ({
                             Download
                           </DropdownMenuItem>
                         )}
-                        <DropdownMenuItem onClick={(e) => toggleStar(file.name, e)}>
+                        <DropdownMenuItem onClick={(e) => onToggleStar(file.name, e)}>
                           <Star className={cn("w-4 h-4 mr-2", isStarred && "fill-primary")} />
                           {isStarred ? "Unstar" : "Star"}
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setRenameDialog({ open: true, fileName: file.name });
+                          }}
+                        >
+                          <Edit className="w-4 h-4 mr-2" />
+                          Rename
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setMoveDialog({ open: true, fileName: file.name, mode: "move" });
+                          }}
+                        >
+                          <Move className="w-4 h-4 mr-2" />
+                          Move
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setMoveDialog({ open: true, fileName: file.name, mode: "copy" });
+                          }}
+                        >
+                          <Copy className="w-4 h-4 mr-2" />
+                          Copy
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem
@@ -392,6 +427,24 @@ const FileTable: React.FC<FileTableProps> = ({
         </Table>
       </div>
     </div>
+
+      <RenameDialog
+        open={renameDialog.open}
+        onOpenChange={(open) => setRenameDialog({ ...renameDialog, open })}
+        fileName={renameDialog.fileName}
+        currentPath={currentPath}
+        onSuccess={onRefresh}
+      />
+
+      <MoveDialog
+        open={moveDialog.open}
+        onOpenChange={(open) => setMoveDialog({ ...moveDialog, open })}
+        fileName={moveDialog.fileName}
+        currentPath={currentPath}
+        onSuccess={onRefresh}
+        mode={moveDialog.mode}
+      />
+    </>
   );
 };
 

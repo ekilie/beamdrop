@@ -581,15 +581,21 @@ func StartServer(sharedDir string, flags config.Flags) {
 		})
 	})
 
+	// Find an available port from the default ports list
+	port, err := config.FindAvailablePort()
+	if err != nil {
+		logger.Fatal("Failed to find available port: %v", err)
+	}
+
 	ip := GetLocalIP()
-	url := fmt.Sprintf("http://%s:%d", ip, config.GetConfig().PORT)
+	url := fmt.Sprintf("http://%s:%d", ip, port)
 
 	if !flags.NoQR {
 		qr.ShowQrCode(url)
 	}
 	logger.Info("Server started at %s sharing directory: %s", url, sharedDir)
 
-	err := http.ListenAndServe(fmt.Sprintf(":%d", config.GetConfig().PORT), nil)
+	err = http.ListenAndServe(fmt.Sprintf(":%d", port), nil)
 	if err != nil {
 		logger.Fatal("Server error: %v", err)
 	}

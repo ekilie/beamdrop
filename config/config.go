@@ -1,7 +1,9 @@
 package config
 
 import (
+	"fmt"
 	"log"
+	"net"
 	"os"
 	"path/filepath"
 )
@@ -12,11 +14,12 @@ const (
 	ConfigDirName = ".beamdrop"
 )
 
+
 var (
 	ConfigDir  string
 	ConfigPath string
 	DBName     = "beamdrop.db"
-	DBPath     = filepath.Join(ConfigDir, DBName)
+	DBPath     string
 )
 
 type Config struct {
@@ -30,10 +33,35 @@ type Flags struct {
 	Password  string
 }
 
+func GetDBPath() string {
+	return filepath.Join(ConfigDir, DBName)
+}
+
 func GetConfig() Config {
 	return Config{
 		PORT: PORT,
 	}
+}
+
+// FindAvailablePort tries to find an available port from the default ports list
+func FindAvailablePort() (int, error) {
+	for _, port := range DefaultPorts {
+		if isPortAvailable(port) {
+			return port, nil
+		}
+	}
+	return 0, fmt.Errorf("no available ports found from the default list: %v", DefaultPorts)
+}
+
+// isPortAvailable checks if a port is available for use
+func isPortAvailable(port int) bool {
+	address := fmt.Sprintf(":%d", port)
+	listener, err := net.Listen("tcp", address)
+	if err != nil {
+		return false
+	}
+	defer listener.Close()
+	return true
 }
 
 func init() {
@@ -43,6 +71,7 @@ func init() {
 	}
 	ConfigDir = filepath.Join(homeDir, ConfigDirName)
 	ConfigPath = filepath.Join(ConfigDir, "beamdrop.db") //FIXME: will fix this
+	DBPath = GetDBPath()
 
 	createConfigDir()
 

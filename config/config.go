@@ -16,7 +16,7 @@ var (
 	ConfigDir  string
 	ConfigPath string
 	DBName     = "beamdrop.db"
-	DBPath     = filepath.Join(ConfigDir, DBName)
+	DBPath     string
 )
 
 type Config struct {
@@ -28,6 +28,10 @@ type Flags struct {
 	NoQR      bool
 	Help      bool
 	Password  string
+}
+
+func GetDBPath() string {
+	return filepath.Join(ConfigDir, DBName)
 }
 
 func GetConfig() Config {
@@ -43,6 +47,7 @@ func init() {
 	}
 	ConfigDir = filepath.Join(homeDir, ConfigDirName)
 	ConfigPath = filepath.Join(ConfigDir, "beamdrop.db") //FIXME: will fix this
+	DBPath = GetDBPath()
 
 	createConfigDir()
 

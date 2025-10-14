@@ -70,7 +70,8 @@ All colors MUST be HSL.
     --popover: 240 5.9% 12%;
     --popover-foreground: 240 4.8% 95.9%;
 
-    --primary: 24 45% 35%;
+    /* Google Drive inspired blue theme - consistent across app */
+    --primary: 217 91% 60%;
     --primary-foreground: 0 0% 100%;
 
     --secondary: 240 3.7% 18%;
@@ -79,24 +80,24 @@ All colors MUST be HSL.
     --muted: 240 3.7% 18%;
     --muted-foreground: 240 5% 64.9%;
 
-    --accent: 82 25% 70%;
-    --accent-foreground: 240 5.9% 10%;
+    --accent: 217 91% 60%;
+    --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 62.8% 50%;
+    --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
 
     --border: 240 3.7% 20%;
     --input: 240 3.7% 18%;
-    --ring: 24 45% 35%;
+    --ring: 217 91% 60%;
 
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 24 45% 35%;
+    --sidebar-primary: 217 91% 60%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 240 3.7% 18%;
     --sidebar-accent-foreground: 240 4.8% 95.9%;
     --sidebar-border: 240 3.7% 20%;
-    --sidebar-ring: 24 45% 35%;
+    --sidebar-ring: 217 91% 60%;
   }
 }
 

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { FileUpload } from "@/components/FileUpload";
 import { Card } from "@/components/ui/card";
-import { Upload, Download, Server, Search, Grid3x3, List } from "lucide-react";
+import { Upload, Download, Server, Search, Grid3x3, List, FolderPlus } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
@@ -15,6 +15,8 @@ import { FileUploadModule } from "@/components/FileUploadModule";
 import { EmptyState } from "@/components/EmptyState";
 import { FileGridView } from "@/components/FileGridView";
 import { DropZone } from "@/components/DropZone";
+import { CreateFolderDialog } from "@/components/CreateFolderDialog";
+import { AdvancedSearch } from "@/components/AdvancedSearch";
 
 export interface FileItem {
   name: string;
@@ -211,17 +213,50 @@ const Index = () => {
     }
   };
 
-  const toggleStar = (fileName: string, event: React.MouseEvent) => {
+  const toggleStar = async (fileName: string, event: React.MouseEvent) => {
     event.stopPropagation();
-    setStarredFiles(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(fileName)) {
-        newSet.delete(fileName);
+    try {
+      const filePath = currentPath === "." ? fileName : `${currentPath}/${fileName}`;
+      const response = await fetch("/star", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ filePath }),
+      });
+
+      if (response.ok) {
+        setStarredFiles(prev => {
+          const newSet = new Set(prev);
+          if (newSet.has(fileName)) {
+            newSet.delete(fileName);
+            toast({
+              title: "Unstarred",
+              description: `${fileName} removed from starred files.`,
+            });
+          } else {
+            newSet.add(fileName);
+            toast({
+              title: "Starred",
+              description: `${fileName} added to starred files.`,
+            });
+          }
+          return newSet;
+        });
       } else {
-        newSet.add(fileName);
+        toast({
+          title: "Error",
+          description: "Failed to update starred status",
+          variant: "destructive",
+        });
       }
-      return newSet;
-    });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update starred status",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -293,6 +328,12 @@ const Index = () => {
                     <Grid3x3 className="w-4 h-4" />
                   </Button>
                 </div>
+                <CreateFolderDialog currentPath={currentPath} onSuccess={() => fetchFiles()} />
+                <AdvancedSearch 
+                  currentPath={currentPath} 
+                  onNavigate={handleNavigate} 
+                  onPreview={handlePreview}
+                />
                 <FileUploadDialog />
               </div>
             </div>
@@ -353,6 +394,8 @@ const Index = () => {
                       onPreview={handlePreview}
                       searchTerm={searchTerm}
                       currentPath={currentPath}
+                      starredFiles={starredFiles}
+                      onToggleStar={toggleStar}
                     />
                   ) : (
                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
@@ -380,6 +423,8 @@ const Index = () => {
                   onPreview={handlePreview}
                   searchTerm={searchTerm}
                   currentPath={currentPath}
+                  starredFiles={starredFiles}
+                  onToggleStar={toggleStar}
                 />
               ) : (
                 <FileGridView
@@ -391,6 +436,7 @@ const Index = () => {
                   onStar={toggleStar}
                   starredFiles={starredFiles}
                   currentPath={currentPath}
+                  onRefresh={() => fetchFiles()}
                 />
               )}
             </Card>

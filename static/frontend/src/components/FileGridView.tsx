@@ -1,6 +1,6 @@
-import React from "react";
+import React, { useState } from "react";
 import { motion } from "framer-motion";
-import { Download, Trash2, Star, Eye, Folder, MoreVertical } from "lucide-react";
+import { Download, Trash2, Star, Eye, Folder, MoreVertical, Edit, Copy, Move } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -11,6 +11,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { getFileIcon } from "@/lib/utils";
 import { cn } from "@/lib/utils";
+import { RenameDialog } from "./RenameDialog";
+import { MoveDialog } from "./MoveDialog";
 
 interface FileItem {
   name: string;
@@ -29,6 +31,7 @@ interface FileGridViewProps {
   onStar: (fileName: string, event: React.MouseEvent) => void;
   starredFiles: Set<string>;
   currentPath: string;
+  onRefresh: () => void;
 }
 
 export const FileGridView: React.FC<FileGridViewProps> = ({
@@ -40,7 +43,22 @@ export const FileGridView: React.FC<FileGridViewProps> = ({
   onStar,
   starredFiles,
   currentPath,
+  onRefresh,
 }) => {
+  const [renameDialog, setRenameDialog] = useState<{ open: boolean; fileName: string }>({
+    open: false,
+    fileName: "",
+  });
+  const [moveDialog, setMoveDialog] = useState<{
+    open: boolean;
+    fileName: string;
+    mode: "move" | "copy";
+  }>({
+    open: false,
+    fileName: "",
+    mode: "move",
+  });
+
   const handleFileClick = (file: FileItem) => {
     if (file.isDir) {
       const newPath = currentPath === "." ? file.name : `${currentPath}/${file.name}`;
@@ -173,6 +191,34 @@ export const FileGridView: React.FC<FileGridViewProps> = ({
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setRenameDialog({ open: true, fileName: file.name });
+                      }}
+                    >
+                      <Edit className="w-4 h-4 mr-2" />
+                      Rename
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setMoveDialog({ open: true, fileName: file.name, mode: "move" });
+                      }}
+                    >
+                      <Move className="w-4 h-4 mr-2" />
+                      Move
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setMoveDialog({ open: true, fileName: file.name, mode: "copy" });
+                      }}
+                    >
+                      <Copy className="w-4 h-4 mr-2" />
+                      Copy
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
                       onClick={(e) => onDelete(file.name, e)}
                       className="text-destructive focus:text-destructive"
                     >
@@ -189,6 +235,23 @@ export const FileGridView: React.FC<FileGridViewProps> = ({
           </motion.div>
         );
       })}
+
+      <RenameDialog
+        open={renameDialog.open}
+        onOpenChange={(open) => setRenameDialog({ ...renameDialog, open })}
+        fileName={renameDialog.fileName}
+        currentPath={currentPath}
+        onSuccess={onRefresh}
+      />
+
+      <MoveDialog
+        open={moveDialog.open}
+        onOpenChange={(open) => setMoveDialog({ ...moveDialog, open })}
+        fileName={moveDialog.fileName}
+        currentPath={currentPath}
+        onSuccess={onRefresh}
+        mode={moveDialog.mode}
+      />
     </div>
   );
 };

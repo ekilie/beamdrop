@@ -56,10 +56,15 @@ export function AppSidebar({ password = "" }: AppSidebarProps) {
         headers["X-Password"] = password;
       }
 
-      const response = await fetch(" /stats", { headers });
+      const response = await fetch("/stats", { headers });
       if (response.ok) {
         const data = await response.json();
-        setStats(data);
+        // Map backend stats to our format
+        setStats({
+          downloads: data.total_downloads || 0,
+          uploads: data.total_uploads || 0,
+          startTime: stats.startTime, // Keep existing or use server start time if available
+        });
       }
     } catch (error) {
       console.error("Failed to fetch stats:", error);

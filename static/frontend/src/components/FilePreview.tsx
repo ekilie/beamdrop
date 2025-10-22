@@ -12,18 +12,15 @@ import {
   Download,
   ZoomIn,
   ZoomOut,
-  Play,
-  Pause,
-  Volume2,
-  VolumeX,
   FileText,
-  Code,
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneLight, oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { getFileIcon } from "@/lib/utils";
 import { useTheme } from "./ThemeProvider";
+import { EnhancedVideoPlayer } from "./EnhancedVideoPlayer";
+import { EnhancedAudioPlayer } from "./EnhancedAudioPlayer";
 
 interface FilePreviewProps {
   fileName: string;
@@ -36,8 +33,6 @@ export function FilePreview({ fileName, isOpen, onClose, currentPath = "." }: Fi
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [zoom, setZoom] = useState(100);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [isMuted, setIsMuted] = useState(false);
 
   const fileExt = fileName.split(".").pop()?.toLowerCase() || "";
   
@@ -86,34 +81,36 @@ export function FilePreview({ fileName, isOpen, onClose, currentPath = "." }: Fi
 
     if (isImage) {
       return (
-        <div className="flex flex-col items-center space-y-4">
-          <div className="flex items-center gap-2">
+        <div className="flex flex-col items-center space-y-4 animate-fade-in">
+          <div className="flex items-center gap-2 bg-secondary/50 rounded-lg px-4 py-2 border border-border">
             <Button
-              variant="outline"
+              variant="ghost"
               size="sm"
               onClick={() => setZoom(Math.max(25, zoom - 25))}
               disabled={zoom <= 25}
+              className="h-8"
             >
               <ZoomOut className="w-4 h-4" />
             </Button>
-            <Badge variant="secondary" className="font-mono text-xs">
+            <Badge variant="secondary" className="font-mono text-xs min-w-[4rem] text-center">
               {zoom}%
             </Badge>
             <Button
-              variant="outline"
+              variant="ghost"
               size="sm"
               onClick={() => setZoom(Math.min(200, zoom + 25))}
               disabled={zoom >= 200}
+              className="h-8"
             >
               <ZoomIn className="w-4 h-4" />
             </Button>
           </div>
-          <div className="max-h-[60vh] overflow-auto">
+          <div className="max-h-[65vh] overflow-auto rounded-lg border border-border bg-muted/30 p-4 scrollbar-thin">
             <img
               src={previewUrl}
               alt={fileName}
               style={{ transform: `scale(${zoom / 100})` }}
-              className="max-w-full h-auto transition-transform origin-center"
+              className="max-w-full h-auto transition-transform origin-center rounded"
               onLoad={() => setLoading(false)}
               onError={() => {
                 setError("Failed to load image");
@@ -127,10 +124,10 @@ export function FilePreview({ fileName, isOpen, onClose, currentPath = "." }: Fi
 
     if (isPdf) {
       return (
-        <div className="w-full h-[70vh]">
+        <div className="w-full h-[70vh] animate-fade-in">
           <iframe
             src={previewUrl}
-            className="w-full h-full border border-border rounded"
+            className="w-full h-full border-2 border-border rounded-lg shadow-lg"
             onLoad={() => setLoading(false)}
             onError={() => {
               setError("Failed to load PDF");
@@ -144,50 +141,29 @@ export function FilePreview({ fileName, isOpen, onClose, currentPath = "." }: Fi
 
     if (isVideo) {
       return (
-        <div className="w-full">
-          <video
-            src={previewUrl}
-            controls
-            className="w-full max-h-[60vh] bg-black rounded"
-            onLoadedData={() => setLoading(false)}
-            onError={() => {
-              setError("Failed to load video");
-              setLoading(false);
-            }}
-            onLoadStart={() => setLoading(true)}
-          >
-            Your browser does not support the video tag.
-          </video>
-        </div>
+        <EnhancedVideoPlayer
+          src={previewUrl}
+          fileName={fileName}
+          onLoadedData={() => setLoading(false)}
+          onError={() => {
+            setError("Failed to load video");
+            setLoading(false);
+          }}
+        />
       );
     }
 
     if (isAudio) {
       return (
-        <div className="w-full space-y-4">
-          <div className="bg-secondary p-6 rounded border-2 border-border text-center">
-            <div className="w-16 h-16 mx-auto mb-4 bg-primary rounded-full flex items-center justify-center">
-              <Volume2 className="w-8 h-8 text-primary-foreground" />
-            </div>
-            <p className="font-mono font-bold text-foreground mb-2">{fileName}</p>
-            <Badge variant="outline" className="font-mono text-xs">
-              AUDIO FILE
-            </Badge>
-          </div>
-          <audio
-            src={previewUrl}
-            controls
-            className="w-full"
-            onLoadedData={() => setLoading(false)}
-            onError={() => {
-              setError("Failed to load audio");
-              setLoading(false);
-            }}
-            onLoadStart={() => setLoading(true)}
-          >
-            Your browser does not support the audio tag.
-          </audio>
-        </div>
+        <EnhancedAudioPlayer
+          src={previewUrl}
+          fileName={fileName}
+          onLoadedData={() => setLoading(false)}
+          onError={() => {
+            setError("Failed to load audio");
+            setLoading(false);
+          }}
+        />
       );
     }
 
@@ -230,31 +206,34 @@ export function FilePreview({ fileName, isOpen, onClose, currentPath = "." }: Fi
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] bg-card border-2 border-border">
-        <DialogHeader>
-          <div className="flex items-center justify-between m-4">
-            <DialogTitle className="font-mono font-bold text-foreground truncate">
+      <DialogContent className="max-w-5xl max-h-[95vh] bg-card border-2 border-border overflow-hidden">
+        <DialogHeader className="border-b border-border pb-4">
+          <div className="flex items-center justify-between">
+            <DialogTitle className="font-mono font-bold text-foreground truncate flex items-center gap-2">
+              {getFileIcon(fileName, "w-5 h-5")}
               {fileName}
             </DialogTitle>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleDownload}
-              >
-                <Download className="w-4 h-4 mr-2" />
-                Download
-              </Button>
-            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleDownload}
+              className="shrink-0"
+            >
+              <Download className="w-4 h-4 mr-2" />
+              Download
+            </Button>
           </div>
         </DialogHeader>
 
-        <div className="mt-4">
+        <div className="mt-4 overflow-auto max-h-[calc(95vh-8rem)] scrollbar-thin">
           {loading && !error && (
-            <div className="flex items-center justify-center py-12">
-              <div className="text-center">
-                <div className="w-8 h-8 border-2 border-primary border-t-transparent animate-spin rounded-full mx-auto mb-4"></div>
-                <p className="font-mono text-sm text-muted-foreground">
+            <div className="flex items-center justify-center py-16">
+              <div className="text-center space-y-4 animate-fade-in">
+                <div className="relative">
+                  <div className="w-12 h-12 border-4 border-primary/30 border-t-primary animate-spin rounded-full mx-auto"></div>
+                  <div className="w-12 h-12 border-4 border-accent/30 border-b-accent animate-spin rounded-full mx-auto absolute top-0 left-1/2 -translate-x-1/2" style={{ animationDirection: 'reverse', animationDuration: '0.8s' }}></div>
+                </div>
+                <p className="font-mono text-sm text-muted-foreground font-semibold">
                   LOADING PREVIEW...
                 </p>
               </div>
@@ -262,17 +241,17 @@ export function FilePreview({ fileName, isOpen, onClose, currentPath = "." }: Fi
           )}
 
           {error && (
-            <div className="text-center py-12">
-              <div className="w-16 h-16 mx-auto mb-4 bg-destructive/10 rounded-full flex items-center justify-center">
-                <X className="w-8 h-8 text-destructive" />
+            <div className="text-center py-16 animate-fade-in">
+              <div className="w-20 h-20 mx-auto mb-4 bg-destructive/10 rounded-full flex items-center justify-center border-2 border-destructive/30 animate-bounce-slow">
+                <X className="w-10 h-10 text-destructive" />
               </div>
-              <h3 className="font-mono font-bold text-foreground mb-2">
+              <h3 className="font-mono font-bold text-foreground mb-2 text-lg">
                 PREVIEW ERROR
               </h3>
-              <p className="text-muted-foreground font-mono text-sm mb-4">
+              <p className="text-muted-foreground font-mono text-sm mb-6 max-w-md mx-auto">
                 {error}
               </p>
-              <Button onClick={handleDownload} variant="default">
+              <Button onClick={handleDownload} variant="default" className="hover-lift">
                 <Download className="w-4 h-4 mr-2" />
                 Download File
               </Button>
@@ -375,10 +354,9 @@ function TextFilePreview({ fileName, currentPath = ".", onLoad, onError }: {
   const language = getLanguageFromExtension(fileExt);
 
   return (
-    <div className="bg-secondary border-2 border-border rounded p-4">
-      <div className="flex items-center gap-2 mb-4">
-        {/* Use the specific file icon instead of generic Code icon */}
-        <div className="flex items-center justify-center w-4 h-4">
+    <div className="bg-secondary/30 border-2 border-border rounded-lg p-4 animate-fade-in">
+      <div className="flex items-center gap-2 mb-4 pb-3 border-b border-border">
+        <div className="flex items-center justify-center w-5 h-5">
           {fileIcon}
         </div>
         <Badge variant="outline" className="font-mono text-xs">
@@ -390,7 +368,7 @@ function TextFilePreview({ fileName, currentPath = ".", onLoad, onError }: {
           </Badge>
         )}
       </div>
-      <div className="bg-background border border-border rounded overflow-hidden">
+      <div className="bg-background border-2 border-border rounded-lg overflow-hidden shadow-sm">
         {isCode ? (
           <SyntaxHighlighter
             language={language}

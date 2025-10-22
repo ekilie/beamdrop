@@ -80,7 +80,7 @@ export const FileGridView: React.FC<FileGridViewProps> = ({
   };
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 animate-fade-in">
       {files.map((file, index) => {
         const previewUrl = getFilePreviewBg(file.name);
         const isStarred = starredFiles.has(file.name);
@@ -92,7 +92,7 @@ export const FileGridView: React.FC<FileGridViewProps> = ({
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: index * 0.05, duration: 0.2 }}
             className={cn(
-              "group relative bg-card border border-border rounded-lg overflow-hidden hover:border-primary/50 hover:shadow-lg transition-all cursor-pointer",
+              "group relative bg-card border border-border rounded-lg overflow-hidden hover:border-primary/50 hover:shadow-lg transition-all cursor-pointer hover-lift",
               isStarred && "ring-2 ring-primary/20"
             )}
             onClick={() => handleFileClick(file)}

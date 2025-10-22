@@ -216,12 +216,12 @@ const FileTable: React.FC<FileTableProps> = ({
 
   if (isLoading) {
     return (
-      <div className="space-y-4">
+      <div className="space-y-4 animate-fade-in">
         <div className="flex items-center justify-between">
           <Skeleton className="h-6 w-48" />
           <Skeleton className="h-8 w-24" />
         </div>
-        <div className="border border-border rounded-lg">
+        <div className="border border-border rounded-lg hover-lift">
           <Table>
             <TableHeader>
               <TableRow className="border-b border-border">
@@ -236,13 +236,13 @@ const FileTable: React.FC<FileTableProps> = ({
                 <TableRow key={i}>
                   <TableCell>
                     <div className="flex items-center gap-3">
-                      <Skeleton className="h-6 w-6" />
-                      <Skeleton className="h-4 w-32" />
+                      <Skeleton className="h-6 w-6 animate-pulse" />
+                      <Skeleton className="h-4 w-32 animate-pulse" />
                     </div>
                   </TableCell>
-                  <TableCell><Skeleton className="h-4 w-16" /></TableCell>
-                  <TableCell><Skeleton className="h-4 w-24" /></TableCell>
-                  <TableCell><Skeleton className="h-8 w-8" /></TableCell>
+                  <TableCell><Skeleton className="h-4 w-16 animate-pulse" /></TableCell>
+                  <TableCell><Skeleton className="h-4 w-24 animate-pulse" /></TableCell>
+                  <TableCell><Skeleton className="h-8 w-8 animate-pulse" /></TableCell>
                 </TableRow>
               ))}
             </TableBody>
@@ -254,7 +254,7 @@ const FileTable: React.FC<FileTableProps> = ({
 
   return (
     <>
-      <div className="space-y-4">
+      <div className="space-y-4 animate-fade-in">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="font-mono text-sm font-bold uppercase tracking-wide text-foreground">
@@ -267,7 +267,7 @@ const FileTable: React.FC<FileTableProps> = ({
           variant="outline"
           size="sm"
           onClick={onRefresh}
-          className="gap-2"
+          className="gap-2 hover-lift transition-smooth"
         >
           <RefreshCw className="w-4 h-4" />
           <span className="font-mono text-xs font-bold uppercase tracking-wide">
@@ -277,7 +277,7 @@ const FileTable: React.FC<FileTableProps> = ({
       </div>
 
       {/* Table */}
-      <div className="border-t border-b border-border">
+      <div className="border-t border-b border-border hover-lift transition-smooth rounded-lg overflow-hidden shadow-sm">
         <Table>
           <TableHeader>
             <TableRow className="hover:bg-transparent border-b border-border">
@@ -317,7 +317,7 @@ const FileTable: React.FC<FileTableProps> = ({
               return (
                 <TableRow
                   key={`${file.name}-${file.modTime}`}
-                  className="cursor-pointer border-b border-border hover:bg-muted/50 transition-colors group"
+                  className="cursor-pointer border-b border-border hover:bg-muted/50 transition-all group hover:shadow-sm"
                   onClick={() => handleFileClick(file)}
                 >
                   <TableCell className="font-medium">

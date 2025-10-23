@@ -70,8 +70,8 @@ All colors MUST be HSL.
     --popover: 240 5.9% 12%;
     --popover-foreground: 240 4.8% 95.9%;
 
-    /* Google Drive inspired blue theme - consistent across app */
-    --primary: 217 91% 60%;
+    /* Vibrant brown theme - consistent with light mode */
+    --primary: 28 75% 55%;
     --primary-foreground: 0 0% 100%;
 
     --secondary: 240 3.7% 18%;
@@ -80,7 +80,7 @@ All colors MUST be HSL.
     --muted: 240 3.7% 18%;
     --muted-foreground: 240 5% 64.9%;
 
-    --accent: 217 91% 60%;
+    --accent: 28 75% 55%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 72% 51%;
@@ -88,16 +88,16 @@ All colors MUST be HSL.
 
     --border: 240 3.7% 20%;
     --input: 240 3.7% 18%;
-    --ring: 217 91% 60%;
+    --ring: 28 75% 55%;
 
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 217 91% 60%;
+    --sidebar-primary: 28 75% 55%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 240 3.7% 18%;
     --sidebar-accent-foreground: 240 4.8% 95.9%;
     --sidebar-border: 240 3.7% 20%;
-    --sidebar-ring: 217 91% 60%;
+    --sidebar-ring: 28 75% 55%;
   }
 }
 
@@ -178,7 +178,8 @@ All colors MUST be HSL.
   }
 
   @keyframes bounce {
-    0%, 100% {
+    0%,
+    100% {
       transform: translateY(0);
     }
     50% {

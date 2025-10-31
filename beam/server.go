@@ -589,7 +589,9 @@ func StartServer(sharedDir string, flags config.Flags) {
 
 	if flags.Port > 0 {
 		// If its greater than zero then the flag was passed
-		port = flags.Port
+		if !config.IsPortAvailable(flags.Port) {
+			logger.Error("Port %d is not available, falling back to default port %d ",flags.Port,port)
+		} 
 	}
 
 	ip := GetLocalIP()

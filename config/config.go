@@ -14,7 +14,6 @@ const (
 	ConfigDirName = ".beamdrop"
 )
 
-
 var (
 	ConfigDir  string
 	ConfigPath string
@@ -29,6 +28,7 @@ type Config struct {
 type Flags struct {
 	SharedDir string
 	NoQR      bool
+	Port      int
 	Help      bool
 	Password  string
 }

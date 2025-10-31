@@ -245,7 +245,7 @@ func StartServer(sharedDir string, flags config.Flags) {
 
 		logger.Debug("Retrieved starred files list")
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]interface{}{
+		json.NewEncoder(w).Encode(map[string]any{
 			"starred": starredFiles,
 		})
 	})
@@ -573,7 +573,7 @@ func StartServer(sharedDir string, flags config.Flags) {
 
 		logger.Info("Search completed for query '%s' in path '%s', found %d results", query, searchPath, len(results))
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]interface{}{
+		json.NewEncoder(w).Encode(map[string]any{
 			"query":   query,
 			"path":    searchPath,
 			"results": results,

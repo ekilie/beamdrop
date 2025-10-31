@@ -581,18 +581,7 @@ func StartServer(sharedDir string, flags config.Flags) {
 		})
 	})
 
-	// Find an available port from the default ports list
-	port, err := config.FindAvailablePort()
-	if err != nil {
-		logger.Fatal("Failed to find available port: %v", err)
-	}
-
-	if flags.Port > 0 {
-		// If its greater than zero then the flag was passed
-		if !config.IsPortAvailable(flags.Port) {
-			logger.Error("Port %d is not available, falling back to default port %d ",flags.Port,port)
-		} 
-	}
+	port := getPort(flags)
 
 	ip := GetLocalIP()
 	url := fmt.Sprintf("http://%s:%d", ip, port)
@@ -602,8 +591,28 @@ func StartServer(sharedDir string, flags config.Flags) {
 	}
 	logger.Info("Server started at %s sharing directory: %s", url, sharedDir)
 
-	err = http.ListenAndServe(fmt.Sprintf(":%d", port), nil)
+	err := http.ListenAndServe(fmt.Sprintf(":%d", port), nil)
 	if err != nil {
 		logger.Fatal("Server error: %v", err)
 	}
+}
+
+// getPort return the port to be used
+func getPort(flags config.Flags)int {
+	// Find an available port from the default ports list
+	port, err := config.FindAvailablePort()
+	if err != nil {
+		logger.Fatal("Failed to find available port: %v", err)
+		// return 0
+	}
+
+	// If its greater than zero then the flag was passed in the cli args
+	if flags.Port > 0 {
+		if !config.IsPortAvailable(flags.Port) {
+			logger.Error("Port %d is not available, falling back to port %d ", flags.Port, port)
+			return port
+		}
+		return flags.Port
+	}
+	return port
 }

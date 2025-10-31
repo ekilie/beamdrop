@@ -21,7 +21,7 @@ func init() {
 
 func openDB() {
 	var dbPath string = config.DBPath
-	logger.Info("Opening database at: %s", dbPath)
+	// logger.Info("Opening database at: %s", dbPath)
 	var err error
 	db, err = gorm.Open(sqlite.Open(dbPath), &gorm.Config{})
 	if err != nil {

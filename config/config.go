@@ -46,15 +46,15 @@ func GetConfig() Config {
 // FindAvailablePort tries to find an available port from the default ports list
 func FindAvailablePort() (int, error) {
 	for _, port := range DefaultPorts {
-		if isPortAvailable(port) {
+		if IsPortAvailable(port) {
 			return port, nil
 		}
 	}
 	return 0, fmt.Errorf("no available ports found from the default list: %v", DefaultPorts)
 }
 
-// isPortAvailable checks if a port is available for use
-func isPortAvailable(port int) bool {
+// IsPortAvailable checks if a port is available for use
+func IsPortAvailable(port int) bool {
 	address := fmt.Sprintf(":%d", port)
 	listener, err := net.Listen("tcp", address)
 	if err != nil {

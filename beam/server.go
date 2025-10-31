@@ -587,6 +587,11 @@ func StartServer(sharedDir string, flags config.Flags) {
 		logger.Fatal("Failed to find available port: %v", err)
 	}
 
+	if flags.Port > 0 {
+		// If its greater than zero then the flag was passed
+		port = flags.Port
+	}
+
 	ip := GetLocalIP()
 	url := fmt.Sprintf("http://%s:%d", ip, port)
 

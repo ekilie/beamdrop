@@ -16,12 +16,10 @@ func main() {
 	password := flag.String("p", "", "Password authentication")
 	versionFlag := flag.Bool("v", false, "Show version information")
 
-	defaultPort, err := config.FindAvailablePort()
-	if err != nil {
-		logger.Error("Something went wrong failed to get the port: %v", err)
-	}
 
-	port := flag.Int("port", defaultPort, "Set the port that beamdrop will run on")
+	// NOTE:Here i default it to 0 so when it zero we know that the flag wasnt passed
+	// Since the flag is a non-boolean value
+	port := flag.Int("port", 0, "Set the port that beamdrop will run on") 
 	if *versionFlag {
 		styles.InfoStyle.Println("Beamdrop Version:", config.VERSION)
 		return

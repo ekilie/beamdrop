@@ -128,6 +128,7 @@ export const getFileIcon = (filename: string, className: string = "w-4 h-4 text-
 
     // Media files
     case "mp4":
+    case "mkv":
     case "avi":
     case "mov":
     case "wmv":

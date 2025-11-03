@@ -38,7 +38,7 @@ export function FilePreview({ fileName, isOpen, onClose, currentPath = "." }: Fi
   
   const isImage = ["jpg", "jpeg", "png", "gif", "webp", "svg", "bmp"].includes(fileExt);
   const isPdf = fileExt === "pdf";
-  const isVideo = ["mp4", "avi", "mov", "wmv", "flv", "webm"].includes(fileExt);
+  const isVideo = ["mp4","mkv", "avi", "mov", "wmv", "flv", "webm"].includes(fileExt);
   const isAudio = ["mp3", "wav", "ogg", "flac", "aac"].includes(fileExt);
   const isText = ["txt", "md", "json", "xml", "csv", "log"].includes(fileExt);
   const isCode = ["js", "ts", "tsx", "jsx", "py", "java", "vint", "go", "php", "rb", "html", "css", "scss"].includes(fileExt);

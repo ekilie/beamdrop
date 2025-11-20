@@ -64,40 +64,39 @@ All colors MUST be HSL.
     --background: 240 5.9% 10%;
     --foreground: 240 4.8% 95.9%;
 
-    --card: 240 5.9% 12%;
+    --card: 240 5.9% 10%;
     --card-foreground: 240 4.8% 95.9%;
 
-    --popover: 240 5.9% 12%;
+    --popover: 240 3.7% 15.9%;
     --popover-foreground: 240 4.8% 95.9%;
 
-    /* Vibrant brown theme - consistent with light mode */
-    --primary: 28 75% 55%;
+    --primary: 24 45% 35%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 240 3.7% 18%;
+    --secondary: 240 3.7% 15.9%;
     --secondary-foreground: 240 4.8% 95.9%;
 
-    --muted: 240 3.7% 18%;
+    --muted: 240 3.7% 15.9%;
     --muted-foreground: 240 5% 64.9%;
 
-    --accent: 28 75% 55%;
-    --accent-foreground: 0 0% 100%;
+    --accent: 82 25% 70%;
+    --accent-foreground: 240 4.8% 95.9%;
 
-    --destructive: 0 72% 51%;
-    --destructive-foreground: 0 0% 100%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 240 4.8% 95.9%;
 
-    --border: 240 3.7% 20%;
-    --input: 240 3.7% 18%;
-    --ring: 28 75% 55%;
+    --border: 240 3.7% 15.9%;
+    --input: 240 3.7% 15.9%;
+    --ring: 24 45% 35%;
 
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 28 75% 55%;
+    --sidebar-primary: 24 45% 35%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 18%;
+    --sidebar-accent: 240 3.7% 15.9%;
     --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 20%;
-    --sidebar-ring: 28 75% 55%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 24 45% 35%;
   }
 }
 
@@ -142,57 +141,5 @@ All colors MUST be HSL.
 
   .scrollbar-track-transparent::-webkit-scrollbar-track {
     background: transparent;
-  }
-
-  /* Enhanced animations */
-  .animate-slide-up {
-    animation: slideUp 0.4s ease-out;
-  }
-
-  @keyframes slideUp {
-    from {
-      opacity: 0;
-      transform: translateY(20px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-
-  .animate-shimmer {
-    animation: shimmer 2s infinite;
-  }
-
-  @keyframes shimmer {
-    0% {
-      transform: translateX(-100%);
-    }
-    100% {
-      transform: translateX(100%);
-    }
-  }
-
-  .animate-bounce-slow {
-    animation: bounce 3s infinite;
-  }
-
-  @keyframes bounce {
-    0%,
-    100% {
-      transform: translateY(0);
-    }
-    50% {
-      transform: translateY(-10px);
-    }
-  }
-
-  .hover-lift {
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
-  }
-
-  .hover-lift:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 10px 25px -5px hsl(var(--primary) / 0.3);
   }
 }

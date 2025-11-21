@@ -197,8 +197,7 @@ export function AdvancedSearch({
 
           <Separator className="flex-shrink-0" />
 
-          {/* Dynamic Content Area - This will grow/shrink properly */}
-          <div className="flex-1 min-h-0">
+          <div className="flex-1 min-h-0 overflow-auto">
             {/* Results Section */}
             {results.length > 0 && (
               <div className="h-full flex flex-col">
@@ -315,7 +314,7 @@ export function AdvancedSearch({
           </div>
         </div>
 
-        <DialogFooter className="flex-shrink-0 gap-2 sm:gap-0 mt-4">
+        <DialogFooter className="flex-shrink-0 gap-2 sm:gap-0 mt-2">
           <Button
             variant="outline"
             onClick={() => setOpen(false)}

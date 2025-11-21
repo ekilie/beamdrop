@@ -70,6 +70,7 @@ const Index = () => {
         file.name.toLowerCase().includes(term.toLowerCase()),
       );
       setFilteredFiles(filtered);
+      console.log("Filtered Files:", filtered);
     }
   };
 
@@ -90,7 +91,6 @@ const Index = () => {
 
     initializeApp();
 
-    // Add keyboard shortcuts
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.ctrlKey || e.metaKey) {
         switch (e.key) {
@@ -116,7 +116,7 @@ const Index = () => {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [searchTerm, fetchFiles]);
+  }, []);
 
   const handleUploadSuccess = () => {
     fetchFiles();

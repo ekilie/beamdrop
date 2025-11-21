@@ -134,8 +134,8 @@ export function AdvancedSearch({
           </span>
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[700px] max-h-[90vh] flex flex-col">
-        <DialogHeader>
+      <DialogContent className="sm:max-w-[700px] max-h-[90vh] w-[95vw] flex flex-col">
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle className="flex items-center gap-2">
             <SearchIcon className="w-5 h-5" />
             <span className="font-mono uppercase tracking-wide">
@@ -148,9 +148,8 @@ export function AdvancedSearch({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex flex-col flex-1 gap-4">
-          {/* Search Controls */}
-          <div className="grid gap-4">
+        <div className="flex flex-col flex-1 min-h-0 gap-4">
+          <div className="grid gap-4 flex-shrink-0">
             <div className="grid gap-2">
               <Label
                 htmlFor="query"
@@ -196,109 +195,127 @@ export function AdvancedSearch({
             </div>
           </div>
 
-          <Separator />
+          <Separator className="flex-shrink-0" />
 
-          {/* Results Section */}
-          {results.length > 0 && (
-            <div className="flex-1 flex flex-col min-h-0">
-              <div className="flex items-center justify-between mb-3">
-                <Label className="font-mono text-xs uppercase">
-                  Search Results
-                </Label>
-                <Badge variant="secondary" className="font-mono">
-                  {results.length} {results.length === 1 ? "item" : "items"}
-                </Badge>
-              </div>
+          {/* Dynamic Content Area - This will grow/shrink properly */}
+          <div className="flex-1 min-h-0">
+            {/* Results Section */}
+            {results.length > 0 && (
+              <div className="h-full flex flex-col">
+                <div className="flex items-center justify-between mb-3 flex-shrink-0">
+                  <Label className="font-mono text-xs uppercase">
+                    Search Results
+                  </Label>
+                  <Badge variant="secondary" className="font-mono">
+                    {results.length} {results.length === 1 ? "item" : "items"}
+                  </Badge>
+                </div>
 
-              <ScrollArea className="flex-1 border rounded-lg">
-                <div className="p-2 space-y-2">
-                  {results.map((result, idx) => (
-                    <Card
-                      key={`${result.path}-${idx}`}
-                      className="p-3 hover:bg-muted/50 cursor-pointer transition-colors border-border/50"
-                      onClick={() => handleResultClick(result)}
-                    >
-                      <div className="flex items-start gap-3">
-                        <div className="flex-shrink-0 mt-0.5 text-muted-foreground">
-                          {result.isDir ? (
-                            <FolderOpen className="w-5 h-5 text-blue-500" />
-                          ) : (
-                            getFileIcon(result.name, "w-5 h-5") || (
-                              <File className="w-5 h-5" />
-                            )
-                          )}
-                        </div>
-
-                        <div className="flex-1 min-w-0 space-y-1">
-                          <div className="flex items-center gap-2">
-                            <p
-                              className="font-medium text-sm truncate"
-                              title={result.name}
-                            >
-                              {result.name}
-                            </p>
-                            {result.isDir && (
-                              <Badge variant="outline" className="text-xs">
-                                Folder
-                              </Badge>
+                <ScrollArea className="flex-1 border rounded-lg">
+                  <div className="p-2 space-y-2">
+                    {results.map((result, idx) => (
+                      <Card
+                        key={`${result.path}-${idx}`}
+                        className="p-3 hover:bg-muted/50 cursor-pointer transition-colors border-border/50"
+                        onClick={() => handleResultClick(result)}
+                      >
+                        <div className="flex items-start gap-3">
+                          <div className="flex-shrink-0 mt-0.5 text-muted-foreground">
+                            {result.isDir ? (
+                              <FolderOpen className="w-5 h-5 text-blue-500" />
+                            ) : (
+                              getFileIcon(result.name, "w-5 h-5") || (
+                                <File className="w-5 h-5" />
+                              )
                             )}
                           </div>
 
-                          <p
-                            className="text-xs text-muted-foreground truncate"
-                            title={result.path}
-                          >
-                            {result.path}
-                          </p>
-
-                          <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                            <div className="flex items-center gap-1">
-                              <HardDrive className="w-3 h-3" />
-                              <span>{formatFileSize(result.size)}</span>
+                          <div className="flex-1 min-w-0 space-y-1">
+                            <div className="flex items-center gap-2">
+                              <p
+                                className="font-medium text-sm truncate"
+                                title={result.name}
+                              >
+                                {result.name}
+                              </p>
+                              {result.isDir && (
+                                <Badge variant="outline" className="text-xs">
+                                  Folder
+                                </Badge>
+                              )}
                             </div>
-                            <div className="flex items-center gap-1">
-                              <Calendar className="w-3 h-3" />
-                              <span>{formatDate(result.modTime)}</span>
+
+                            <p
+                              className="text-xs text-muted-foreground truncate"
+                              title={result.path}
+                            >
+                              {result.path}
+                            </p>
+
+                            <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                              <div className="flex items-center gap-1">
+                                <HardDrive className="w-3 h-3" />
+                                <span>{formatFileSize(result.size)}</span>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <Calendar className="w-3 h-3" />
+                                <span>{formatDate(result.modTime)}</span>
+                              </div>
                             </div>
                           </div>
                         </div>
-                      </div>
-                    </Card>
-                  ))}
+                      </Card>
+                    ))}
+                  </div>
+                </ScrollArea>
+              </div>
+            )}
+
+            {/* Empty State */}
+            {!isSearching && results.length === 0 && query && (
+              <div className="h-full flex items-center justify-center text-center p-8">
+                <div className="space-y-2">
+                  <SearchIcon className="w-12 h-12 text-muted-foreground/50 mx-auto" />
+                  <p className="font-mono text-sm text-muted-foreground">
+                    No results found for "{query}"
+                  </p>
+                  <p className="font-mono text-xs text-muted-foreground">
+                    Try adjusting your search terms or path
+                  </p>
                 </div>
-              </ScrollArea>
-            </div>
-          )}
-
-          {/* Empty State */}
-          {!isSearching && results.length === 0 && query && (
-            <div className="flex-1 flex items-center justify-center text-center p-8">
-              <div className="space-y-2">
-                <SearchIcon className="w-12 h-12 text-muted-foreground/50 mx-auto" />
-                <p className="font-mono text-sm text-muted-foreground">
-                  No results found for "{query}"
-                </p>
-                <p className="font-mono text-xs text-muted-foreground">
-                  Try adjusting your search terms or path
-                </p>
               </div>
-            </div>
-          )}
+            )}
 
-          {/* Loading State */}
-          {isSearching && (
-            <div className="flex-1 flex items-center justify-center text-center p-8">
-              <div className="space-y-3">
-                <Loader2 className="w-8 h-8 animate-spin text-primary mx-auto" />
-                <p className="font-mono text-sm text-muted-foreground">
-                  Searching for "{query}"...
-                </p>
+            {/* Loading State */}
+            {isSearching && (
+              <div className="h-full flex items-center justify-center text-center p-8">
+                <div className="space-y-3">
+                  <Loader2 className="w-8 h-8 animate-spin text-primary mx-auto" />
+                  <p className="font-mono text-sm text-muted-foreground">
+                    Searching for "{query}"...
+                  </p>
+                </div>
               </div>
-            </div>
-          )}
+            )}
+
+            {/* Initial State - No search performed */}
+            {!isSearching && results.length === 0 && !query && (
+              <div className="h-full flex items-center justify-center text-center p-8">
+                <div className="space-y-2">
+                  <SearchIcon className="w-12 h-12 text-muted-foreground/50 mx-auto" />
+                  <p className="font-mono text-sm text-muted-foreground">
+                    Enter a search query to find files and folders
+                  </p>
+                  <p className="font-mono text-xs text-muted-foreground">
+                    You can search by name, extension, or pattern
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
-        <DialogFooter className="flex-shrink-0 gap-2 sm:gap-0">
+        <DialogFooter className="flex-shrink-0 gap-2 sm:gap-0 mt-4">
           <Button
             variant="outline"
             onClick={() => setOpen(false)}

@@ -1,17 +1,14 @@
 import { useState, useEffect, useCallback } from "react";
-import { FileUpload } from "@/components/FileUpload";
 import { Card } from "@/components/ui/card";
-import { Upload, Download, Server, Search, Grid3x3, List, FolderPlus } from "lucide-react";
+import { Download, Search, Grid3x3, List } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
 import Footer from "@/components/Footer";
-import FileList from "@/components/FileList";
 import { FileUploadDialog } from "@/components/FileUploadDialog";
 import FileTable from "@/components/FileTable";
 import { BreadcrumbNav } from "@/components/BreadcrumbNav";
 import { FilePreview } from "@/components/FilePreview";
-import { FileUploadModule } from "@/components/FileUploadModule";
 import { EmptyState } from "@/components/EmptyState";
 import { FileGridView } from "@/components/FileGridView";
 import { DropZone } from "@/components/DropZone";

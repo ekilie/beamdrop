@@ -529,6 +529,73 @@ func StartServer(sharedDir string, flags config.Flags) {
 		})
 	})
 
+	// Write/save file content endpoint
+	http.HandleFunc("/write", func(w http.ResponseWriter, r *http.Request) {
+		db.IncrementRequests()
+
+		if r.Method != "POST" {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusMethodNotAllowed)
+			json.NewEncoder(w).Encode(map[string]string{"error": "Method not allowed"})
+			return
+		}
+
+		var req struct {
+			FilePath string `json:"filePath"`
+			Content  string `json:"content"`
+		}
+
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			logger.Error("Invalid write request: %v", err)
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(map[string]string{"error": "Invalid request body"})
+			return
+		}
+
+		if req.FilePath == "" {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(map[string]string{"error": "File path is required"})
+			return
+		}
+
+		targetPath, err := ResolvePath(sharedDir, req.FilePath)
+		if err != nil {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(map[string]string{"error": "Invalid file path"})
+			return
+		}
+
+		// Create parent directories if they don't exist
+		parentDir := path.Dir(targetPath)
+		if err := os.MkdirAll(parentDir, 0755); err != nil {
+			logger.Error("Failed to create parent directory %s: %v", parentDir, err)
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(map[string]string{"error": "Failed to create parent directory"})
+			return
+		}
+
+		// Write file content
+		if err := os.WriteFile(targetPath, []byte(req.Content), 0644); err != nil {
+			logger.Error("Failed to write file %s: %v", targetPath, err)
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(map[string]string{"error": "Failed to write file"})
+			return
+		}
+
+		logger.Info("File written successfully: %s", req.FilePath)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(map[string]string{
+			"message": "File written successfully",
+			"filePath": req.FilePath,
+		})
+	})
+
 	// Search files by name/content endpoint
 	http.HandleFunc("/search", func(w http.ResponseWriter, r *http.Request) {
 		db.IncrementRequests()

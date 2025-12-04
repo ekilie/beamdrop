@@ -13,6 +13,7 @@ import {
   ZoomIn,
   ZoomOut,
   FileText,
+  Edit,
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
@@ -21,6 +22,7 @@ import { getFileIcon } from "@/lib/utils";
 import { useTheme } from "./ThemeProvider";
 import { EnhancedVideoPlayer } from "./EnhancedVideoPlayer";
 import { EnhancedAudioPlayer } from "./EnhancedAudioPlayer";
+import { CodeEditorDialog } from "./CodeEditorDialog";
 
 interface FilePreviewProps {
   fileName: string;
@@ -33,6 +35,8 @@ export function FilePreview({ fileName, isOpen, onClose, currentPath = "." }: Fi
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [zoom, setZoom] = useState(100);
+  const [fileContent, setFileContent] = useState<string>("");
+  const [refreshKey, setRefreshKey] = useState(0);
 
   const fileExt = fileName.split(".").pop()?.toLowerCase() || "";
   
@@ -171,13 +175,15 @@ export function FilePreview({ fileName, isOpen, onClose, currentPath = "." }: Fi
       return (
         <div className="w-full">
           <TextFilePreview 
+            key={refreshKey}
             fileName={fileName} 
             currentPath={currentPath}
             onLoad={() => setLoading(false)} 
             onError={(err) => {
               setError(err);
               setLoading(false);
-            }} 
+            }}
+            onContentLoaded={(content) => setFileContent(content)}
           />
         </div>
       );
@@ -213,15 +219,42 @@ export function FilePreview({ fileName, isOpen, onClose, currentPath = "." }: Fi
               {getFileIcon(fileName, "w-5 h-5")}
               {fileName}
             </DialogTitle>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleDownload}
-              className="shrink-0"
-            >
-              <Download className="w-4 h-4 mr-2" />
-              Download
-            </Button>
+            <div className="flex items-center gap-2">
+              {(isText || isCode) && (
+                <CodeEditorDialog
+                  currentPath={currentPath}
+                  initialFileName={fileName}
+                  initialContent={fileContent}
+                  mode="edit"
+                  onSaveSuccess={() => {
+                    // Refresh the preview by updating the refresh key
+                    setRefreshKey(prev => prev + 1);
+                    setLoading(true);
+                    setError(null);
+                    setFileContent("");
+                  }}
+                  triggerButton={
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="shrink-0"
+                    >
+                      <Edit className="w-4 h-4 mr-2" />
+                      Edit
+                    </Button>
+                  }
+                />
+              )}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleDownload}
+                className="shrink-0"
+              >
+                <Download className="w-4 h-4 mr-2" />
+                Download
+              </Button>
+            </div>
           </div>
         </DialogHeader>
 
@@ -311,11 +344,12 @@ function getLanguageFromExtension(ext: string): string {
 }
 
 // Component for text file previews
-function TextFilePreview({ fileName, currentPath = ".", onLoad, onError }: {
+function TextFilePreview({ fileName, currentPath = ".", onLoad, onError, onContentLoaded }: {
   fileName: string;
   currentPath?: string;
   onLoad: () => void;
   onError: (error: string) => void;
+  onContentLoaded?: (content: string) => void;
 }) {
   const [content, setContent] = useState<string>("");
   const { theme } = useTheme();
@@ -330,6 +364,9 @@ function TextFilePreview({ fileName, currentPath = ".", onLoad, onError }: {
         }
         const text = await response.text();
         setContent(text);
+        if (onContentLoaded) {
+          onContentLoaded(text);
+        }
         onLoad();
       } catch (error) {
         onError("Failed to load text file");

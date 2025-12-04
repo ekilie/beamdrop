@@ -17,6 +17,7 @@ import { FileGridView } from "@/components/FileGridView";
 import { DropZone } from "@/components/DropZone";
 import { CreateFolderDialog } from "@/components/CreateFolderDialog";
 import { AdvancedSearch } from "@/components/AdvancedSearch";
+import { CodeEditorDialog } from "@/components/CodeEditorDialog";
 
 export interface FileItem {
   name: string;
@@ -329,6 +330,10 @@ const Index = () => {
                   </Button>
                 </div>
                 <CreateFolderDialog currentPath={currentPath} onSuccess={() => fetchFiles()} />
+                <CodeEditorDialog 
+                  currentPath={currentPath} 
+                  onSaveSuccess={() => fetchFiles()}
+                />
                 <AdvancedSearch 
                   currentPath={currentPath} 
                   onNavigate={handleNavigate} 

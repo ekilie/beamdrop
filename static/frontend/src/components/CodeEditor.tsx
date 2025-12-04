@@ -7,7 +7,7 @@ import { Save, FileText, Loader2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { useTheme } from "./ThemeProvider";
 import Editor from "react-simple-code-editor";
-import { highlight, languages } from 'prismjs';
+import Prism from 'prismjs';
 import 'prismjs/components/prism-core';
 import 'prismjs/components/prism-clike';
 import 'prismjs/components/prism-javascript';
@@ -28,7 +28,7 @@ import 'prismjs/components/prism-cpp';
 import 'prismjs/components/prism-rust';
 import 'prismjs/components/prism-sql';
 import 'prismjs/components/prism-yaml';
-import 'prismjs/themes/prism.css';
+import 'prismjs/components/prism-markdown';
 
 interface CodeEditorProps {
   initialFileName?: string;

@@ -212,7 +212,7 @@ export function FilePreview({ fileName, isOpen, onClose, currentPath = "." }: Fi
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-5xl max-h-[95vh] bg-card border-2 border-border overflow-hidden">
+      <DialogContent className="max-w-5xl max-h-[95vh] bg-card border-2 border-border overflow-hidden [&>button]:hidden">
         <DialogHeader className="border-b border-border pb-4">
           <div className="flex items-center justify-between">
             <DialogTitle className="font-mono font-bold text-foreground truncate flex items-center gap-2">

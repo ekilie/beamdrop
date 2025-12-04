@@ -10,7 +10,7 @@ import Editor from "react-simple-code-editor";
 import Prism from 'prismjs';
 
 // Import Prism languages - import in dependency order
-// Don't import prism-core separately, it's included in prismjs
+// NOTE: We Don't import prism-core separately, it's included in prismjs
 import 'prismjs/components/prism-clike';
 import 'prismjs/components/prism-markup';
 import 'prismjs/components/prism-css';

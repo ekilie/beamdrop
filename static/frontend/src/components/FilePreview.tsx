@@ -448,9 +448,9 @@ function TextFilePreview({ fileName, currentPath = ".", onLoad, onError, onConte
         <div className="flex items-center justify-center w-5 h-5">
           {fileIcon}
         </div>
-        <Badge variant="outline" className="font-mono text-xs">
+        {/* <Badge variant="outline" className="font-mono text-xs">
           {fileExt.toUpperCase()}
-        </Badge>
+        </Badge> */}
         {isCode && (
           <Badge variant="secondary" className="font-mono text-xs">
             {language.toUpperCase()}

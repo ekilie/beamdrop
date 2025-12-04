@@ -10,6 +10,8 @@ import {
   SkipBack,
   SkipForward,
   Music,
+  Maximize,
+  Minimize,
 } from "lucide-react";
 import { motion } from "framer-motion";
 
@@ -32,6 +34,8 @@ export function EnhancedAudioPlayer({
   const [duration, setDuration] = useState(0);
   const [volume, setVolume] = useState(100);
   const [isMuted, setIsMuted] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -54,6 +58,32 @@ export function EnhancedAudioPlayer({
       audio.removeEventListener("ended", handleEnded);
     };
   }, [onLoadedData]);
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+    };
+  }, []);
+
+  const toggleFullscreen = () => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    if (!document.fullscreenElement) {
+      container.requestFullscreen().catch((err) => {
+        console.error('Error attempting to enable fullscreen:', err);
+      });
+    } else {
+      document.exitFullscreen().catch((err) => {
+        console.error('Error attempting to exit fullscreen:', err);
+      });
+    }
+  };
 
   const togglePlay = () => {
     const audio = audioRef.current;
@@ -111,7 +141,10 @@ export function EnhancedAudioPlayer({
   const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
 
   return (
-    <div className="w-full bg-gradient-to-br from-primary/20 via-accent/10 to-secondary rounded-lg p-6 border-2 border-border animate-fade-in">
+    <div 
+      ref={containerRef}
+      className="w-full bg-gradient-to-br from-primary/20 via-accent/10 to-secondary rounded-lg p-6 border-2 border-border animate-fade-in"
+    >
       <audio ref={audioRef} src={src} onError={onError} />
 
       {/* Album Art / Visualization */}
@@ -212,7 +245,7 @@ export function EnhancedAudioPlayer({
         </Button>
       </div>
 
-      {/* Volume Control */}
+      {/* Volume Control and Fullscreen */}
       <div className="flex items-center gap-3">
         <Button
           variant="ghost"
@@ -236,6 +269,18 @@ export function EnhancedAudioPlayer({
         <span className="text-xs font-mono text-muted-foreground w-10 text-right">
           {Math.round(isMuted ? 0 : volume)}%
         </span>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={toggleFullscreen}
+          className="h-8 w-8 text-foreground hover:text-primary flex-shrink-0"
+        >
+          {isFullscreen ? (
+            <Minimize className="h-4 w-4" />
+          ) : (
+            <Maximize className="h-4 w-4" />
+          )}
+        </Button>
       </div>
     </div>
   );

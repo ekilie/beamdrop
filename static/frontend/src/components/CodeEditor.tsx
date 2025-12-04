@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Save, FileText, Loader2 } from "lucide-react";
+import { Save, FileText, Loader2, Maximize, Minimize } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { useTheme } from "./ThemeProvider";
 import Editor from "react-simple-code-editor";
@@ -93,6 +93,8 @@ export function CodeEditor({
   const [content, setContent] = useState(initialContent);
   const [isSaving, setIsSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const editorRef = useRef<HTMLDivElement>(null);
   const { theme } = useTheme();
 
   // Determine the current effective theme
@@ -105,6 +107,32 @@ export function CodeEditor({
     setContent(initialContent);
     setHasChanges(false);
   }, [initialFileName, initialContent]);
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+    };
+  }, []);
+
+  const toggleFullscreen = () => {
+    const editor = editorRef.current;
+    if (!editor) return;
+
+    if (!document.fullscreenElement) {
+      editor.requestFullscreen().catch((err) => {
+        console.error('Error attempting to enable fullscreen:', err);
+      });
+    } else {
+      document.exitFullscreen().catch((err) => {
+        console.error('Error attempting to exit fullscreen:', err);
+      });
+    }
+  };
 
   const handleContentChange = (value: string) => {
     setContent(value);
@@ -236,7 +264,7 @@ export function CodeEditor({
   };
 
   return (
-    <div className="flex flex-col h-full bg-background">
+    <div ref={editorRef} className="flex flex-col h-full bg-background">
       {/* Header */}
       <div className="flex items-center gap-4 px-6 py-4 border-b border-border bg-card">
         <div className="flex items-center gap-3 flex-1 min-w-0">
@@ -267,6 +295,18 @@ export function CodeEditor({
               Unsaved
             </Badge>
           )}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={toggleFullscreen}
+            className="shrink-0"
+          >
+            {isFullscreen ? (
+              <Minimize className="w-4 h-4" />
+            ) : (
+              <Maximize className="w-4 h-4" />
+            )}
+          </Button>
           <Button
             onClick={handleSave}
             disabled={isSaving || !hasChanges}

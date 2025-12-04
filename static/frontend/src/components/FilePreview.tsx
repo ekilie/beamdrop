@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Dialog,
   DialogContent,
@@ -14,6 +14,8 @@ import {
   ZoomOut,
   FileText,
   Edit,
+  Maximize,
+  Minimize,
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
@@ -37,6 +39,8 @@ export function FilePreview({ fileName, isOpen, onClose, currentPath = "." }: Fi
   const [zoom, setZoom] = useState(100);
   const [fileContent, setFileContent] = useState<string>("");
   const [refreshKey, setRefreshKey] = useState(0);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const dialogRef = useRef<HTMLDivElement>(null);
 
   const fileExt = fileName.split(".").pop()?.toLowerCase() || "";
   
@@ -52,8 +56,35 @@ export function FilePreview({ fileName, isOpen, onClose, currentPath = "." }: Fi
       setLoading(true);
       setError(null);
       setZoom(100);
+      setIsFullscreen(false);
     }
   }, [isOpen, fileName]);
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+    };
+  }, []);
+
+  const toggleFullscreen = () => {
+    const dialog = dialogRef.current?.closest('[role="dialog"]') as HTMLElement;
+    if (!dialog) return;
+
+    if (!document.fullscreenElement) {
+      dialog.requestFullscreen().catch((err) => {
+        console.error('Error attempting to enable fullscreen:', err);
+      });
+    } else {
+      document.exitFullscreen().catch((err) => {
+        console.error('Error attempting to exit fullscreen:', err);
+      });
+    }
+  };
 
   const handleDownload = () => {
     try {
@@ -212,7 +243,10 @@ export function FilePreview({ fileName, isOpen, onClose, currentPath = "." }: Fi
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-5xl max-h-[95vh] bg-card border-2 border-border overflow-hidden [&>button]:hidden">
+      <DialogContent 
+        ref={dialogRef}
+        className="max-w-5xl max-h-[95vh] bg-card border-2 border-border overflow-hidden [&>button]:hidden"
+      >
         <DialogHeader className="border-b border-border pb-4">
           <div className="flex items-center justify-between">
             <DialogTitle className="font-mono font-bold text-foreground truncate flex items-center gap-2">
@@ -220,6 +254,24 @@ export function FilePreview({ fileName, isOpen, onClose, currentPath = "." }: Fi
               {fileName}
             </DialogTitle>
             <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={toggleFullscreen}
+                className="shrink-0"
+              >
+                {isFullscreen ? (
+                  <>
+                    <Minimize className="w-4 h-4 mr-2" />
+                    Exit
+                  </>
+                ) : (
+                  <>
+                    <Maximize className="w-4 h-4 mr-2" />
+                    Fullscreen
+                  </>
+                )}
+              </Button>
               {(isText || isCode) && (
                 <CodeEditorDialog
                   currentPath={currentPath}

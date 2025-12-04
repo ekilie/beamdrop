@@ -142,4 +142,87 @@ All colors MUST be HSL.
   .scrollbar-track-transparent::-webkit-scrollbar-track {
     background: transparent;
   }
+
+  /* Code Editor Styles */
+  .editor-textarea {
+    outline: none !important;
+    border: none !important;
+    background: transparent !important;
+    color: inherit !important;
+    font-family: inherit !important;
+    font-size: inherit !important;
+    line-height: inherit !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    resize: none !important;
+    caret-color: hsl(var(--foreground)) !important;
+  }
+
+  .editor-pre {
+    margin: 0 !important;
+    padding: 0 !important;
+    background: transparent !important;
+  }
+
+  .editor-pre code {
+    font-family: inherit !important;
+    font-size: inherit !important;
+    line-height: inherit !important;
+  }
+
+  /* Prism theme overrides for light mode */
+  .editor-pre .token.comment,
+  .editor-pre .token.prolog,
+  .editor-pre .token.doctype,
+  .editor-pre .token.cdata {
+    color: hsl(var(--muted-foreground));
+  }
+
+  .editor-pre .token.punctuation {
+    color: hsl(var(--foreground));
+  }
+
+  .editor-pre .token.property,
+  .editor-pre .token.tag,
+  .editor-pre .token.boolean,
+  .editor-pre .token.number,
+  .editor-pre .token.constant,
+  .editor-pre .token.symbol,
+  .editor-pre .token.deleted {
+    color: hsl(var(--primary));
+  }
+
+  .editor-pre .token.selector,
+  .editor-pre .token.attr-name,
+  .editor-pre .token.string,
+  .editor-pre .token.char,
+  .editor-pre .token.builtin,
+  .editor-pre .token.inserted {
+    color: hsl(var(--accent-foreground));
+  }
+
+  .editor-pre .token.operator,
+  .editor-pre .token.entity,
+  .editor-pre .token.url,
+  .editor-pre .language-css .token.string,
+  .editor-pre .style .token.string {
+    color: hsl(var(--foreground));
+  }
+
+  .editor-pre .token.atrule,
+  .editor-pre .token.attr-value,
+  .editor-pre .token.keyword {
+    color: hsl(var(--primary));
+  }
+
+  .editor-pre .token.function,
+  .editor-pre .token.class-name {
+    color: hsl(var(--primary));
+  }
+
+  .editor-pre .token.regex,
+  .editor-pre .token.important,
+  .editor-pre .token.variable {
+    color: hsl(var(--accent-foreground));
+  }
 }

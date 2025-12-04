@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Dialog,
   DialogContent,
@@ -13,6 +13,9 @@ import {
   ZoomIn,
   ZoomOut,
   FileText,
+  Edit,
+  Maximize,
+  Minimize,
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
@@ -21,6 +24,7 @@ import { getFileIcon } from "@/lib/utils";
 import { useTheme } from "./ThemeProvider";
 import { EnhancedVideoPlayer } from "./EnhancedVideoPlayer";
 import { EnhancedAudioPlayer } from "./EnhancedAudioPlayer";
+import { CodeEditorDialog } from "./CodeEditorDialog";
 
 interface FilePreviewProps {
   fileName: string;
@@ -33,6 +37,10 @@ export function FilePreview({ fileName, isOpen, onClose, currentPath = "." }: Fi
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [zoom, setZoom] = useState(100);
+  const [fileContent, setFileContent] = useState<string>("");
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const dialogRef = useRef<HTMLDivElement>(null);
 
   const fileExt = fileName.split(".").pop()?.toLowerCase() || "";
   
@@ -48,8 +56,35 @@ export function FilePreview({ fileName, isOpen, onClose, currentPath = "." }: Fi
       setLoading(true);
       setError(null);
       setZoom(100);
+      setIsFullscreen(false);
     }
   }, [isOpen, fileName]);
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+    };
+  }, []);
+
+  const toggleFullscreen = () => {
+    const dialog = dialogRef.current?.closest('[role="dialog"]') as HTMLElement;
+    if (!dialog) return;
+
+    if (!document.fullscreenElement) {
+      dialog.requestFullscreen().catch((err) => {
+        console.error('Error attempting to enable fullscreen:', err);
+      });
+    } else {
+      document.exitFullscreen().catch((err) => {
+        console.error('Error attempting to exit fullscreen:', err);
+      });
+    }
+  };
 
   const handleDownload = () => {
     try {
@@ -171,13 +206,15 @@ export function FilePreview({ fileName, isOpen, onClose, currentPath = "." }: Fi
       return (
         <div className="w-full">
           <TextFilePreview 
+            key={refreshKey}
             fileName={fileName} 
             currentPath={currentPath}
             onLoad={() => setLoading(false)} 
             onError={(err) => {
               setError(err);
               setLoading(false);
-            }} 
+            }}
+            onContentLoaded={(content) => setFileContent(content)}
           />
         </div>
       );
@@ -206,22 +243,70 @@ export function FilePreview({ fileName, isOpen, onClose, currentPath = "." }: Fi
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-5xl max-h-[95vh] bg-card border-2 border-border overflow-hidden">
+      <DialogContent 
+        ref={dialogRef}
+        className="max-w-5xl max-h-[95vh] bg-card border-2 border-border overflow-hidden [&>button]:hidden"
+      >
         <DialogHeader className="border-b border-border pb-4">
           <div className="flex items-center justify-between">
             <DialogTitle className="font-mono font-bold text-foreground truncate flex items-center gap-2">
               {getFileIcon(fileName, "w-5 h-5")}
               {fileName}
             </DialogTitle>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleDownload}
-              className="shrink-0"
-            >
-              <Download className="w-4 h-4 mr-2" />
-              Download
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={toggleFullscreen}
+                className="shrink-0"
+              >
+                {isFullscreen ? (
+                  <>
+                    <Minimize className="w-4 h-4 mr-2" />
+                    Exit
+                  </>
+                ) : (
+                  <>
+                    <Maximize className="w-4 h-4 mr-2" />
+                    Fullscreen
+                  </>
+                )}
+              </Button>
+              {(isText || isCode) && (
+                <CodeEditorDialog
+                  currentPath={currentPath}
+                  initialFileName={fileName}
+                  initialContent={fileContent}
+                  mode="edit"
+                  onSaveSuccess={() => {
+                    // Refresh the preview by updating the refresh key
+                    setRefreshKey(prev => prev + 1);
+                    setLoading(true);
+                    setError(null);
+                    setFileContent("");
+                  }}
+                  triggerButton={
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="shrink-0"
+                    >
+                      <Edit className="w-4 h-4 mr-2" />
+                      Edit
+                    </Button>
+                  }
+                />
+              )}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleDownload}
+                className="shrink-0"
+              >
+                <Download className="w-4 h-4 mr-2" />
+                Download
+              </Button>
+            </div>
           </div>
         </DialogHeader>
 
@@ -311,11 +396,12 @@ function getLanguageFromExtension(ext: string): string {
 }
 
 // Component for text file previews
-function TextFilePreview({ fileName, currentPath = ".", onLoad, onError }: {
+function TextFilePreview({ fileName, currentPath = ".", onLoad, onError, onContentLoaded }: {
   fileName: string;
   currentPath?: string;
   onLoad: () => void;
   onError: (error: string) => void;
+  onContentLoaded?: (content: string) => void;
 }) {
   const [content, setContent] = useState<string>("");
   const { theme } = useTheme();
@@ -330,6 +416,9 @@ function TextFilePreview({ fileName, currentPath = ".", onLoad, onError }: {
         }
         const text = await response.text();
         setContent(text);
+        if (onContentLoaded) {
+          onContentLoaded(text);
+        }
         onLoad();
       } catch (error) {
         onError("Failed to load text file");
@@ -359,9 +448,9 @@ function TextFilePreview({ fileName, currentPath = ".", onLoad, onError }: {
         <div className="flex items-center justify-center w-5 h-5">
           {fileIcon}
         </div>
-        <Badge variant="outline" className="font-mono text-xs">
+        {/* <Badge variant="outline" className="font-mono text-xs">
           {fileExt.toUpperCase()}
-        </Badge>
+        </Badge> */}
         {isCode && (
           <Badge variant="secondary" className="font-mono text-xs">
             {language.toUpperCase()}

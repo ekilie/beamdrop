@@ -9,32 +9,30 @@ import { useTheme } from "./ThemeProvider";
 import Editor from "react-simple-code-editor";
 import Prism from 'prismjs';
 
-// Import Prism core first
+// Import Prism languages - order matters for dependencies
+// Core must be first
 import 'prismjs/components/prism-core';
-
-// Import base languages
 import 'prismjs/components/prism-clike';
 import 'prismjs/components/prism-markup';
 import 'prismjs/components/prism-css';
 import 'prismjs/components/prism-javascript';
 import 'prismjs/components/prism-json';
-
-// Import language extensions (must come after base languages)
-import 'prismjs/components/prism-typescript';
-import 'prismjs/components/prism-jsx';
-import 'prismjs/components/prism-tsx';
-import 'prismjs/components/prism-python';
-import 'prismjs/components/prism-java';
-import 'prismjs/components/prism-go';
-import 'prismjs/components/prism-php';
-import 'prismjs/components/prism-ruby';
 import 'prismjs/components/prism-bash';
 import 'prismjs/components/prism-c';
 import 'prismjs/components/prism-cpp';
+import 'prismjs/components/prism-go';
+import 'prismjs/components/prism-java';
+import 'prismjs/components/prism-php';
+import 'prismjs/components/prism-python';
+import 'prismjs/components/prism-ruby';
 import 'prismjs/components/prism-rust';
 import 'prismjs/components/prism-sql';
 import 'prismjs/components/prism-yaml';
 import 'prismjs/components/prism-markdown';
+// JSX/TSX must come after JavaScript
+import 'prismjs/components/prism-jsx';
+import 'prismjs/components/prism-typescript';
+import 'prismjs/components/prism-tsx';
 
 interface CodeEditorProps {
   initialFileName?: string;
@@ -189,7 +187,7 @@ export function CodeEditor({
   }, []);
 
   const highlightCode = (code: string): string => {
-    if (!isCode || !code) {
+    if (!isCode || !code || !code.trim()) {
       return code;
     }
     
@@ -220,16 +218,23 @@ export function CodeEditor({
     
     const prismLang = prismLanguageMap[language];
     
-    if (prismLang && Prism.languages[prismLang]) {
-      try {
-        return Prism.highlight(code, Prism.languages[prismLang], prismLang);
-      } catch (e) {
-        console.warn('Prism highlighting error:', e);
-        return code;
-      }
+    // Check if language exists and is loaded
+    if (!prismLang) {
+      return code;
     }
     
-    return code;
+    const prismLanguage = Prism.languages[prismLang];
+    if (!prismLanguage || typeof prismLanguage !== 'object') {
+      return code;
+    }
+    
+    try {
+      return Prism.highlight(code, prismLanguage, prismLang);
+    } catch (e) {
+      // If highlighting fails, return unhighlighted code
+      console.warn('Prism highlighting error for language:', prismLang, e);
+      return code;
+    }
   };
 
   return (

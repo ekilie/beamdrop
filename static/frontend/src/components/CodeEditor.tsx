@@ -1,12 +1,34 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Textarea } from "@/components/ui/textarea";
 import { Save, FileText, Loader2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { useTheme } from "./ThemeProvider";
+import Editor from "react-simple-code-editor";
+import { highlight, languages } from 'prismjs';
+import 'prismjs/components/prism-core';
+import 'prismjs/components/prism-clike';
+import 'prismjs/components/prism-javascript';
+import 'prismjs/components/prism-typescript';
+import 'prismjs/components/prism-jsx';
+import 'prismjs/components/prism-tsx';
+import 'prismjs/components/prism-python';
+import 'prismjs/components/prism-java';
+import 'prismjs/components/prism-go';
+import 'prismjs/components/prism-php';
+import 'prismjs/components/prism-ruby';
+import 'prismjs/components/prism-markup';
+import 'prismjs/components/prism-css';
+import 'prismjs/components/prism-json';
+import 'prismjs/components/prism-bash';
+import 'prismjs/components/prism-c';
+import 'prismjs/components/prism-cpp';
+import 'prismjs/components/prism-rust';
+import 'prismjs/components/prism-sql';
+import 'prismjs/components/prism-yaml';
+import 'prismjs/themes/prism.css';
 
 interface CodeEditorProps {
   initialFileName?: string;
@@ -68,8 +90,12 @@ export function CodeEditor({
   const [content, setContent] = useState(initialContent);
   const [isSaving, setIsSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { theme } = useTheme();
+
+  // Determine the current effective theme
+  const currentTheme = theme === "system" 
+    ? (typeof window !== 'undefined' && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light")
+    : theme;
 
   useEffect(() => {
     setFileName(initialFileName);
@@ -77,16 +103,8 @@ export function CodeEditor({
     setHasChanges(false);
   }, [initialFileName, initialContent]);
 
-  useEffect(() => {
-    // Auto-resize textarea
-    if (textareaRef.current) {
-      textareaRef.current.style.height = "auto";
-      textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
-    }
-  }, [content]);
-
-  const handleContentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setContent(e.target.value);
+  const handleContentChange = (value: string) => {
+    setContent(value);
     setHasChanges(true);
   };
 
@@ -164,16 +182,59 @@ export function CodeEditor({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const highlightCode = (code: string): string => {
+    if (!isCode || !code) {
+      return code;
+    }
+    
+    // Map language names to Prism language identifiers
+    const prismLanguageMap: { [key: string]: any } = {
+      'javascript': languages.javascript,
+      'jsx': languages.jsx,
+      'typescript': languages.typescript,
+      'tsx': languages.jsx, // JSX works for TSX
+      'python': languages.python,
+      'java': languages.java,
+      'go': languages.go,
+      'php': languages.php,
+      'ruby': languages.ruby,
+      'html': languages.markup,
+      'css': languages.css,
+      'scss': languages.css,
+      'json': languages.json,
+      'xml': languages.markup,
+      'yaml': languages.yaml,
+      'markdown': languages.markdown,
+      'bash': languages.bash,
+      'c': languages.c,
+      'cpp': languages.cpp,
+      'rust': languages.rust,
+      'sql': languages.sql,
+    };
+    
+    const prismLang = prismLanguageMap[language] || null;
+    
+    if (prismLang) {
+      try {
+        return highlight(code, prismLang, language);
+      } catch (e) {
+        return code;
+      }
+    }
+    
+    return code;
+  };
+
   return (
     <div className="flex flex-col h-full bg-background">
       {/* Header */}
-      <div className="flex items-center justify-between gap-4 p-4 border-b border-border bg-card">
+      <div className="flex items-center gap-4 px-6 py-4 border-b border-border bg-card">
         <div className="flex items-center gap-3 flex-1 min-w-0">
-          <div className="flex items-center justify-center w-8 h-8 bg-primary/10 rounded border border-primary/20">
-            <FileText className="w-4 h-4 text-primary" />
+          <div className="flex items-center justify-center w-10 h-10 bg-primary/10 rounded-lg border border-primary/20 shrink-0">
+            <FileText className="w-5 h-5 text-primary" />
           </div>
           <div className="flex-1 min-w-0">
-            <Label htmlFor="fileName" className="text-xs text-muted-foreground font-mono uppercase">
+            <Label htmlFor="fileName" className="text-xs text-muted-foreground font-mono uppercase mb-1.5 block">
               File Name
             </Label>
             <Input
@@ -181,53 +242,64 @@ export function CodeEditor({
               value={fileName}
               onChange={handleFileNameChange}
               placeholder="example.js"
-              className="font-mono text-sm mt-1"
+              className="font-mono text-sm h-9"
             />
           </div>
           {isCode && (
-            <Badge variant="secondary" className="font-mono text-xs shrink-0">
+            <Badge variant="secondary" className="font-mono text-xs shrink-0 h-fit">
               {language.toUpperCase()}
             </Badge>
           )}
         </div>
-        <Button
-          onClick={handleSave}
-          disabled={isSaving || !hasChanges}
-          className="shrink-0"
-        >
-          {isSaving ? (
-            <>
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              Saving...
-            </>
-          ) : (
-            <>
-              <Save className="w-4 h-4 mr-2" />
-              Save
-            </>
+        <div className="flex items-center gap-2 shrink-0">
+          {hasChanges && (
+            <Badge variant="outline" className="text-xs font-normal">
+              Unsaved
+            </Badge>
           )}
-        </Button>
+          <Button
+            onClick={handleSave}
+            disabled={isSaving || !hasChanges}
+            size="sm"
+            className="gap-2"
+          >
+            {isSaving ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Saving...
+              </>
+            ) : (
+              <>
+                <Save className="w-4 h-4" />
+                Save
+              </>
+            )}
+          </Button>
+        </div>
       </div>
 
       {/* Editor */}
-      <div className="flex-1 overflow-hidden relative">
-        <Textarea
-          ref={textareaRef}
-          value={content}
-          onChange={handleContentChange}
-          placeholder="Start writing your code here..."
-          className="w-full h-full resize-none border-0 rounded-none font-mono text-sm leading-relaxed focus-visible:ring-0 focus-visible:ring-offset-0 p-4"
-          style={{
-            fontFamily: 'ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", Menlo, monospace',
-          }}
-        />
-        {hasChanges && (
-          <div className="absolute top-2 right-2">
-            <Badge variant="outline" className="text-xs">
-              Unsaved changes
-            </Badge>
-          </div>
-        )}
+      <div className="flex-1 overflow-auto relative bg-background">
+        <div className="absolute inset-0">
+          <Editor
+            value={content}
+            onValueChange={handleContentChange}
+            highlight={highlightCode}
+            placeholder="Start writing your code here..."
+            padding={16}
+            style={{
+              fontFamily: 'ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", Menlo, monospace',
+              fontSize: 14,
+              lineHeight: 1.6,
+              minHeight: '100%',
+              outline: 'none',
+              backgroundColor: 'transparent',
+              color: 'hsl(var(--foreground))',
+            }}
+            textareaClassName="editor-textarea"
+            preClassName="editor-pre"
+          />
+        </div>
       </div>
 
       {/* Footer */}

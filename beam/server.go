@@ -591,7 +591,7 @@ func StartServer(sharedDir string, flags config.Flags) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(map[string]string{
-			"message": "File written successfully",
+			"message":  "File written successfully",
 			"filePath": req.FilePath,
 		})
 	})
@@ -665,7 +665,7 @@ func StartServer(sharedDir string, flags config.Flags) {
 }
 
 // getPort return the port to be used
-func getPort(flags config.Flags)int {
+func getPort(flags config.Flags) int {
 	// Find an available port from the default ports list
 	port, err := config.FindAvailablePort()
 	if err != nil {

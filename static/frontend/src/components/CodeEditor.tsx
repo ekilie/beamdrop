@@ -9,9 +9,8 @@ import { useTheme } from "./ThemeProvider";
 import Editor from "react-simple-code-editor";
 import Prism from 'prismjs';
 
-// Import Prism languages - order matters for dependencies
-// Core must be first
-import 'prismjs/components/prism-core';
+// Import Prism languages - import in dependency order
+// Don't import prism-core separately, it's included in prismjs
 import 'prismjs/components/prism-clike';
 import 'prismjs/components/prism-markup';
 import 'prismjs/components/prism-css';
@@ -29,7 +28,7 @@ import 'prismjs/components/prism-rust';
 import 'prismjs/components/prism-sql';
 import 'prismjs/components/prism-yaml';
 import 'prismjs/components/prism-markdown';
-// JSX/TSX must come after JavaScript
+// JSX/TSX must come after JavaScript (they extend it)
 import 'prismjs/components/prism-jsx';
 import 'prismjs/components/prism-typescript';
 import 'prismjs/components/prism-tsx';
@@ -218,7 +217,6 @@ export function CodeEditor({
     
     const prismLang = prismLanguageMap[language];
     
-    // Check if language exists and is loaded
     if (!prismLang) {
       return code;
     }

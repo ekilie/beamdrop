@@ -8,9 +8,18 @@ import { toast } from "@/hooks/use-toast";
 import { useTheme } from "./ThemeProvider";
 import Editor from "react-simple-code-editor";
 import Prism from 'prismjs';
+
+// Import Prism core first
 import 'prismjs/components/prism-core';
+
+// Import base languages
 import 'prismjs/components/prism-clike';
+import 'prismjs/components/prism-markup';
+import 'prismjs/components/prism-css';
 import 'prismjs/components/prism-javascript';
+import 'prismjs/components/prism-json';
+
+// Import language extensions (must come after base languages)
 import 'prismjs/components/prism-typescript';
 import 'prismjs/components/prism-jsx';
 import 'prismjs/components/prism-tsx';
@@ -19,9 +28,6 @@ import 'prismjs/components/prism-java';
 import 'prismjs/components/prism-go';
 import 'prismjs/components/prism-php';
 import 'prismjs/components/prism-ruby';
-import 'prismjs/components/prism-markup';
-import 'prismjs/components/prism-css';
-import 'prismjs/components/prism-json';
 import 'prismjs/components/prism-bash';
 import 'prismjs/components/prism-c';
 import 'prismjs/components/prism-cpp';
@@ -188,36 +194,37 @@ export function CodeEditor({
     }
     
     // Map language names to Prism language identifiers
-    const prismLanguageMap: { [key: string]: any } = {
-      'javascript': languages.javascript,
-      'jsx': languages.jsx,
-      'typescript': languages.typescript,
-      'tsx': languages.jsx, // JSX works for TSX
-      'python': languages.python,
-      'java': languages.java,
-      'go': languages.go,
-      'php': languages.php,
-      'ruby': languages.ruby,
-      'html': languages.markup,
-      'css': languages.css,
-      'scss': languages.css,
-      'json': languages.json,
-      'xml': languages.markup,
-      'yaml': languages.yaml,
-      'markdown': languages.markdown,
-      'bash': languages.bash,
-      'c': languages.c,
-      'cpp': languages.cpp,
-      'rust': languages.rust,
-      'sql': languages.sql,
+    const prismLanguageMap: { [key: string]: string } = {
+      'javascript': 'javascript',
+      'jsx': 'jsx',
+      'typescript': 'typescript',
+      'tsx': 'tsx',
+      'python': 'python',
+      'java': 'java',
+      'go': 'go',
+      'php': 'php',
+      'ruby': 'ruby',
+      'html': 'markup',
+      'css': 'css',
+      'scss': 'css',
+      'json': 'json',
+      'xml': 'markup',
+      'yaml': 'yaml',
+      'markdown': 'markdown',
+      'bash': 'bash',
+      'c': 'c',
+      'cpp': 'cpp',
+      'rust': 'rust',
+      'sql': 'sql',
     };
     
-    const prismLang = prismLanguageMap[language] || null;
+    const prismLang = prismLanguageMap[language];
     
-    if (prismLang) {
+    if (prismLang && Prism.languages[prismLang]) {
       try {
-        return highlight(code, prismLang, language);
+        return Prism.highlight(code, Prism.languages[prismLang], prismLang);
       } catch (e) {
+        console.warn('Prism highlighting error:', e);
         return code;
       }
     }

@@ -76,6 +76,8 @@ func StartServer(sharedDir string, flags config.Flags) {
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(stats)
 	})
+	
+	http.HandleFunc("/ws/stats", StatsSocketHandler)
 
 	// File APIs
 	http.HandleFunc("/files", func(w http.ResponseWriter, r *http.Request) {

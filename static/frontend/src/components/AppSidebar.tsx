@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import {
-  BarChart3,
   Server,
   Upload,
   Download,
@@ -8,8 +7,6 @@ import {
   TrendingUp,
   Clock,
   Activity,
-  Database,
-  Settings,
 } from "lucide-react";
 import {
   Sidebar,
@@ -60,21 +57,18 @@ export function AppSidebar({ password = "" }: AppSidebarProps) {
 
       wStatus.onmessage = (e) => {
         const data = JSON.parse(e.data);
-        console.log("WebSocket stats data:", data);
         const updatedStats = {
           downloads: data.downloads || 0,
           uploads: data.uploads || 0,
           startTime: data.startTime || new Date().toISOString(),
         };
         setStats(updatedStats);
-        console.log("Updated stats via WebSocket:", updatedStats);
       };
 
       wStatus.onerror = (e) => {
-        console.error("WebSocket error:", e);
       };
     } catch (error) {
-      console.error("Failed to fetch stats:", error);
+      console.error("Err", error);
     }
   };
 

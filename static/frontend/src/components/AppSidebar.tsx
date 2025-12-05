@@ -66,6 +66,7 @@ export function AppSidebar({ password = "" }: AppSidebarProps) {
           uploads: data.total_uploads || 0,
           startTime: stats.startTime,
         });
+        console.log("Updated stats via WebSocket:", stats);
       }
 
       wStatus.onerror = (e) => {

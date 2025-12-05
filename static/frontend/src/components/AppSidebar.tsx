@@ -56,16 +56,23 @@ export function AppSidebar({ password = "" }: AppSidebarProps) {
         headers["X-Password"] = password;
       }
 
-      const response = await fetch("/stats", { headers });
-      if (response.ok) {
-        const data = await response.json();
-        // Map backend stats to our format
-        setStats({
-          downloads: data.total_downloads || 0,
-          uploads: data.total_uploads || 0,
-          startTime: stats.startTime, // Keep existing or use server start time if available
-        });
-      }
+      const wStatus = new WebSocket(`ws://${window.location.host}/ws/stats`);
+
+      wStatus.onmessage = (e) => {
+        const data = JSON.parse(e.data);
+        console.log("WebSocket stats data:", data);
+        const updatedStats = {
+          downloads: data.downloads || 0,
+          uploads: data.uploads || 0,
+          startTime: data.startTime || new Date().toISOString(),
+        };
+        setStats(updatedStats);
+        console.log("Updated stats via WebSocket:", updatedStats);
+      };
+
+      wStatus.onerror = (e) => {
+        console.error("WebSocket error:", e);
+      };
     } catch (error) {
       console.error("Failed to fetch stats:", error);
     }

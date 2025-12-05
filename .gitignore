@@ -34,11 +34,11 @@ go.work.sum
 #build
 /build/* 
 
-# binaries
+# binaries - executable files only
 /cmd/beam/beam
-beam
-cmd/beam/beam
-**/beam
+# Ignore beam binary in root only, not beam/ directory
+/beam
+!beam/
 # Any binary without extension in cmd directories
 cmd/*/*
 !cmd/*/*.go

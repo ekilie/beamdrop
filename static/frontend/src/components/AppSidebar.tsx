@@ -308,19 +308,19 @@ export function AppSidebar({ password = "" }: AppSidebarProps) {
 
       <SidebarFooter className="p-4">
         {!isCollapsed ? (
-          <div className="space-y-4">
-            <div className="flex items-center justify-center gap-2">
+          <div className="space-y-4 w-full">
+            <div className="flex items-center justify-center gap-2 w-full">
               <ThemeToggle />
               <SettingsDialog />
             </div>
-            <div className="text-center">
+            <div className="text-center w-full">
               <p className="text-xs font-mono text-sidebar-foreground/60">
                 DROP IT. BEAM IT. DONE.
               </p>
             </div>
           </div>
         ) : (
-          <div className="flex flex-col items-center gap-2">
+          <div className="flex flex-col items-center justify-center gap-2 w-full">
             <ThemeToggle />
             <SettingsDialog />
           </div>

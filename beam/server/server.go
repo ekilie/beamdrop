@@ -2,6 +2,7 @@ package server
 
 import (
 	"fmt"
+	"net"
 	"net/http"
 
 	"github.com/tachRoutine/beamdrop-go/config"
@@ -67,4 +68,27 @@ func (s *Server) getPort() int {
 		return s.flags.Port
 	}
 	return port
+}
+
+// GetLocalIP returns the local IP address
+func GetLocalIP() string {
+	logger.Debug("Detecting local IP address")
+	addrs, err := net.InterfaceAddrs()
+	if err != nil {
+		logger.Warn("Failed to get network interfaces: %v", err)
+		return "localhost"
+	}
+
+	for _, addr := range addrs {
+		if ipnet, ok := addr.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
+			if ipnet.IP.To4() != nil {
+				logger.Debug("Found local IP: %s", ipnet.IP.String())
+				return ipnet.IP.String()
+			}
+		}
+	}
+
+	logger.Warn("No local IP found, using localhost")
+	logger.Info("This might be due to no active network connection.")
+	return "localhost"
 }

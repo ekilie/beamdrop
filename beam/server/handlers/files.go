@@ -11,7 +11,6 @@ import (
 
 	"github.com/tachRoutine/beamdrop-go/pkg/db"
 	"github.com/tachRoutine/beamdrop-go/pkg/logger"
-	"github.com/tachRoutine/beamdrop-go/beam/server"
 )
 
 type FileHandler struct {
@@ -27,13 +26,13 @@ func (h *FileHandler) ListFiles(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	reqPath := r.URL.Query().Get("path")
-	target, err := server.ResolvePath(h.sharedDir, reqPath)
+	target, err := ResolvePath(h.sharedDir, reqPath)
 	if err != nil {
 		http.Error(w, `{"error":"invalid path"}`, http.StatusBadRequest)
 		return
 	}
 
-	if server.IsFile(target) {
+	if IsFile(target) {
 		http.ServeFile(w, r, target)
 		return
 	}
@@ -44,17 +43,17 @@ func (h *FileHandler) ListFiles(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var fileList []server.File
+	var fileList []File
 	for _, f := range files {
 		info, err := f.Info()
 		if err != nil {
 			continue
 		}
-		fileList = append(fileList, server.File{
+		fileList = append(fileList, File{
 			Name:    info.Name(),
 			IsDir:   info.IsDir(),
-			Size:    server.FormatFileSize(info.Size()),
-			ModTime: server.FormatModTime(info.ModTime().Format(time.RFC3339)),
+			Size:    FormatFileSize(info.Size()),
+			ModTime: FormatModTime(info.ModTime().Format(time.RFC3339)),
 			Path:    path.Join(reqPath, info.Name()),
 		})
 	}
@@ -92,7 +91,7 @@ func (h *FileHandler) Upload(w http.ResponseWriter, r *http.Request) {
 	defer file.Close()
 
 	filePath := h.sharedDir + "/" + header.Filename
-	logger.Info("Uploading file: %s (size: %s)", header.Filename, server.FormatFileSize(header.Size))
+	logger.Info("Uploading file: %s (size: %s)", header.Filename, FormatFileSize(header.Size))
 
 	out, err := os.Create(filePath)
 	if err != nil {

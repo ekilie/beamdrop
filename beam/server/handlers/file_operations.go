@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/tachRoutine/beamdrop-go/pkg/logger"
-	"github.com/tachRoutine/beamdrop-go/beam/server"
 )
 
 type FileOperationsHandler struct {
@@ -39,13 +38,13 @@ func (h *FileOperationsHandler) Move(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sourcePath, err := server.ResolvePath(h.sharedDir, req.SourcePath)
+	sourcePath, err := ResolvePath(h.sharedDir, req.SourcePath)
 	if err != nil {
 		sendJSONError(w, "Invalid source path", http.StatusBadRequest)
 		return
 	}
 
-	targetPath, err := server.ResolvePath(h.sharedDir, req.TargetPath)
+	targetPath, err := ResolvePath(h.sharedDir, req.TargetPath)
 	if err != nil {
 		sendJSONError(w, "Invalid target path", http.StatusBadRequest)
 		return
@@ -87,13 +86,13 @@ func (h *FileOperationsHandler) Copy(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sourcePath, err := server.ResolvePath(h.sharedDir, req.SourcePath)
+	sourcePath, err := ResolvePath(h.sharedDir, req.SourcePath)
 	if err != nil {
 		sendJSONError(w, "Invalid source path", http.StatusBadRequest)
 		return
 	}
 
-	targetPath, err := server.ResolvePath(h.sharedDir, req.TargetPath)
+	targetPath, err := ResolvePath(h.sharedDir, req.TargetPath)
 	if err != nil {
 		sendJSONError(w, "Invalid target path", http.StatusBadRequest)
 		return
@@ -145,7 +144,7 @@ func (h *FileOperationsHandler) Mkdir(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	targetPath, err := server.ResolvePath(h.sharedDir, req.DirPath)
+	targetPath, err := ResolvePath(h.sharedDir, req.DirPath)
 	if err != nil {
 		sendJSONError(w, "Invalid directory path", http.StatusBadRequest)
 		return
@@ -186,7 +185,7 @@ func (h *FileOperationsHandler) Rename(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	oldPath, err := server.ResolvePath(h.sharedDir, req.OldPath)
+	oldPath, err := ResolvePath(h.sharedDir, req.OldPath)
 	if err != nil {
 		sendJSONError(w, "Invalid old path", http.StatusBadRequest)
 		return
@@ -206,7 +205,7 @@ func (h *FileOperationsHandler) Rename(w http.ResponseWriter, r *http.Request) {
 		newPath = path.Join(parentDir, req.NewName)
 	}
 
-	newFullPath, err := server.ResolvePath(h.sharedDir, newPath)
+	newFullPath, err := ResolvePath(h.sharedDir, newPath)
 	if err != nil {
 		sendJSONError(w, "Invalid new name", http.StatusBadRequest)
 		return
@@ -253,7 +252,7 @@ func (h *FileOperationsHandler) Write(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	targetPath, err := server.ResolvePath(h.sharedDir, req.FilePath)
+	targetPath, err := ResolvePath(h.sharedDir, req.FilePath)
 	if err != nil {
 		sendJSONError(w, "Invalid file path", http.StatusBadRequest)
 		return
@@ -298,13 +297,13 @@ func (h *FileOperationsHandler) Search(w http.ResponseWriter, r *http.Request) {
 		searchPath = ""
 	}
 
-	targetPath, err := server.ResolvePath(h.sharedDir, searchPath)
+	targetPath, err := ResolvePath(h.sharedDir, searchPath)
 	if err != nil {
 		sendJSONError(w, "Invalid search path", http.StatusBadRequest)
 		return
 	}
 
-	var results []server.File
+	var results []File
 	err = searchFiles(targetPath, query, searchPath, &results)
 	if err != nil {
 		logger.Error("Search failed: %v", err)
@@ -338,7 +337,7 @@ func (h *FileOperationsHandler) Star(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	target, err := server.ResolvePath(h.sharedDir, req.FilePath)
+	target, err := ResolvePath(h.sharedDir, req.FilePath)
 	if err != nil {
 		sendJSONError(w, "Invalid file path", http.StatusBadRequest)
 		return
@@ -378,7 +377,7 @@ func sendJSONSuccess(w http.ResponseWriter, data map[string]string) {
 }
 
 // searchFiles recursively searches for files matching the query in the given directory
-func searchFiles(rootPath, query, relativePath string, results *[]server.File) error {
+func searchFiles(rootPath, query, relativePath string, results *[]File) error {
 	return filepath.Walk(rootPath, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			logger.Warn("Error accessing path %s: %v", path, err)
@@ -406,11 +405,11 @@ func searchFiles(rootPath, query, relativePath string, results *[]server.File) e
 
 		// Check if filename contains the search query (case-insensitive)
 		if strings.Contains(strings.ToLower(info.Name()), strings.ToLower(query)) {
-			file := server.File{
+			file := File{
 				Name:    info.Name(),
 				IsDir:   info.IsDir(),
-				Size:    server.FormatFileSize(info.Size()),
-				ModTime: server.FormatModTime(info.ModTime().Format(time.RFC3339)),
+				Size:    FormatFileSize(info.Size()),
+				ModTime: FormatModTime(info.ModTime().Format(time.RFC3339)),
 				Path:    strings.ReplaceAll(fullRelPath, "\\", "/"), // Normalize path separators
 			}
 			*results = append(*results, file)

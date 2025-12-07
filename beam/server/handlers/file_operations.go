@@ -8,6 +8,7 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/tachRoutine/beamdrop-go/pkg/logger"
 	"github.com/tachRoutine/beamdrop-go/beam/server"
@@ -409,7 +410,7 @@ func searchFiles(rootPath, query, relativePath string, results *[]server.File) e
 				Name:    info.Name(),
 				IsDir:   info.IsDir(),
 				Size:    server.FormatFileSize(info.Size()),
-				ModTime: server.FormatModTime(info.ModTime().Format("2006-01-02T15:04:05Z07:00")),
+				ModTime: server.FormatModTime(info.ModTime().Format(time.RFC3339)),
 				Path:    strings.ReplaceAll(fullRelPath, "\\", "/"), // Normalize path separators
 			}
 			*results = append(*results, file)

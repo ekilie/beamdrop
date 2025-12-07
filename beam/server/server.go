@@ -28,7 +28,7 @@ func New(sharedDir string, flags config.Flags) *Server {
 }
 
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	// Add common middleware here
+	// TODO: Will add other common middleware here
 	db.IncrementRequests()
 	s.mux.ServeHTTP(w, r)
 }

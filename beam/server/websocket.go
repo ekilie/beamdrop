@@ -1,4 +1,4 @@
-package beam
+package server
 
 import (
 	"net/http"
@@ -36,3 +36,4 @@ func StatsSocketHandler(w http.ResponseWriter, r *http.Request) {
 		time.Sleep(1 * time.Minute) // Sends updates every minute
 	}
 }
+

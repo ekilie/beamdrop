@@ -3,7 +3,7 @@ package main
 import (
 	"flag"
 
-	"github.com/tachRoutine/beamdrop-go/beam"
+	"github.com/tachRoutine/beamdrop-go/beam/server"
 	"github.com/tachRoutine/beamdrop-go/config"
 	"github.com/tachRoutine/beamdrop-go/pkg/logger"
 	"github.com/tachRoutine/beamdrop-go/pkg/styles"
@@ -16,10 +16,9 @@ func main() {
 	password := flag.String("p", "", "Password authentication")
 	versionFlag := flag.Bool("v", false, "Show version information")
 
-
 	// NOTE:Here i default it to 0 so when it zero we know that the flag wasnt passed
 	// Since the flag is a non-boolean value
-	port := flag.Int("port", 0, "Set the port that beamdrop will run on") 
+	port := flag.Int("port", 0, "Set the port that beamdrop will run on")
 	if *versionFlag {
 		styles.InfoStyle.Println("Beamdrop Version:", config.VERSION)
 		return
@@ -51,5 +50,9 @@ func main() {
 
 	logger.Info("Starting beamdrop application")
 	logger.Info("Starting server with shared directory: %s", *sharedDir)
-	beam.StartServer(*sharedDir, flags)
+
+	srv := server.New(*sharedDir, flags)
+	if err := srv.Start(); err != nil {
+		logger.Fatal("Server error: %v", err)
+	}
 }

@@ -21,7 +21,7 @@ func HealthHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(map[string]string{
-		"status": "healthy",
+		"status":  "healthy",
 		"service": "beamdrop",
 	})
 }
@@ -86,21 +86,21 @@ func ReadinessHandler(sharedDir string) http.HandlerFunc {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		
+
 		if allHealthy {
 			w.WriteHeader(http.StatusOK)
 			json.NewEncoder(w).Encode(map[string]interface{}{
-				"status": "ready",
+				"status":  "ready",
 				"service": "beamdrop",
-				"checks": checks,
+				"checks":  checks,
 			})
 		} else {
 			w.WriteHeader(http.StatusServiceUnavailable)
 			logger.Warn("Readiness check failed: %v", checks)
 			json.NewEncoder(w).Encode(map[string]interface{}{
-				"status": "not ready",
+				"status":  "not ready",
 				"service": "beamdrop",
-				"checks": checks,
+				"checks":  checks,
 			})
 		}
 	}

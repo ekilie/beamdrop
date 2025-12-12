@@ -5,6 +5,10 @@ import (
 )
 
 func (s *Server) setupRoutes() {
+	// Health and readiness endpoints (for deployment contexts)
+	s.mux.HandleFunc("/health", handlers.HealthHandler)
+	s.mux.HandleFunc("/ready", handlers.ReadinessHandler(s.sharedDir))
+
 	// Static files
 	s.mux.HandleFunc("/", handlers.StaticHandler)
 

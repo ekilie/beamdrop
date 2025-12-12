@@ -89,7 +89,7 @@ func ReadinessHandler(sharedDir string) http.HandlerFunc {
 
 		if allHealthy {
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			json.NewEncoder(w).Encode(map[string]any{
 				"status":  "ready",
 				"service": "beamdrop",
 				"checks":  checks,
@@ -97,7 +97,7 @@ func ReadinessHandler(sharedDir string) http.HandlerFunc {
 		} else {
 			w.WriteHeader(http.StatusServiceUnavailable)
 			logger.Warn("Readiness check failed: %v", checks)
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			json.NewEncoder(w).Encode(map[string]any{
 				"status":  "not ready",
 				"service": "beamdrop",
 				"checks":  checks,

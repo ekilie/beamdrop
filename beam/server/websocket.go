@@ -91,7 +91,7 @@ func StatsSocketHandler(w http.ResponseWriter, r *http.Request) {
 			if err != nil {
 				logger.Error("Failed to retrieve stats from database: %v", err)
 				// Send error message to client
-				if err := conn.WriteJSON(map[string]interface{}{
+				if err := conn.WriteJSON(map[string]any{
 					"error": "Failed to retrieve stats",
 				}); err != nil {
 					logger.Debug("WebSocket connection closed during error send: %v", err)

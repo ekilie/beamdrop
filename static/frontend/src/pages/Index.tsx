@@ -22,6 +22,7 @@ export interface FileItem {
   isDir: boolean;
   modTime: string;
   path: string;
+  isStarred?: boolean;
 }
 
 const Index = () => {
@@ -246,8 +247,8 @@ const Index = () => {
 
       if (response.ok) {
         const result = await response.json();
-        // Refresh starred files from backend to get the actual state
-        await fetchStarredFiles();
+        // Refresh files list to get updated isStarred status from backend
+        await fetchFiles();
         
         // Show appropriate toast message
         const isStarred = result.starred === "true";

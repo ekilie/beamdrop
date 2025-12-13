@@ -435,12 +435,14 @@ func searchFiles(rootPath, query, relativePath string, results *[]File) error {
 
 		// Check if filename contains the search query (case-insensitive)
 		if strings.Contains(strings.ToLower(info.Name()), strings.ToLower(query)) {
+			filePath := strings.ReplaceAll(fullRelPath, "\\", "/") // Normalize path separators
 			file := File{
-				Name:    info.Name(),
-				IsDir:   info.IsDir(),
-				Size:    FormatFileSize(info.Size()),
-				ModTime: FormatModTime(info.ModTime().Format(time.RFC3339)),
-				Path:    strings.ReplaceAll(fullRelPath, "\\", "/"), // Normalize path separators
+				Name:      info.Name(),
+				IsDir:     info.IsDir(),
+				Size:      FormatFileSize(info.Size()),
+				ModTime:   FormatModTime(info.ModTime().Format(time.RFC3339)),
+				Path:      filePath,
+				IsStarred: db.IsStarred(filePath),
 			}
 			*results = append(*results, file)
 		}

@@ -7,6 +7,7 @@ import (
 	"github.com/gorilla/websocket"
 	"github.com/tachRoutine/beamdrop-go/pkg/db"
 	"github.com/tachRoutine/beamdrop-go/pkg/logger"
+	"github.com/tachRoutine/beamdrop-go/pkg/system"
 )
 
 var upgrader = websocket.Upgrader{
@@ -15,9 +16,24 @@ var upgrader = websocket.Upgrader{
 	},
 }
 
+// ExtendedStats contains both database stats and system stats
+type ExtendedStats struct {
+	Downloads int                `json:"downloads"`
+	Requests  int                `json:"requests"`
+	Uploads   int                `json:"uploads"`
+	StartTime time.Time          `json:"startTime"`
+	System    system.SystemStats `json:"system"`
+}
+
 // StatsSocketHandler handles WebSocket connections for real-time stats updates
-// It fetches fresh stats from the database on each interval and sends them to the client
-func StatsSocketHandler(w http.ResponseWriter, r *http.Request) {
+// It fetches fresh stats from the database and system on each interval and sends them to the client
+func StatsSocketHandler(sharedDir string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		handleStatsSocket(w, r, sharedDir)
+	}
+}
+
+func handleStatsSocket(w http.ResponseWriter, r *http.Request, sharedDir string) {
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		logger.Error("Failed to upgrade to WebSocket: %v", err)
@@ -35,8 +51,24 @@ func StatsSocketHandler(w http.ResponseWriter, r *http.Request) {
 		return nil
 	})
 
+	// Helper function to get extended stats
+	getExtendedStats := func() (ExtendedStats, error) {
+		dbStats, err := db.GetStats()
+		if err != nil {
+			return ExtendedStats{}, err
+		}
+		sysStats := system.GetSystemStats(sharedDir)
+		return ExtendedStats{
+			Downloads: dbStats.Downloads,
+			Requests:  dbStats.Requests,
+			Uploads:   dbStats.Uploads,
+			StartTime: dbStats.StartTime,
+			System:    sysStats,
+		}, nil
+	}
+
 	// Sending initial stats immediately
-	stats, err := db.GetStats()
+	stats, err := getExtendedStats()
 	if err != nil {
 		logger.Error("Failed to retrieve initial stats: %v", err)
 		conn.WriteJSON(map[string]string{"error": "Failed to retrieve stats"})
@@ -86,10 +118,10 @@ func StatsSocketHandler(w http.ResponseWriter, r *http.Request) {
 			}
 
 		case <-ticker.C:
-			// Fetch fresh stats from database on each interval
-			stats, err := db.GetStats()
+			// Fetch fresh stats from database and system on each interval
+			stats, err := getExtendedStats()
 			if err != nil {
-				logger.Error("Failed to retrieve stats from database: %v", err)
+				logger.Error("Failed to retrieve stats: %v", err)
 				// Send error message to client
 				if err := conn.WriteJSON(map[string]any{
 					"error": "Failed to retrieve stats",
@@ -105,8 +137,8 @@ func StatsSocketHandler(w http.ResponseWriter, r *http.Request) {
 				logger.Debug("WebSocket connection closed during stats send: %v", err)
 				return
 			}
-			logger.Debug("Sent updated stats via WebSocket: Downloads=%d, Uploads=%d, Requests=%d",
-				stats.Downloads, stats.Uploads, stats.Requests)
+			logger.Debug("Sent updated stats via WebSocket: Downloads=%d, Uploads=%d, Requests=%d, Memory=%.1f%%, Disk=%.1f%%",
+				stats.Downloads, stats.Uploads, stats.Requests, stats.System.Memory.Percent, stats.System.Disk.Percent)
 		}
 	}
 }

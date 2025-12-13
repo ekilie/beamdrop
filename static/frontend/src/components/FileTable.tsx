@@ -313,7 +313,9 @@ const FileTable: React.FC<FileTableProps> = ({
           </TableHeader>
           <TableBody>
             {sortedFiles.map((file) => {
-              const isStarred = starredFiles.has(file.name);
+              // Check starred status by file path (consistent with backend storage)
+              const filePath = file.path || (currentPath === "." ? file.name : `${currentPath}/${file.name}`);
+              const isStarred = starredFiles.has(filePath);
               return (
                 <TableRow
                   key={`${file.name}-${file.modTime}`}

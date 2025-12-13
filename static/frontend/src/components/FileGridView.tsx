@@ -83,7 +83,9 @@ export const FileGridView: React.FC<FileGridViewProps> = ({
     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 animate-fade-in">
       {files.map((file, index) => {
         const previewUrl = getFilePreviewBg(file.name);
-        const isStarred = starredFiles.has(file.name);
+        // Check starred status by file path (consistent with backend storage)
+        const filePath = file.path || (currentPath === "." ? file.name : `${currentPath}/${file.name}`);
+        const isStarred = starredFiles.has(filePath);
 
         return (
           <motion.div

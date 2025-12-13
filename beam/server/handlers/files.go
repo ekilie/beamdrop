@@ -49,12 +49,14 @@ func (h *FileHandler) ListFiles(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			continue
 		}
+		filePath := path.Join(reqPath, info.Name())
 		fileList = append(fileList, File{
-			Name:    info.Name(),
-			IsDir:   info.IsDir(),
-			Size:    FormatFileSize(info.Size()),
-			ModTime: FormatModTime(info.ModTime().Format(time.RFC3339)),
-			Path:    path.Join(reqPath, info.Name()),
+			Name:      info.Name(),
+			IsDir:     info.IsDir(),
+			Size:      FormatFileSize(info.Size()),
+			ModTime:   FormatModTime(info.ModTime().Format(time.RFC3339)),
+			Path:      filePath,
+			IsStarred: db.IsStarred(filePath),
 		})
 	}
 

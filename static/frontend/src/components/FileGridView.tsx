@@ -20,6 +20,7 @@ interface FileItem {
   modTime: string;
   isDir: boolean;
   path?: string;
+  isStarred?: boolean;
 }
 
 interface FileGridViewProps {
@@ -83,7 +84,9 @@ export const FileGridView: React.FC<FileGridViewProps> = ({
     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 animate-fade-in">
       {files.map((file, index) => {
         const previewUrl = getFilePreviewBg(file.name);
-        const isStarred = starredFiles.has(file.name);
+        // Use isStarred from backend response, fallback to Set lookup for backwards compatibility
+        const filePath = file.path || (currentPath === "." ? file.name : `${currentPath}/${file.name}`);
+        const isStarred = file.isStarred ?? starredFiles.has(filePath);
 
         return (
           <motion.div

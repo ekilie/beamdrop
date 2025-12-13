@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/tachRoutine/beamdrop-go/pkg/db"
 	"github.com/tachRoutine/beamdrop-go/pkg/logger"
 )
 
@@ -348,9 +349,25 @@ func (h *FileOperationsHandler) Star(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// TODO: Implement database storage for starred files
-	logger.Info("File starred: %s", req.FilePath)
-	sendJSONSuccess(w, map[string]string{"message": "File starred", "filePath": req.FilePath})
+	// Toggle star status: if already starred, unstars it; otherwise stars it
+	isStarred := db.IsStarred(req.FilePath)
+	if isStarred {
+		if err := db.UnstarFile(req.FilePath); err != nil {
+			logger.Error("Failed to unstar file %s: %v", req.FilePath, err)
+			sendJSONError(w, "Failed to unstar file", http.StatusInternalServerError)
+			return
+		}
+		logger.Info("File unstarred: %s", req.FilePath)
+		sendJSONSuccess(w, map[string]string{"message": "File unstarred", "filePath": req.FilePath, "starred": "false"})
+	} else {
+		if err := db.StarFile(req.FilePath); err != nil {
+			logger.Error("Failed to star file %s: %v", req.FilePath, err)
+			sendJSONError(w, "Failed to star file", http.StatusInternalServerError)
+			return
+		}
+		logger.Info("File starred: %s", req.FilePath)
+		sendJSONSuccess(w, map[string]string{"message": "File starred", "filePath": req.FilePath, "starred": "true"})
+	}
 }
 
 func (h *FileOperationsHandler) Starred(w http.ResponseWriter, r *http.Request) {
@@ -359,13 +376,26 @@ func (h *FileOperationsHandler) Starred(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	// TODO: Implement database retrieval of starred files
-	starredFiles := []map[string]string{} // Empty list for now
+	starredFiles, err := db.GetStarredFiles()
+	if err != nil {
+		logger.Error("Failed to retrieve starred files: %v", err)
+		sendJSONError(w, "Failed to retrieve starred files", http.StatusInternalServerError)
+		return
+	}
 
-	logger.Debug("Retrieved starred files list")
+	// Convert to a more frontend-friendly format
+	result := make([]map[string]string, len(starredFiles))
+	for i, sf := range starredFiles {
+		result[i] = map[string]string{
+			"filePath":  sf.FilePath,
+			"createdAt": sf.CreatedAt.Format(time.RFC3339),
+		}
+	}
+
+	logger.Debug("Retrieved %d starred files", len(starredFiles))
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]any{
-		"starred": starredFiles,
+		"starred": result,
 	})
 }
 
@@ -405,12 +435,14 @@ func searchFiles(rootPath, query, relativePath string, results *[]File) error {
 
 		// Check if filename contains the search query (case-insensitive)
 		if strings.Contains(strings.ToLower(info.Name()), strings.ToLower(query)) {
+			filePath := strings.ReplaceAll(fullRelPath, "\\", "/") // Normalize path separators
 			file := File{
-				Name:    info.Name(),
-				IsDir:   info.IsDir(),
-				Size:    FormatFileSize(info.Size()),
-				ModTime: FormatModTime(info.ModTime().Format(time.RFC3339)),
-				Path:    strings.ReplaceAll(fullRelPath, "\\", "/"), // Normalize path separators
+				Name:      info.Name(),
+				IsDir:     info.IsDir(),
+				Size:      FormatFileSize(info.Size()),
+				ModTime:   FormatModTime(info.ModTime().Format(time.RFC3339)),
+				Path:      filePath,
+				IsStarred: db.IsStarred(filePath),
 			}
 			*results = append(*results, file)
 		}
@@ -418,4 +450,3 @@ func searchFiles(rootPath, query, relativePath string, results *[]File) error {
 		return nil
 	})
 }
-

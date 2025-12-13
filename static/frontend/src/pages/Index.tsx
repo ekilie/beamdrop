@@ -22,6 +22,7 @@ export interface FileItem {
   isDir: boolean;
   modTime: string;
   path: string;
+  isStarred?: boolean;
 }
 
 const Index = () => {
@@ -34,6 +35,23 @@ const Index = () => {
   const [viewMode, setViewMode] = useState<"table" | "grid">("table");
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
   const [starredFiles, setStarredFiles] = useState<Set<string>>(new Set());
+
+  const fetchStarredFiles = useCallback(async () => {
+    try {
+      const response = await fetch("/starred");
+      if (!response.ok) {
+        throw new Error("Failed to fetch starred files");
+      }
+      const data = await response.json();
+      const starredPaths = new Set<string>(
+        data.starred.map((item: { filePath: string }) => item.filePath)
+      );
+      setStarredFiles(starredPaths);
+    } catch (error) {
+      // Silently fail - starred files are not critical for core functionality
+      console.error("Failed to fetch starred files:", error);
+    }
+  }, []);
 
   const fetchFiles = useCallback(
     async (path: string = currentPath) => {
@@ -85,10 +103,14 @@ const Index = () => {
   useEffect(() => {
     const initializeApp = () => {
       fetchFiles();
+      fetchStarredFiles();
     };
 
     initializeApp();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only run once on mount
 
+  useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.ctrlKey || e.metaKey) {
         switch (e.key) {
@@ -114,7 +136,7 @@ const Index = () => {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, []);
+  }, [fetchFiles, searchTerm]);
 
   const handleUploadSuccess = () => {
     fetchFiles();
@@ -224,22 +246,15 @@ const Index = () => {
       });
 
       if (response.ok) {
-        setStarredFiles(prev => {
-          const newSet = new Set(prev);
-          if (newSet.has(fileName)) {
-            newSet.delete(fileName);
-            toast({
-              title: "Unstarred",
-              description: `${fileName} removed from starred files.`,
-            });
-          } else {
-            newSet.add(fileName);
-            toast({
-              title: "Starred",
-              description: `${fileName} added to starred files.`,
-            });
-          }
-          return newSet;
+        const result = await response.json();
+        // Refresh files list to get updated isStarred status from backend
+        await fetchFiles();
+        
+        // Show appropriate toast message
+        const isStarred = result.starred === "true";
+        toast({
+          title: isStarred ? "Starred" : "Unstarred",
+          description: `${fileName} ${isStarred ? "added to" : "removed from"} starred files.`,
         });
       } else {
         toast({

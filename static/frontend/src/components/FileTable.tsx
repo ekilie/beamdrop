@@ -45,6 +45,7 @@ interface FileItem {
   modTime: string;
   isDir: boolean;
   path?: string;
+  isStarred?: boolean;
 }
 
 interface FileTableProps {
@@ -313,7 +314,9 @@ const FileTable: React.FC<FileTableProps> = ({
           </TableHeader>
           <TableBody>
             {sortedFiles.map((file) => {
-              const isStarred = starredFiles.has(file.name);
+              // Use isStarred from backend response, fallback to Set lookup for backwards compatibility
+              const filePath = file.path || (currentPath === "." ? file.name : `${currentPath}/${file.name}`);
+              const isStarred = file.isStarred ?? starredFiles.has(filePath);
               return (
                 <TableRow
                   key={`${file.name}-${file.modTime}`}

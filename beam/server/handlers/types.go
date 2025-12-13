@@ -10,11 +10,12 @@ import (
 
 // File represents a file or directory in the file system
 type File struct {
-	Name    string `json:"name"`
-	Size    string `json:"size"`
-	IsDir   bool   `json:"isDir"`
-	ModTime string `json:"modTime"`
-	Path    string `json:"path"`
+	Name      string `json:"name"`
+	Size      string `json:"size"`
+	IsDir     bool   `json:"isDir"`
+	ModTime   string `json:"modTime"`
+	Path      string `json:"path"`
+	IsStarred bool   `json:"isStarred"`
 }
 
 // ResolvePath safely resolves a relative path within the shared directory

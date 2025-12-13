@@ -7,6 +7,8 @@ import {
   TrendingUp,
   Clock,
   Activity,
+  Cpu,
+  MemoryStick,
 } from "lucide-react";
 import {
   Sidebar,
@@ -27,10 +29,31 @@ import { Separator } from "@/components/ui/separator";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { SettingsDialog } from "@/components/SettingsDialog";
 
+interface SystemStats {
+  memory: {
+    total: number;
+    available: number;
+    used: number;
+    percent: number;
+  };
+  disk: {
+    total: number;
+    free: number;
+    used: number;
+    percent: number;
+  };
+  cpu: {
+    cores: number;
+    goroutines: number;
+  };
+}
+
 interface SidebarStats {
   downloads: number;
   uploads: number;
+  requests: number;
   startTime: string;
+  system?: SystemStats;
 }
 
 interface AppSidebarProps {
@@ -42,6 +65,7 @@ export function AppSidebar({ password = "" }: AppSidebarProps) {
   const [stats, setStats] = useState<SidebarStats>({
     downloads: 0,
     uploads: 0,
+    requests: 0,
     startTime: new Date().toISOString(),
   });
   const [uptime, setUptime] = useState("");
@@ -57,10 +81,12 @@ export function AppSidebar({ password = "" }: AppSidebarProps) {
 
       wStatus.onmessage = (e) => {
         const data = JSON.parse(e.data);
-        const updatedStats = {
+        const updatedStats: SidebarStats = {
           downloads: data.downloads || 0,
           uploads: data.uploads || 0,
+          requests: data.requests || 0,
           startTime: data.startTime || new Date().toISOString(),
+          system: data.system,
         };
         setStats(updatedStats);
       };
@@ -104,6 +130,20 @@ export function AppSidebar({ password = "" }: AppSidebarProps) {
   }, [stats.startTime]);
 
   const isCollapsed = state === "collapsed";
+
+  // Helper function to format bytes
+  const formatBytes = (bytes: number): string => {
+    const units = ["B", "KB", "MB", "GB", "TB"];
+    let size = bytes;
+    let unitIndex = 0;
+    
+    while (size >= 1024 && unitIndex < units.length - 1) {
+      size /= 1024;
+      unitIndex++;
+    }
+    
+    return `${size.toFixed(1)} ${units[unitIndex]}`;
+  };
 
   return (
     <Sidebar className="border-r border-sidebar-border bg-sidebar">
@@ -259,6 +299,124 @@ export function AppSidebar({ password = "" }: AppSidebarProps) {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+
+        {/* System Resources */}
+        {stats.system && (
+          <>
+            <Separator className="my-4 bg-sidebar-border" />
+            <SidebarGroup>
+              <SidebarGroupLabel className="text-sidebar-foreground/80 font-mono text-xs">
+                {isCollapsed ? "SYSTEM" : "SYSTEM RESOURCES"}
+              </SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  {/* Memory */}
+                  <SidebarMenuItem>
+                    <SidebarMenuButton className="p-3 bg-sidebar-accent/30 hover:bg-sidebar-accent h-auto">
+                      <div className="flex items-start gap-3 w-full min-w-0">
+                        <div className="bg-blue-500/10 p-2 rounded flex-shrink-0">
+                          <MemoryStick className="w-4 h-4 text-blue-500" />
+                        </div>
+                        {!isCollapsed && (
+                          <div className="flex-1 min-w-0 space-y-1.5">
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="text-sm font-mono text-sidebar-foreground/80 whitespace-nowrap">
+                                MEMORY
+                              </span>
+                              <Badge
+                                variant="outline"
+                                className="bg-blue-500/10 text-blue-500 border-blue-500/30 flex-shrink-0"
+                              >
+                                {stats.system.memory.percent.toFixed(1)}%
+                              </Badge>
+                            </div>
+                            <div className="w-full bg-sidebar-border rounded-full h-1.5">
+                              <div
+                                className="bg-blue-500 h-1.5 rounded-full transition-all"
+                                style={{
+                                  width: `${Math.min(stats.system.memory.percent, 100)}%`,
+                                }}
+                              />
+                            </div>
+                            <span className="text-xs font-mono text-sidebar-foreground/60 block truncate">
+                              {formatBytes(stats.system.memory.used)} / {formatBytes(stats.system.memory.total)}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+
+                  {/* Disk */}
+                  <SidebarMenuItem>
+                    <SidebarMenuButton className="p-3 bg-sidebar-accent/30 hover:bg-sidebar-accent h-auto">
+                      <div className="flex items-start gap-3 w-full min-w-0">
+                        <div className="bg-green-500/10 p-2 rounded flex-shrink-0">
+                          <HardDrive className="w-4 h-4 text-green-500" />
+                        </div>
+                        {!isCollapsed && (
+                          <div className="flex-1 min-w-0 space-y-1.5">
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="text-sm font-mono text-sidebar-foreground/80 whitespace-nowrap">
+                                DISK
+                              </span>
+                              <Badge
+                                variant="outline"
+                                className="bg-green-500/10 text-green-500 border-green-500/30 flex-shrink-0"
+                              >
+                                {stats.system.disk.percent.toFixed(1)}%
+                              </Badge>
+                            </div>
+                            <div className="w-full bg-sidebar-border rounded-full h-1.5">
+                              <div
+                                className="bg-green-500 h-1.5 rounded-full transition-all"
+                                style={{
+                                  width: `${Math.min(stats.system.disk.percent, 100)}%`,
+                                }}
+                              />
+                            </div>
+                            <span className="text-xs font-mono text-sidebar-foreground/60 block truncate">
+                              {formatBytes(stats.system.disk.used)} / {formatBytes(stats.system.disk.total)}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+
+                  {/* CPU */}
+                  <SidebarMenuItem>
+                    <SidebarMenuButton className="p-3 bg-sidebar-accent/30 hover:bg-sidebar-accent h-auto">
+                      <div className="flex items-start gap-3 w-full min-w-0">
+                        <div className="bg-purple-500/10 p-2 rounded flex-shrink-0">
+                          <Cpu className="w-4 h-4 text-purple-500" />
+                        </div>
+                        {!isCollapsed && (
+                          <div className="flex-1 min-w-0 space-y-1.5">
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="text-sm font-mono text-sidebar-foreground/80 whitespace-nowrap">
+                                CPU CORES
+                              </span>
+                              <Badge
+                                variant="outline"
+                                className="bg-purple-500/10 text-purple-500 border-purple-500/30 flex-shrink-0"
+                              >
+                                {stats.system.cpu.cores}
+                              </Badge>
+                            </div>
+                            <span className="text-xs font-mono text-sidebar-foreground/60 block truncate">
+                              {stats.system.cpu.goroutines} goroutines
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          </>
+        )}
 
         {!isCollapsed && (
           <>

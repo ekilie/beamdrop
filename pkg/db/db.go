@@ -23,7 +23,9 @@ func openDB() {
 	var dbPath string = config.DBPath
 	// logger.Info("Opening database at: %s", dbPath)
 	var err error
-	db, err = gorm.Open(sqlite.Open(dbPath), &gorm.Config{})
+	db, err = gorm.Open(sqlite.Open(dbPath), &gorm.Config{
+        Logger: logger.Default.LogMode(logger.Silent),
+    })
 	if err != nil {
 		logger.Error("failed to connect database: %v", err)
 	}

@@ -7,6 +7,7 @@ import (
 	"github.com/tachRoutine/beamdrop-go/pkg/logger"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
+	 gormlogger "gorm.io/gorm/logger" 
 )
 
 var (
@@ -23,7 +24,9 @@ func openDB() {
 	var dbPath string = config.DBPath
 	// logger.Info("Opening database at: %s", dbPath)
 	var err error
-	db, err = gorm.Open(sqlite.Open(dbPath), &gorm.Config{})
+	db, err = gorm.Open(sqlite.Open(dbPath), &gorm.Config{
+		Logger: gormlogger.Default.LogMode(gormlogger.Silent),
+	})
 	if err != nil {
 		logger.Error("failed to connect database: %v", err)
 	}

@@ -6,31 +6,40 @@ import (
 	"net/http"
 
 	"github.com/tachRoutine/beamdrop-go/config"
+	"github.com/tachRoutine/beamdrop-go/pkg/auth"
 	"github.com/tachRoutine/beamdrop-go/pkg/db"
 	"github.com/tachRoutine/beamdrop-go/pkg/logger"
 	"github.com/tachRoutine/beamdrop-go/pkg/qr"
 )
 
 type Server struct {
-	sharedDir string
-	flags     config.Flags
-	mux       *http.ServeMux
+	sharedDir       string
+	flags           config.Flags
+	mux             *http.ServeMux
+	passwordService *auth.PasswordService
+	authMiddleware  *auth.AuthMiddleware
 }
 
 func New(sharedDir string, flags config.Flags) *Server {
+	// Initialize password service
+	passwordService := auth.NewPasswordService(flags.Password)
+
 	s := &Server{
-		sharedDir: sharedDir,
-		flags:     flags,
-		mux:       http.NewServeMux(),
+		sharedDir:       sharedDir,
+		flags:           flags,
+		mux:             http.NewServeMux(),
+		passwordService: passwordService,
+		authMiddleware:  auth.NewAuthMiddleware(passwordService),
 	}
 	s.setupRoutes()
 	return s
 }
 
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	// TODO: Will add other common middleware here
+	// Increment request counter
 	db.IncrementRequests()
-	s.mux.ServeHTTP(w, r)
+	// Apply auth middleware
+	s.authMiddleware.Middleware(s.mux).ServeHTTP(w, r)
 }
 
 func (s *Server) Start() error {

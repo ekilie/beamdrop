@@ -1,7 +1,7 @@
 .PHONY: run build dev build-all build-linux build-darwin build-windows deps clean
 
 run: build
-	./cmd/beam/beam
+	./cmd/beam/beam -p="tach"
 
 build-ui:
 	cd ./static/frontend && bun install && bun run build

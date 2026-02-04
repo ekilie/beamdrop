@@ -12,6 +12,12 @@ func (s *Server) setupRoutes() {
 	// Static files
 	s.mux.HandleFunc("/", handlers.StaticHandler)
 
+	// Auth handlers
+	authHandler := handlers.NewAuthHandler(s.passwordService)
+	s.mux.HandleFunc("/auth/login", authHandler.Login)
+	s.mux.HandleFunc("/auth/logout", authHandler.Logout)
+	s.mux.HandleFunc("/auth/status", authHandler.Status)
+
 	// Stats
 	s.mux.HandleFunc("/stats", handlers.StatsHandler)
 	s.mux.HandleFunc("/ws/stats", StatsSocketHandler(s.sharedDir)) //TODO: will come up with  better structure for the websockts

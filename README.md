@@ -26,7 +26,7 @@ go build -o beamdrop ./cmd/beam
 Start the server with a directory to share:
 
 ```bash
-./beamdrop -dir /path/to/share
+./beamdrop -dir="/path/to/share"
 ```
 
 Available flags:

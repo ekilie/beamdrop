@@ -64,14 +64,14 @@ const Login = () => {
             <div className="relative w-full max-w-md animate-fade-in">
                 {/* Logo and branding */}
                 <div className="text-center mb-8 animate-slide-up">
-                    <div className="inline-flex items-center justify-center mb-4">
+                    {/* <div className="inline-flex items-center justify-center mb-4">
                         <div className="relative">
                             <div className="absolute inset-0 bg-primary/20 blur-2xl rounded-full animate-pulse" />
                             <div className="relative bg-gradient-to-br from-primary to-primary/80 p-5 rounded-3xl border-2 border-primary/30 shadow-2xl">
                                 <Zap className="w-12 h-12 text-primary-foreground" />
                             </div>
                         </div>
-                    </div>
+                    </div> */}
                     <h1 className="text-4xl font-bold font-mono uppercase tracking-wider text-foreground mb-2">
                         <span className="bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent">
                             BeamDrop
@@ -156,20 +156,7 @@ const Login = () => {
                                 </div>
                             )}
 
-                            {/* Password strength indicator */}
-                            {password.length > 0 && !error && (
-                                <div className="flex items-center gap-2 animate-fade-in">
-                                    <Badge
-                                        variant={password.length >= 8 ? "default" : "outline"}
-                                        className="font-mono text-xs transition-smooth"
-                                    >
-                                        {password.length >= 8 ? "STRONG" : "WEAK"}
-                                    </Badge>
-                                    <span className="text-xs font-mono text-muted-foreground">
-                                        {password.length} characters
-                                    </span>
-                                </div>
-                            )}
+                            
                         </div>
 
                         <Button

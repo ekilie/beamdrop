@@ -156,20 +156,7 @@ const Login = () => {
                                 </div>
                             )}
 
-                            {/* Password strength indicator */}
-                            {password.length > 0 && !error && (
-                                <div className="flex items-center gap-2 animate-fade-in">
-                                    <Badge
-                                        variant={password.length >= 8 ? "default" : "outline"}
-                                        className="font-mono text-xs transition-smooth"
-                                    >
-                                        {password.length >= 8 ? "STRONG" : "WEAK"}
-                                    </Badge>
-                                    <span className="text-xs font-mono text-muted-foreground">
-                                        {password.length} characters
-                                    </span>
-                                </div>
-                            )}
+                            
                         </div>
 
                         <Button

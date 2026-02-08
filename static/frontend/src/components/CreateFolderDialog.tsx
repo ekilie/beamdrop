@@ -74,12 +74,12 @@ export function CreateFolderDialog({ currentPath, onSuccess }: CreateFolderDialo
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button variant="outline" size="sm" className="gap-2">
+      <DialogTrigger asChild title="New File">
+        <Button variant="outline" size="sm" className="gap-2" title="New Folder">
           <FolderPlus className="w-4 h-4" />
-          <span className="font-mono text-xs font-bold uppercase tracking-wide">
+          {/* <span className="font-mono text-xs font-bold uppercase tracking-wide">
             New Folder
-          </span>
+          </span> */}
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">

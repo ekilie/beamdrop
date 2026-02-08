@@ -55,11 +55,12 @@ export function CodeEditorDialog({
       variant="outline"
       size="sm"
       className="gap-2 font-mono uppercase text-xs hover-lift transition-smooth"
+      title="New File"
     >
       {mode === "create" ? (
         <>
           <FilePlus className="w-4 h-4" />
-          <span className="hidden sm:inline">New File</span>
+          {/* <span className="hidden sm:inline">New File</span> */}
         </>
       ) : (
         <>
@@ -72,7 +73,7 @@ export function CodeEditorDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogTrigger asChild>
+      <DialogTrigger asChild title="New File">
         {triggerButton || defaultTrigger}
       </DialogTrigger>
       <DialogContent className="max-w-6xl max-h-[95vh] p-0 bg-card border-2 border-border overflow-hidden">

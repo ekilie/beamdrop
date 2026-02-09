@@ -1,0 +1,65 @@
+package crypto
+
+import (
+	"crypto/hmac"
+	"crypto/sha256"
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+}	return diff >= -15*time.Minute && diff <= 15*time.Minute	// Allow 15 minutes of clock skew in either direction		diff := now.Sub(t)	now := time.Now().UTC()		}		return false	if err != nil {	t, err := time.Parse(time.RFC3339, timestamp)func IsTimestampValid(timestamp string) bool {// IsTimestampValid checks if a timestamp is within acceptable range (15 minutes)}	return hmac.Equal([]byte(expected), []byte(token))	expected := GeneratePresignedToken(secretKey, method, bucket, key, expiresAt)func VerifyPresignedToken(secretKey, method, bucket, key string, expiresAt time.Time, token string) bool {// VerifyPresignedToken verifies a presigned URL token}	return base64.URLEncoding.EncodeToString(h.Sum(nil))	h.Write([]byte(message))	h := hmac.New(sha256.New, []byte(secretKey))	message := fmt.Sprintf("%s\n%s\n%s\n%d", method, bucket, key, expiresAt.Unix())func GeneratePresignedToken(secretKey, method, bucket, key string, expiresAt time.Time) string {// GeneratePresignedToken creates a token for presigned URLs}	return hmac.Equal([]byte(expected), []byte(signature))	expected := GenerateSignature(secretKey, method, path, timestamp)func VerifySignature(secretKey, method, path, timestamp, signature string) bool {// VerifySignature verifies an HMAC-SHA256 signature}	return base64.StdEncoding.EncodeToString(h.Sum(nil))	h.Write([]byte(message))	h := hmac.New(sha256.New, []byte(secretKey))	message := fmt.Sprintf("%s\n%s\n%s", method, path, timestamp)func GenerateSignature(secretKey, method, path, timestamp string) string {// GenerateSignature creates an HMAC-SHA256 signature for a request}	return HashSecret(secret) == hashfunc VerifySecret(secret, hash string) bool {// VerifySecret checks if a secret matches a stored hash}	return hex.EncodeToString(h.Sum(nil))	h.Write([]byte(secret))	h := sha256.New()func HashSecret(secret string) string {// HashSecret creates a SHA-256 hash of a secret key for storage)	"time"	"fmt"	"encoding/hex"	"encoding/base64"

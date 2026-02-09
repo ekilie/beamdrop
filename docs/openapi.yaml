@@ -1,0 +1,732 @@
+openapi: 3.0.3
+info:
+  title: Beamdrop S3-Compatible API
+  description: |
+    S3-compatible file storage API for Beamdrop. Enables programmatic upload, 
+    download, and management of files through a RESTful interface.
+
+    ## Authentication
+
+    All API requests (except key creation) require HMAC-SHA256 signature authentication:
+
+    1. Generate a signature:
+       ```
+       StringToSign = METHOD + "\n" + PATH + "\n" + TIMESTAMP
+       Signature = Base64(HMAC-SHA256(StringToSign, SecretKey))
+       ```
+
+    2. Include headers:
+       ```
+       Authorization: Bearer ACCESS_KEY_ID:SIGNATURE
+       X-Beamdrop-Date: ISO8601_TIMESTAMP
+       ```
+
+    ## Rate Limiting
+
+    No rate limiting by default. Can be configured per deployment.
+
+  version: 1.0.0
+  contact:
+    name: Beamdrop
+  license:
+    name: MIT
+
+servers:
+  - url: http://localhost:8080/api/v1
+    description: Local development server
+
+tags:
+  - name: API Keys
+    description: Manage API authentication keys
+  - name: Buckets
+    description: Create and manage storage buckets
+  - name: Objects
+    description: Upload, download, and manage objects
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      description: |
+        HMAC-SHA256 signed authentication.
+        Format: `ACCESS_KEY_ID:BASE64_SIGNATURE`
+
+  schemas:
+    APIKey:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: Unique identifier
+          example: 1
+        name:
+          type: string
+          description: Human-readable name
+          example: "CI Pipeline"
+        accessKeyId:
+          type: string
+          description: Access key identifier
+          example: "BDK_a1b2c3d4e5f6g7h8"
+        bucketScope:
+          type: string
+          nullable: true
+          description: Restrict to specific bucket
+          example: "my-bucket"
+        expiresAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: Expiration timestamp
+        createdAt:
+          type: string
+          format: date-time
+          description: Creation timestamp
+        lastUsedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: Last usage timestamp
+
+    APIKeyCreate:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          description: Human-readable name for the key
+          example: "My App API Key"
+        bucketScope:
+          type: string
+          description: Restrict key to specific bucket
+          example: "my-bucket"
+        expiresIn:
+          type: integer
+          description: Expiration time in seconds (e.g., 2592000 = 30 days)
+          example: 2592000
+
+    APIKeyCreated:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        name:
+          type: string
+          example: "My App API Key"
+        accessKeyId:
+          type: string
+          description: Public access key identifier
+          example: "BDK_a1b2c3d4e5f6g7h8"
+        secretKey:
+          type: string
+          description: |
+            Secret key for signing requests.
+            **IMPORTANT**: This is only returned once during creation!
+          example: "sk_a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6"
+        expiresAt:
+          type: string
+          format: date-time
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+
+    Bucket:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Bucket name
+          example: "my-bucket"
+        createdAt:
+          type: string
+          format: date-time
+        objectCount:
+          type: integer
+          description: Number of objects in bucket
+          example: 42
+        totalSize:
+          type: string
+          description: Human-readable total size
+          example: "1.2 GB"
+
+    BucketList:
+      type: object
+      properties:
+        buckets:
+          type: array
+          items:
+            $ref: "#/components/schemas/Bucket"
+        count:
+          type: integer
+          example: 5
+
+    BucketCreated:
+      type: object
+      properties:
+        bucket:
+          type: string
+          example: "my-bucket"
+        created:
+          type: string
+          format: date-time
+        location:
+          type: string
+          example: "/api/v1/buckets/my-bucket"
+
+    Object:
+      type: object
+      properties:
+        key:
+          type: string
+          description: Object key (path)
+          example: "images/photo.jpg"
+        size:
+          type: integer
+          description: Size in bytes
+          example: 1048576
+        lastModified:
+          type: string
+          format: date-time
+        etag:
+          type: string
+          description: MD5 hash of content
+          example: "d41d8cd98f00b204e9800998ecf8427e"
+
+    ObjectList:
+      type: object
+      properties:
+        bucket:
+          type: string
+          example: "my-bucket"
+        prefix:
+          type: string
+          example: "images/"
+        delimiter:
+          type: string
+          example: "/"
+        maxKeys:
+          type: integer
+          example: 1000
+        isTruncated:
+          type: boolean
+          example: false
+        contents:
+          type: array
+          items:
+            $ref: "#/components/schemas/Object"
+        commonPrefixes:
+          type: array
+          items:
+            type: object
+            properties:
+              prefix:
+                type: string
+                example: "images/thumbnails/"
+
+    ObjectCreated:
+      type: object
+      properties:
+        bucket:
+          type: string
+          example: "my-bucket"
+        key:
+          type: string
+          example: "images/photo.jpg"
+        etag:
+          type: string
+          example: "d41d8cd98f00b204e9800998ecf8427e"
+        size:
+          type: integer
+          example: 1048576
+        url:
+          type: string
+          example: "/api/v1/buckets/my-bucket/images/photo.jpg"
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Error message
+          example: "bucket not found"
+        code:
+          type: string
+          description: Error code
+          example: "NOT_FOUND"
+
+  responses:
+    Unauthorized:
+      description: Authentication failed
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          example:
+            error: "invalid signature"
+            code: "UNAUTHORIZED"
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          example:
+            error: "bucket not found"
+            code: "NOT_FOUND"
+    BadRequest:
+      description: Invalid request
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          example:
+            error: "invalid bucket name"
+            code: "BAD_REQUEST"
+
+paths:
+  /keys:
+    get:
+      tags:
+        - API Keys
+      summary: List all API keys
+      description: Returns all API keys. Secret keys are not included.
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: List of API keys
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/APIKey"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+    post:
+      tags:
+        - API Keys
+      summary: Create a new API key
+      description: |
+        Create a new API key for authentication.
+
+        **Important**: The `secretKey` is only returned once in this response.
+        Store it securely!
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/APIKeyCreate"
+      responses:
+        "201":
+          description: API key created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIKeyCreated"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+
+  /keys/{id}:
+    delete:
+      tags:
+        - API Keys
+      summary: Delete an API key
+      description: Permanently delete an API key. This cannot be undone.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: API key ID
+      responses:
+        "204":
+          description: Key deleted successfully
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /buckets:
+    get:
+      tags:
+        - Buckets
+      summary: List all buckets
+      description: Returns all accessible buckets with their metadata.
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: List of buckets
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BucketList"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /buckets/{bucket}:
+    put:
+      tags:
+        - Buckets
+      summary: Create a bucket
+      description: |
+        Create a new storage bucket.
+
+        **Naming rules**:
+        - 3-63 characters
+        - Lowercase letters, numbers, and hyphens only
+        - Must start with letter or number
+        - Cannot end with hyphen
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: bucket
+          in: path
+          required: true
+          schema:
+            type: string
+            minLength: 3
+            maxLength: 63
+            pattern: "^[a-z0-9][a-z0-9-]*[a-z0-9]$"
+          description: Bucket name
+          example: my-bucket
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                versioning:
+                  type: boolean
+                  default: false
+                maxSizeBytes:
+                  type: integer
+                  description: Maximum bucket size in bytes
+      responses:
+        "201":
+          description: Bucket created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BucketCreated"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "409":
+          description: Bucket already exists
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+    head:
+      tags:
+        - Buckets
+      summary: Check if bucket exists
+      description: Returns 200 if bucket exists, 404 if not.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: bucket
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Bucket name
+      responses:
+        "200":
+          description: Bucket exists
+        "404":
+          description: Bucket not found
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+    get:
+      tags:
+        - Objects
+      summary: List objects in bucket
+      description: |
+        List objects in a bucket. Use query parameters to filter and paginate.
+
+        Set `list` query parameter to enable listing mode.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: bucket
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Bucket name
+        - name: list
+          in: query
+          schema:
+            type: boolean
+          description: Enable listing mode
+        - name: prefix
+          in: query
+          schema:
+            type: string
+          description: Filter objects by prefix
+          example: images/
+        - name: delimiter
+          in: query
+          schema:
+            type: string
+          description: Group keys by delimiter (e.g., "/" for directories)
+          example: /
+        - name: max-keys
+          in: query
+          schema:
+            type: integer
+            default: 1000
+            maximum: 1000
+          description: Maximum number of keys to return
+        - name: continuation-token
+          in: query
+          schema:
+            type: string
+          description: Token for pagination
+      responses:
+        "200":
+          description: Object listing
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ObjectList"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+    delete:
+      tags:
+        - Buckets
+      summary: Delete a bucket
+      description: Delete an empty bucket. Fails if bucket contains objects.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: bucket
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Bucket name
+      responses:
+        "204":
+          description: Bucket deleted
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          description: Bucket not empty
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                error: "bucket is not empty"
+                code: "CONFLICT"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /buckets/{bucket}/{key}:
+    put:
+      tags:
+        - Objects
+      summary: Upload an object
+      description: |
+        Upload an object to a bucket. The key can include path separators 
+        to create a hierarchical structure (e.g., `images/photos/vacation.jpg`).
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: bucket
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Bucket name
+        - name: key
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Object key (can include path separators)
+          example: images/photo.jpg
+      requestBody:
+        required: true
+        content:
+          application/octet-stream:
+            schema:
+              type: string
+              format: binary
+          "*/*":
+            schema:
+              type: string
+              format: binary
+      responses:
+        "201":
+          description: Object created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ObjectCreated"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          description: Bucket not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+    get:
+      tags:
+        - Objects
+      summary: Download an object
+      description: |
+        Download an object from a bucket. Supports partial downloads 
+        using the Range header.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: bucket
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Bucket name
+        - name: key
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Object key
+        - name: Range
+          in: header
+          schema:
+            type: string
+          description: Byte range to download
+          example: bytes=0-1023
+      responses:
+        "200":
+          description: Object content
+          headers:
+            ETag:
+              schema:
+                type: string
+              description: MD5 hash of content
+            Content-Type:
+              schema:
+                type: string
+              description: MIME type of content
+            Content-Length:
+              schema:
+                type: integer
+              description: Content size in bytes
+            Last-Modified:
+              schema:
+                type: string
+              description: Last modification time
+          content:
+            "*/*":
+              schema:
+                type: string
+                format: binary
+        "206":
+          description: Partial content (when Range header is used)
+          content:
+            "*/*":
+              schema:
+                type: string
+                format: binary
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+    head:
+      tags:
+        - Objects
+      summary: Get object metadata
+      description: Get object metadata without downloading the content.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: bucket
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Bucket name
+        - name: key
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Object key
+      responses:
+        "200":
+          description: Object metadata
+          headers:
+            ETag:
+              schema:
+                type: string
+              description: MD5 hash of content
+            Content-Type:
+              schema:
+                type: string
+              description: MIME type
+            Content-Length:
+              schema:
+                type: integer
+              description: Size in bytes
+            Last-Modified:
+              schema:
+                type: string
+              description: Last modification time
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+    delete:
+      tags:
+        - Objects
+      summary: Delete an object
+      description: Permanently delete an object from a bucket.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: bucket
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Bucket name
+        - name: key
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Object key
+      responses:
+        "204":
+          description: Object deleted
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "401":
+          $ref: "#/components/responses/Unauthorized"

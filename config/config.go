@@ -58,6 +58,7 @@ type Flags struct {
 	TLSCert        string
 	TLSKey         string
 	AllowedOrigins string // Comma-separated list of allowed CORS origins
+	APIAuth        bool   // Enable API key authentication for S3-like API
 }
 
 func GetDBPath() string {
@@ -118,9 +119,9 @@ func createConfigDir() {
 
 // CreateTrashBin creates the trash bin directory if it doesn't exist
 // inside the sharedDir
-func CreateTrashBin(sharedDir string) error{
+func CreateTrashBin(sharedDir string) error {
 	trashBinDir := filepath.Join(sharedDir, ".beamdrop_trash")
-	if err := os.MkdirAll(trashBinDir,0755); err != nil {	
+	if err := os.MkdirAll(trashBinDir, 0755); err != nil {
 		return err
 	}
 	return nil

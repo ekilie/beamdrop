@@ -105,7 +105,7 @@ func (ps *PasswordService) ValidateToken(tokenString string) bool {
 	}
 
 	claims := &Claims{}
-	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
+	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (any, error) {
 		return jwtSecret, nil
 	})
 

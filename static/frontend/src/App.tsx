@@ -13,6 +13,7 @@ import { AuthProvider, useAuth } from "@/context/auth";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
+import { ApiKeysPage } from "./components/ApiKeysPage";
 import { Menu, LogOut, Loader2 } from "lucide-react";
 
 const queryClient = new QueryClient();
@@ -83,6 +84,7 @@ function MainLayout() {
           <main className="flex-1 overflow-y-auto scrollbar-thin">
             <Routes>
               <Route path="/" element={<Index />} />
+              <Route path="/api-keys" element={<ApiKeysPage />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </main>

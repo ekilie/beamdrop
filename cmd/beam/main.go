@@ -18,6 +18,7 @@ func main() {
 	tlsCert := flag.String("tls-cert", "", "Path to TLS certificate file for HTTPS")
 	tlsKey := flag.String("tls-key", "", "Path to TLS private key file for HTTPS")
 	allowedOrigins := flag.String("allowed-origins", "", "Comma-separated list of allowed CORS origins (empty = CORS disabled)")
+	apiAuth := flag.Bool("api-auth", false, "Enable API key authentication for S3-like API endpoints")
 
 	// NOTE:Here i default it to 0 so when it zero we know that the flag wasnt passed
 	// Since the flag is a non-boolean value
@@ -37,6 +38,7 @@ func main() {
 		TLSCert:        *tlsCert,
 		TLSKey:         *tlsKey,
 		AllowedOrigins: *allowedOrigins,
+		APIAuth:        *apiAuth,
 	}
 
 	if flag.NArg() > 0 {
@@ -60,7 +62,7 @@ func main() {
 
 	err := config.CreateTrashBin(*sharedDir)
 
-	if err != nil{
+	if err != nil {
 		logger.Fatal("Failed to create trash bin: %v", err)
 	}
 

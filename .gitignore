@@ -45,3 +45,6 @@ cmd/*/*
 !cmd/*/*.md
 !cmd/*/*.txt
 !cmd/*/*.json
+
+
+.beamdrop_trash/*

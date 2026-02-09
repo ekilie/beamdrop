@@ -22,6 +22,11 @@ func NewFileHandler(sharedDir string) *FileHandler {
 }
 
 func (h *FileHandler) ListFiles(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		sendJSONError(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	
 	logger.Debug("Listing files from directory: %s", h.sharedDir)
 	w.Header().Set("Content-Type", "application/json")
 
@@ -64,6 +69,11 @@ func (h *FileHandler) ListFiles(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *FileHandler) Download(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	
 	filename := r.URL.Query().Get("file")
 	filePath := h.sharedDir + "/" + filename
 
@@ -83,6 +93,11 @@ func (h *FileHandler) Download(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *FileHandler) Upload(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		sendJSONError(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	
 	logger.Info("Upload request received")
 	file, header, err := r.FormFile("file")
 	if err != nil {

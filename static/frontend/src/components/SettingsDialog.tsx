@@ -43,7 +43,7 @@ export function SettingsDialog() {
           <span className="sr-only">Settings</span>
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[500px] w-[400px] bg-card border-2 border-border">
+      <DialogContent className="sm:max-w-[500px] bg-card border-2 border-border">
         <DialogHeader>
           <DialogTitle className="text-xl font-bold font-mono uppercase tracking-wide text-foreground flex items-center gap-2">
             <Settings className="w-5 h-5" />

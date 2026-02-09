@@ -1,6 +1,8 @@
 package server
 
 import (
+	"net/http"
+
 	"github.com/tachRoutine/beamdrop-go/beam/server/handlers"
 )
 
@@ -39,4 +41,9 @@ func (s *Server) setupRoutes() {
 	s.mux.HandleFunc("/search", fileOpsHandler.Search)
 	s.mux.HandleFunc("/star", fileOpsHandler.Star)
 	s.mux.HandleFunc("/starred", fileOpsHandler.Starred)
+
+	// Api endpoints
+	s.mux.HandleFunc("/api/upload", func(w http.ResponseWriter, r *http.Request) {
+		
+	})
 }

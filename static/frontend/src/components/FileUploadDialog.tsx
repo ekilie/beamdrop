@@ -39,7 +39,7 @@ export function FileUploadDialog({ currentPath = "." }: FileUploadDialogProps) {
           Upload Files
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[600px] max-h-[80vh] w-[400px] mx-auto overflow-y-auto bg-card border-2 border-border">
+      <DialogContent className="sm:max-w-[600px] max-h-[80vh] mx-auto overflow-y-auto bg-card border-2 border-border">
         <DialogHeader>
           <DialogTitle className="text-xl font-bold font-mono uppercase tracking-wide text-foreground flex items-center gap-2">
             <Upload className="h-4 w-4" />

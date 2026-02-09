@@ -253,20 +253,20 @@ export function FilePreview({ fileName, isOpen, onClose, currentPath = "." }: Fi
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent
         ref={dialogRef}
-        className="max-w-5xl max-h-[95vh] bg-card border-2 border-border overflow-hidden [&>button]:hidden"
+        className="w-[calc(100%-1rem)] max-w-5xl max-h-[90vh] bg-card border-2 border-border overflow-hidden [&>button]:hidden sm:max-h-[95vh]"
       >
-        <DialogHeader className="border-b border-border pb-4">
-          <div className="flex items-center justify-between">
-            <DialogTitle className="font-mono font-bold text-foreground truncate flex items-center gap-2">
-              {getFileIcon(fileName, "w-5 h-5")}
-              {fileName}
+        <DialogHeader className="border-b border-border pb-3 sm:pb-4">
+          <div className="flex items-center justify-between gap-2">
+            <DialogTitle className="font-mono font-bold text-foreground truncate flex items-center gap-2 text-sm sm:text-base">
+              {getFileIcon(fileName, "w-4 h-4 sm:w-5 sm:h-5")}
+              <span className="truncate">{fileName}</span>
             </DialogTitle>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={toggleFullscreen}
-                className="shrink-0"
+                className="shrink-0 hidden sm:flex"
               >
                 {isFullscreen ? (
                   <>
@@ -278,6 +278,19 @@ export function FilePreview({ fileName, isOpen, onClose, currentPath = "." }: Fi
                     <Maximize className="w-4 h-4 mr-2" />
                     Fullscreen
                   </>
+                )}
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={toggleFullscreen}
+                className="shrink-0 sm:hidden p-2"
+                aria-label={isFullscreen ? "Exit fullscreen mode" : "Toggle fullscreen mode"}
+              >
+                {isFullscreen ? (
+                  <Minimize className="w-4 h-4" />
+                ) : (
+                  <Maximize className="w-4 h-4" />
                 )}
               </Button>
               {(isText || isCode) && (
@@ -294,14 +307,24 @@ export function FilePreview({ fileName, isOpen, onClose, currentPath = "." }: Fi
                     setFileContent("");
                   }}
                   triggerButton={
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="shrink-0"
-                    >
-                      <Edit className="w-4 h-4 mr-2" />
-                      Edit
-                    </Button>
+                    <>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="shrink-0 hidden sm:flex"
+                      >
+                        <Edit className="w-4 h-4 mr-2" />
+                        Edit
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="shrink-0 sm:hidden p-2"
+                        aria-label="Edit file"
+                      >
+                        <Edit className="w-4 h-4" />
+                      </Button>
+                    </>
                   }
                 />
               )}
@@ -309,16 +332,25 @@ export function FilePreview({ fileName, isOpen, onClose, currentPath = "." }: Fi
                 variant="outline"
                 size="sm"
                 onClick={handleDownload}
-                className="shrink-0"
+                className="shrink-0 hidden sm:flex"
               >
                 <Download className="w-4 h-4 mr-2" />
                 Download
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleDownload}
+                className="shrink-0 sm:hidden p-2"
+                aria-label="Download file"
+              >
+                <Download className="w-4 h-4" />
               </Button>
             </div>
           </div>
         </DialogHeader>
 
-        <div className="mt-4 overflow-auto max-h-[calc(95vh-8rem)] scrollbar-thin">
+        <div className="mt-4 overflow-auto max-h-[calc(90vh-8rem)] sm:max-h-[calc(95vh-8rem)] scrollbar-thin">
           {loading && !error && (
             <div className="flex items-center justify-center py-16">
               <div className="text-center space-y-4 animate-fade-in">

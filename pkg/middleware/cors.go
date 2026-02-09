@@ -2,7 +2,6 @@ package middleware
 
 import (
 	"net/http"
-	"strings"
 )
 
 // CORSConfig holds CORS configuration
@@ -90,7 +89,8 @@ func IsOriginAllowed(origin string, allowedOrigins []string) bool {
 		if allowed == "*" {
 			return true
 		}
-		if strings.EqualFold(allowed, origin) {
+		// Origins are case-sensitive per CORS spec
+		if allowed == origin {
 			return true
 		}
 	}

@@ -64,9 +64,6 @@ Prevents the page from being embedded in iframes, protecting against clickjackin
 ### X-Content-Type-Options: nosniff
 Prevents browsers from MIME-sniffing the content type, reducing XSS risks.
 
-### X-XSS-Protection: 1; mode=block
-Enables browser's XSS filter to block pages if XSS attack is detected.
-
 ### Referrer-Policy: strict-origin-when-cross-origin
 Controls how much referrer information is sent with requests:
 - Same origin: full URL

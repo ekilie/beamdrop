@@ -14,9 +14,6 @@ func SecurityHeaders(enableHSTS bool) func(http.Handler) http.Handler {
 			// Prevent MIME type sniffing
 			w.Header().Set("X-Content-Type-Options", "nosniff")
 			
-			// Enable browser XSS protection
-			w.Header().Set("X-XSS-Protection", "1; mode=block")
-			
 			// Referrer policy for privacy
 			w.Header().Set("Referrer-Policy", "strict-origin-when-cross-origin")
 			

@@ -35,7 +35,7 @@ export function CodeEditorDialog({
     setFileName(savedFileName);
     setContent(savedContent);
     setOpen(false);
-    
+
     if (onSaveSuccess) {
       onSaveSuccess();
     }
@@ -60,12 +60,12 @@ export function CodeEditorDialog({
       {mode === "create" ? (
         <>
           <FilePlus className="w-4 h-4" />
-          {/* <span className="hidden sm:inline">New File</span> */}
+          <span className="hidden lg:inline">New File</span>
         </>
       ) : (
         <>
           <Edit className="w-4 h-4" />
-          <span className="hidden sm:inline">Edit</span>
+          <span className="hidden lg:inline">Edit</span>
         </>
       )}
     </Button>

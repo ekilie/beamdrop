@@ -2,8 +2,10 @@ package server
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/tachRoutine/beamdrop-go/beam/server/handlers"
+	"github.com/tachRoutine/beamdrop-go/beam/server/handlers/api"
 )
 
 func (s *Server) setupRoutes() {
@@ -42,8 +44,41 @@ func (s *Server) setupRoutes() {
 	s.mux.HandleFunc("/star", fileOpsHandler.Star)
 	s.mux.HandleFunc("/starred", fileOpsHandler.Starred)
 
-	// Api endpoints
-	s.mux.HandleFunc("/api/upload", func(w http.ResponseWriter, r *http.Request) {
-		
+	// S3-like API endpoints
+	s.setupAPIRoutes()
+}
+
+// setupAPIRoutes configures the S3-like API endpoints
+func (s *Server) setupAPIRoutes() {
+	bucketHandler := api.NewBucketHandler(s.sharedDir)
+	objectHandler := api.NewObjectHandler(s.sharedDir)
+
+	// API auth middleware (disabled by default for now - enable with -api-auth flag)
+	apiAuth := api.NewAPIAuthMiddleware(s.flags.APIAuth)
+
+	// API v1 routes - handle bucket and object operations
+	s.mux.HandleFunc("/api/v1/buckets/", func(w http.ResponseWriter, r *http.Request) {
+		// Apply API auth middleware
+		apiAuth.Middleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			// Route to appropriate handler based on path
+			path := strings.TrimPrefix(r.URL.Path, "/api/v1/buckets/")
+			parts := strings.SplitN(path, "/", 2)
+
+			// If there's an object key, use object handler
+			if len(parts) > 1 && parts[1] != "" {
+				objectHandler.Handle(w, r)
+				return
+			}
+
+			// Otherwise use bucket handler
+			bucketHandler.Handle(w, r)
+		})).ServeHTTP(w, r)
+	})
+
+	// List buckets endpoint (no trailing path)
+	s.mux.HandleFunc("/api/v1/buckets", func(w http.ResponseWriter, r *http.Request) {
+		apiAuth.Middleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			bucketHandler.Handle(w, r)
+		})).ServeHTTP(w, r)
 	})
 }

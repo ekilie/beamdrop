@@ -12,6 +12,8 @@ const (
 	PORT          = 7777
 	VERSION       = "0.0.1"
 	ConfigDirName = ".beamdrop"
+	// MaxUploadSize defines the maximum upload file size (100MB by default)
+	MaxUploadSize int64 = 100 * 1024 * 1024 // 100MB in bytes
 )
 
 var (
@@ -19,6 +21,28 @@ var (
 	ConfigPath string
 	DBName     = "beamdrop.db"
 	DBPath     string
+	// AllowedMIMETypes defines the allowed MIME types for uploads
+	// Empty list means all types are allowed
+	AllowedMIMETypes = []string{
+		// Images
+		"image/jpeg", "image/png", "image/gif", "image/webp", "image/svg+xml", "image/bmp",
+		// Documents
+		"application/pdf", "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+		"application/vnd.ms-excel", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+		"application/vnd.ms-powerpoint", "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+		"text/plain", "text/csv", "text/html", "text/css", "text/javascript",
+		// Archives
+		"application/zip", "application/x-rar-compressed", "application/x-7z-compressed",
+		"application/x-tar", "application/gzip",
+		// Audio
+		"audio/mpeg", "audio/wav", "audio/ogg", "audio/mp4", "audio/webm", "audio/flac",
+		// Video
+		"video/mp4", "video/mpeg", "video/webm", "video/ogg", "video/x-msvideo", "video/quicktime",
+		// Code
+		"application/json", "application/xml", "application/javascript",
+		// Other
+		"application/octet-stream",
+	}
 )
 
 type Config struct {

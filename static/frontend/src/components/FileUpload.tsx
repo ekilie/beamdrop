@@ -9,6 +9,9 @@ interface FileUploadProps {
   onUploadSuccess: () => void;
 }
 
+// Maximum upload size in bytes (100MB)
+const MAX_UPLOAD_SIZE = 100 * 1024 * 1024;
+
 export const FileUpload = ({ onUploadSuccess }: FileUploadProps) => {
   const [isDragging, setIsDragging] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -31,13 +34,30 @@ export const FileUpload = ({ onUploadSuccess }: FileUploadProps) => {
 
     const files = Array.from(e.dataTransfer.files);
     if (files.length > 0) {
-      setSelectedFile(files[0]);
+      const file = files[0];
+      if (file.size > MAX_UPLOAD_SIZE) {
+        toast({
+          title: "Error",
+          description: `File is too large. Maximum size is ${(MAX_UPLOAD_SIZE / 1024 / 1024).toFixed(0)}MB`,
+          variant: "destructive",
+        });
+        return;
+      }
+      setSelectedFile(file);
     }
   }, []);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      if (file.size > MAX_UPLOAD_SIZE) {
+        toast({
+          title: "Error",
+          description: `File is too large. Maximum size is ${(MAX_UPLOAD_SIZE / 1024 / 1024).toFixed(0)}MB`,
+          variant: "destructive",
+        });
+        return;
+      }
       setSelectedFile(file);
     }
   };

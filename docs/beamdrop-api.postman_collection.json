@@ -1,0 +1,1527 @@
+{
+    "info": {
+        "_postman_id": "beamdrop-s3-api-collection",
+        "name": "Beamdrop S3-Compatible API",
+        "description": "Comprehensive collection for testing the Beamdrop S3-compatible file storage API.\n\n## Setup\n\n1. Import this collection into Postman\n2. Import the environment file (beamdrop-api.postman_environment.json)\n3. Update the `base_url` variable to your server address\n4. Start the flow by creating an API key\n\n## Authentication\n\nThe API uses HMAC-SHA256 signature authentication. Each request requires:\n- `Authorization` header with Bearer token containing access_key:signature\n- `X-Beamdrop-Date` header with ISO 8601 timestamp\n\nThe pre-request script automatically generates signatures using your secret key.",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "variable": [
+        {
+            "key": "base_url",
+            "value": "http://localhost:8080"
+        },
+        {
+            "key": "bucket_name",
+            "value": "test-bucket"
+        },
+        {
+            "key": "object_key",
+            "value": "test-file.txt"
+        }
+    ],
+    "auth": {
+        "type": "noauth"
+    },
+    "event": [
+        {
+            "listen": "prerequest",
+            "script": {
+                "type": "text/javascript",
+                "exec": [
+                    "// Skip signature generation for key creation endpoint",
+                    "if (pm.request.url.toString().includes('/api/v1/keys') && pm.request.method === 'POST' && !pm.environment.get('access_key_id')) {",
+                    "    return;",
+                    "}",
+                    "",
+                    "// Generate HMAC-SHA256 signature",
+                    "const accessKeyId = pm.environment.get('access_key_id');",
+                    "const secretKey = pm.environment.get('secret_key');",
+                    "",
+                    "if (!accessKeyId || !secretKey) {",
+                    "    console.log('No API keys configured. Skipping signature generation.');",
+                    "    return;",
+                    "}",
+                    "",
+                    "// Get request details",
+                    "const method = pm.request.method;",
+                    "const url = new URL(pm.request.url.toString());",
+                    "const path = url.pathname + url.search;",
+                    "const timestamp = new Date().toISOString();",
+                    "",
+                    "// Create string to sign",
+                    "const stringToSign = `${method}\\n${path}\\n${timestamp}`;",
+                    "",
+                    "// Generate HMAC-SHA256 signature",
+                    "const signature = CryptoJS.HmacSHA256(stringToSign, secretKey);",
+                    "const signatureBase64 = CryptoJS.enc.Base64.stringify(signature);",
+                    "",
+                    "// Set headers",
+                    "pm.request.headers.add({",
+                    "    key: 'Authorization',",
+                    "    value: `Bearer ${accessKeyId}:${signatureBase64}`",
+                    "});",
+                    "",
+                    "pm.request.headers.add({",
+                    "    key: 'X-Beamdrop-Date',",
+                    "    value: timestamp",
+                    "});",
+                    "",
+                    "console.log('Signature generated for:', stringToSign);"
+                ]
+            }
+        }
+    ],
+    "item": [
+        {
+            "name": "1. API Key Management",
+            "description": "Create, list, and manage API keys for authentication",
+            "item": [
+                {
+                    "name": "Create API Key",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status code is 201', function () {",
+                                    "    pm.response.to.have.status(201);",
+                                    "});",
+                                    "",
+                                    "pm.test('Response contains credentials', function () {",
+                                    "    const jsonData = pm.response.json();",
+                                    "    pm.expect(jsonData).to.have.property('accessKeyId');",
+                                    "    pm.expect(jsonData).to.have.property('secretKey');",
+                                    "    pm.expect(jsonData).to.have.property('name');",
+                                    "    ",
+                                    "    // Save credentials to environment",
+                                    "    pm.environment.set('access_key_id', jsonData.accessKeyId);",
+                                    "    pm.environment.set('secret_key', jsonData.secretKey);",
+                                    "    pm.environment.set('key_id', jsonData.id);",
+                                    "    ",
+                                    "    console.log('API Key created and saved to environment');",
+                                    "    console.log('Access Key ID:', jsonData.accessKeyId);",
+                                    "    console.log('IMPORTANT: Save the secret key - it will not be shown again!');",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"name\": \"Test API Key\",\n    \"bucketScope\": \"\",\n    \"expiresIn\": 2592000\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/keys",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "keys"
+                            ]
+                        },
+                        "description": "Create a new API key for authentication.\n\n**Note:** The secret key is only returned once during creation. Save it securely!\n\n**Fields:**\n- `name`: Human-readable name for the key\n- `bucketScope`: (optional) Restrict key to a specific bucket\n- `expiresIn`: (optional) Expiration time in seconds (30 days = 2592000)"
+                    }
+                },
+                {
+                    "name": "List API Keys",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status code is 200', function () {",
+                                    "    pm.response.to.have.status(200);",
+                                    "});",
+                                    "",
+                                    "pm.test('Response is an array', function () {",
+                                    "    const jsonData = pm.response.json();",
+                                    "    pm.expect(jsonData).to.be.an('array');",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/keys",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "keys"
+                            ]
+                        },
+                        "description": "List all API keys. Note: Secret keys are not returned."
+                    }
+                },
+                {
+                    "name": "Delete API Key",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status code is 204', function () {",
+                                    "    pm.response.to.have.status(204);",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "DELETE",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/keys/{{key_id}}",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "keys",
+                                "{{key_id}}"
+                            ]
+                        },
+                        "description": "Delete an API key by ID."
+                    }
+                }
+            ]
+        },
+        {
+            "name": "2. Bucket Operations",
+            "description": "Create, list, and manage storage buckets",
+            "item": [
+                {
+                    "name": "Create Bucket",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status code is 201', function () {",
+                                    "    pm.response.to.have.status(201);",
+                                    "});",
+                                    "",
+                                    "pm.test('Response contains bucket info', function () {",
+                                    "    const jsonData = pm.response.json();",
+                                    "    pm.expect(jsonData).to.have.property('bucket');",
+                                    "    pm.expect(jsonData).to.have.property('created');",
+                                    "    pm.expect(jsonData).to.have.property('location');",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/buckets/{{bucket_name}}",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "buckets",
+                                "{{bucket_name}}"
+                            ]
+                        },
+                        "description": "Create a new storage bucket.\n\n**Bucket Naming Rules:**\n- 3-63 characters long\n- Lowercase letters, numbers, and hyphens only\n- Must start with a letter or number\n- Cannot end with a hyphen"
+                    }
+                },
+                {
+                    "name": "List Buckets",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status code is 200', function () {",
+                                    "    pm.response.to.have.status(200);",
+                                    "});",
+                                    "",
+                                    "pm.test('Response contains buckets array', function () {",
+                                    "    const jsonData = pm.response.json();",
+                                    "    pm.expect(jsonData).to.have.property('buckets');",
+                                    "    pm.expect(jsonData.buckets).to.be.an('array');",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/buckets",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "buckets"
+                            ]
+                        },
+                        "description": "List all accessible buckets."
+                    }
+                },
+                {
+                    "name": "Check Bucket Exists (HEAD)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status code is 200 (exists) or 404 (not found)', function () {",
+                                    "    pm.expect(pm.response.code).to.be.oneOf([200, 404]);",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "HEAD",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/buckets/{{bucket_name}}",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "buckets",
+                                "{{bucket_name}}"
+                            ]
+                        },
+                        "description": "Check if a bucket exists. Returns 200 if exists, 404 if not."
+                    }
+                },
+                {
+                    "name": "Delete Bucket",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status code is 204', function () {",
+                                    "    pm.response.to.have.status(204);",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "DELETE",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/buckets/{{bucket_name}}",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "buckets",
+                                "{{bucket_name}}"
+                            ]
+                        },
+                        "description": "Delete a bucket. The bucket must be empty."
+                    }
+                }
+            ]
+        },
+        {
+            "name": "3. Object Operations",
+            "description": "Upload, download, and manage objects within buckets",
+            "item": [
+                {
+                    "name": "Upload Object (Text)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status code is 201', function () {",
+                                    "    pm.response.to.have.status(201);",
+                                    "});",
+                                    "",
+                                    "pm.test('Response contains object info', function () {",
+                                    "    const jsonData = pm.response.json();",
+                                    "    pm.expect(jsonData).to.have.property('bucket');",
+                                    "    pm.expect(jsonData).to.have.property('key');",
+                                    "    pm.expect(jsonData).to.have.property('etag');",
+                                    "    pm.expect(jsonData).to.have.property('size');",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "text/plain"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "Hello, Beamdrop! This is a test file uploaded via the S3-compatible API.\n\nYou can upload any content here - text, JSON, binary data, etc."
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/buckets/{{bucket_name}}/{{object_key}}",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "buckets",
+                                "{{bucket_name}}",
+                                "{{object_key}}"
+                            ]
+                        },
+                        "description": "Upload a text file to the bucket."
+                    }
+                },
+                {
+                    "name": "Upload Object (JSON)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status code is 201', function () {",
+                                    "    pm.response.to.have.status(201);",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"name\": \"Sample Data\",\n    \"timestamp\": \"2026-02-09T12:00:00Z\",\n    \"values\": [1, 2, 3, 4, 5],\n    \"metadata\": {\n        \"source\": \"postman-test\",\n        \"version\": \"1.0\"\n    }\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/buckets/{{bucket_name}}/data/sample.json",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "buckets",
+                                "{{bucket_name}}",
+                                "data",
+                                "sample.json"
+                            ]
+                        },
+                        "description": "Upload a JSON file with nested path (data/sample.json)."
+                    }
+                },
+                {
+                    "name": "Upload Object (Binary/File)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status code is 201', function () {",
+                                    "    pm.response.to.have.status(201);",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "PUT",
+                        "header": [],
+                        "body": {
+                            "mode": "file",
+                            "file": {
+                                "src": ""
+                            }
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/buckets/{{bucket_name}}/uploads/myfile.bin",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "buckets",
+                                "{{bucket_name}}",
+                                "uploads",
+                                "myfile.bin"
+                            ]
+                        },
+                        "description": "Upload a binary file. Select a file from your computer in the Body tab."
+                    }
+                },
+                {
+                    "name": "Download Object",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status code is 200', function () {",
+                                    "    pm.response.to.have.status(200);",
+                                    "});",
+                                    "",
+                                    "pm.test('Response has content', function () {",
+                                    "    pm.expect(pm.response.text().length).to.be.greaterThan(0);",
+                                    "});",
+                                    "",
+                                    "pm.test('Has ETag header', function () {",
+                                    "    pm.expect(pm.response.headers.has('ETag')).to.be.true;",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/buckets/{{bucket_name}}/{{object_key}}",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "buckets",
+                                "{{bucket_name}}",
+                                "{{object_key}}"
+                            ]
+                        },
+                        "description": "Download an object from the bucket."
+                    }
+                },
+                {
+                    "name": "Download Object (Range)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status code is 206 (partial) or 200', function () {",
+                                    "    pm.expect(pm.response.code).to.be.oneOf([200, 206]);",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Range",
+                                "value": "bytes=0-99"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/buckets/{{bucket_name}}/{{object_key}}",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "buckets",
+                                "{{bucket_name}}",
+                                "{{object_key}}"
+                            ]
+                        },
+                        "description": "Download a partial object using Range header. Useful for large files or resumable downloads."
+                    }
+                },
+                {
+                    "name": "Get Object Metadata (HEAD)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status code is 200', function () {",
+                                    "    pm.response.to.have.status(200);",
+                                    "});",
+                                    "",
+                                    "pm.test('Has Content-Length header', function () {",
+                                    "    pm.expect(pm.response.headers.has('Content-Length')).to.be.true;",
+                                    "});",
+                                    "",
+                                    "pm.test('Has Content-Type header', function () {",
+                                    "    pm.expect(pm.response.headers.has('Content-Type')).to.be.true;",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "HEAD",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/buckets/{{bucket_name}}/{{object_key}}",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "buckets",
+                                "{{bucket_name}}",
+                                "{{object_key}}"
+                            ]
+                        },
+                        "description": "Get object metadata without downloading the content. Returns headers only."
+                    }
+                },
+                {
+                    "name": "List Objects",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status code is 200', function () {",
+                                    "    pm.response.to.have.status(200);",
+                                    "});",
+                                    "",
+                                    "pm.test('Response contains objects list', function () {",
+                                    "    const jsonData = pm.response.json();",
+                                    "    pm.expect(jsonData).to.have.property('bucket');",
+                                    "    pm.expect(jsonData).to.have.property('contents');",
+                                    "    pm.expect(jsonData.contents).to.be.an('array');",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/buckets/{{bucket_name}}?list",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "buckets",
+                                "{{bucket_name}}"
+                            ],
+                            "query": [
+                                {
+                                    "key": "list",
+                                    "value": null
+                                }
+                            ]
+                        },
+                        "description": "List all objects in a bucket."
+                    }
+                },
+                {
+                    "name": "List Objects (with Prefix)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status code is 200', function () {",
+                                    "    pm.response.to.have.status(200);",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/buckets/{{bucket_name}}?list&prefix=data/",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "buckets",
+                                "{{bucket_name}}"
+                            ],
+                            "query": [
+                                {
+                                    "key": "list",
+                                    "value": null
+                                },
+                                {
+                                    "key": "prefix",
+                                    "value": "data/"
+                                }
+                            ]
+                        },
+                        "description": "List objects with a specific prefix (like a directory)."
+                    }
+                },
+                {
+                    "name": "List Objects (with Delimiter)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status code is 200', function () {",
+                                    "    pm.response.to.have.status(200);",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/buckets/{{bucket_name}}?list&delimiter=/",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "buckets",
+                                "{{bucket_name}}"
+                            ],
+                            "query": [
+                                {
+                                    "key": "list",
+                                    "value": null
+                                },
+                                {
+                                    "key": "delimiter",
+                                    "value": "/"
+                                }
+                            ]
+                        },
+                        "description": "List objects with delimiter to simulate directory listing. Returns commonPrefixes for 'directories'."
+                    }
+                },
+                {
+                    "name": "Delete Object",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status code is 204', function () {",
+                                    "    pm.response.to.have.status(204);",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "DELETE",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/buckets/{{bucket_name}}/{{object_key}}",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "buckets",
+                                "{{bucket_name}}",
+                                "{{object_key}}"
+                            ]
+                        },
+                        "description": "Delete an object from the bucket."
+                    }
+                }
+            ]
+        },
+        {
+            "name": "4. Complete Flow Tests",
+            "description": "End-to-end test scenarios for the full API workflow",
+            "item": [
+                {
+                    "name": "Flow 1: Basic CRUD",
+                    "item": [
+                        {
+                            "name": "1.1 Create Bucket",
+                            "event": [
+                                {
+                                    "listen": "prerequest",
+                                    "script": {
+                                        "exec": [
+                                            "pm.environment.set('flow_bucket', 'flow-test-' + Date.now());"
+                                        ],
+                                        "type": "text/javascript"
+                                    }
+                                },
+                                {
+                                    "listen": "test",
+                                    "script": {
+                                        "exec": [
+                                            "pm.test('Bucket created', function () {",
+                                            "    pm.response.to.have.status(201);",
+                                            "});"
+                                        ],
+                                        "type": "text/javascript"
+                                    }
+                                }
+                            ],
+                            "request": {
+                                "method": "PUT",
+                                "header": [
+                                    {
+                                        "key": "Content-Type",
+                                        "value": "application/json"
+                                    }
+                                ],
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{}"
+                                },
+                                "url": {
+                                    "raw": "{{base_url}}/api/v1/buckets/{{flow_bucket}}",
+                                    "host": [
+                                        "{{base_url}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "v1",
+                                        "buckets",
+                                        "{{flow_bucket}}"
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            "name": "1.2 Upload File",
+                            "event": [
+                                {
+                                    "listen": "test",
+                                    "script": {
+                                        "exec": [
+                                            "pm.test('File uploaded', function () {",
+                                            "    pm.response.to.have.status(201);",
+                                            "    const jsonData = pm.response.json();",
+                                            "    pm.environment.set('flow_etag', jsonData.etag);",
+                                            "});"
+                                        ],
+                                        "type": "text/javascript"
+                                    }
+                                }
+                            ],
+                            "request": {
+                                "method": "PUT",
+                                "header": [
+                                    {
+                                        "key": "Content-Type",
+                                        "value": "text/plain"
+                                    }
+                                ],
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "Test content for flow test - {{$timestamp}}"
+                                },
+                                "url": {
+                                    "raw": "{{base_url}}/api/v1/buckets/{{flow_bucket}}/test.txt",
+                                    "host": [
+                                        "{{base_url}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "v1",
+                                        "buckets",
+                                        "{{flow_bucket}}",
+                                        "test.txt"
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            "name": "1.3 Verify Upload (List)",
+                            "event": [
+                                {
+                                    "listen": "test",
+                                    "script": {
+                                        "exec": [
+                                            "pm.test('File appears in listing', function () {",
+                                            "    pm.response.to.have.status(200);",
+                                            "    const jsonData = pm.response.json();",
+                                            "    const testFile = jsonData.contents.find(obj => obj.key === 'test.txt');",
+                                            "    pm.expect(testFile).to.not.be.undefined;",
+                                            "});"
+                                        ],
+                                        "type": "text/javascript"
+                                    }
+                                }
+                            ],
+                            "request": {
+                                "method": "GET",
+                                "header": [],
+                                "url": {
+                                    "raw": "{{base_url}}/api/v1/buckets/{{flow_bucket}}?list",
+                                    "host": [
+                                        "{{base_url}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "v1",
+                                        "buckets",
+                                        "{{flow_bucket}}"
+                                    ],
+                                    "query": [
+                                        {
+                                            "key": "list",
+                                            "value": null
+                                        }
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            "name": "1.4 Download File",
+                            "event": [
+                                {
+                                    "listen": "test",
+                                    "script": {
+                                        "exec": [
+                                            "pm.test('File downloaded', function () {",
+                                            "    pm.response.to.have.status(200);",
+                                            "    pm.expect(pm.response.text()).to.include('Test content for flow test');",
+                                            "});"
+                                        ],
+                                        "type": "text/javascript"
+                                    }
+                                }
+                            ],
+                            "request": {
+                                "method": "GET",
+                                "header": [],
+                                "url": {
+                                    "raw": "{{base_url}}/api/v1/buckets/{{flow_bucket}}/test.txt",
+                                    "host": [
+                                        "{{base_url}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "v1",
+                                        "buckets",
+                                        "{{flow_bucket}}",
+                                        "test.txt"
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            "name": "1.5 Delete File",
+                            "event": [
+                                {
+                                    "listen": "test",
+                                    "script": {
+                                        "exec": [
+                                            "pm.test('File deleted', function () {",
+                                            "    pm.response.to.have.status(204);",
+                                            "});"
+                                        ],
+                                        "type": "text/javascript"
+                                    }
+                                }
+                            ],
+                            "request": {
+                                "method": "DELETE",
+                                "header": [],
+                                "url": {
+                                    "raw": "{{base_url}}/api/v1/buckets/{{flow_bucket}}/test.txt",
+                                    "host": [
+                                        "{{base_url}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "v1",
+                                        "buckets",
+                                        "{{flow_bucket}}",
+                                        "test.txt"
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            "name": "1.6 Delete Bucket",
+                            "event": [
+                                {
+                                    "listen": "test",
+                                    "script": {
+                                        "exec": [
+                                            "pm.test('Bucket deleted', function () {",
+                                            "    pm.response.to.have.status(204);",
+                                            "});",
+                                            "",
+                                            "// Cleanup",
+                                            "pm.environment.unset('flow_bucket');",
+                                            "pm.environment.unset('flow_etag');"
+                                        ],
+                                        "type": "text/javascript"
+                                    }
+                                }
+                            ],
+                            "request": {
+                                "method": "DELETE",
+                                "header": [],
+                                "url": {
+                                    "raw": "{{base_url}}/api/v1/buckets/{{flow_bucket}}",
+                                    "host": [
+                                        "{{base_url}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "v1",
+                                        "buckets",
+                                        "{{flow_bucket}}"
+                                    ]
+                                }
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Flow 2: Nested Objects",
+                    "item": [
+                        {
+                            "name": "2.1 Create Bucket",
+                            "event": [
+                                {
+                                    "listen": "prerequest",
+                                    "script": {
+                                        "exec": [
+                                            "pm.environment.set('nested_bucket', 'nested-test-' + Date.now());"
+                                        ],
+                                        "type": "text/javascript"
+                                    }
+                                },
+                                {
+                                    "listen": "test",
+                                    "script": {
+                                        "exec": [
+                                            "pm.test('Bucket created', function () {",
+                                            "    pm.response.to.have.status(201);",
+                                            "});"
+                                        ],
+                                        "type": "text/javascript"
+                                    }
+                                }
+                            ],
+                            "request": {
+                                "method": "PUT",
+                                "header": [
+                                    {
+                                        "key": "Content-Type",
+                                        "value": "application/json"
+                                    }
+                                ],
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{}"
+                                },
+                                "url": {
+                                    "raw": "{{base_url}}/api/v1/buckets/{{nested_bucket}}",
+                                    "host": [
+                                        "{{base_url}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "v1",
+                                        "buckets",
+                                        "{{nested_bucket}}"
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            "name": "2.2 Upload to images/",
+                            "event": [
+                                {
+                                    "listen": "test",
+                                    "script": {
+                                        "exec": [
+                                            "pm.test('File uploaded', function () {",
+                                            "    pm.response.to.have.status(201);",
+                                            "});"
+                                        ],
+                                        "type": "text/javascript"
+                                    }
+                                }
+                            ],
+                            "request": {
+                                "method": "PUT",
+                                "header": [
+                                    {
+                                        "key": "Content-Type",
+                                        "value": "text/plain"
+                                    }
+                                ],
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "Image placeholder content"
+                                },
+                                "url": {
+                                    "raw": "{{base_url}}/api/v1/buckets/{{nested_bucket}}/images/photo.jpg",
+                                    "host": [
+                                        "{{base_url}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "v1",
+                                        "buckets",
+                                        "{{nested_bucket}}",
+                                        "images",
+                                        "photo.jpg"
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            "name": "2.3 Upload to documents/",
+                            "event": [
+                                {
+                                    "listen": "test",
+                                    "script": {
+                                        "exec": [
+                                            "pm.test('File uploaded', function () {",
+                                            "    pm.response.to.have.status(201);",
+                                            "});"
+                                        ],
+                                        "type": "text/javascript"
+                                    }
+                                }
+                            ],
+                            "request": {
+                                "method": "PUT",
+                                "header": [
+                                    {
+                                        "key": "Content-Type",
+                                        "value": "text/plain"
+                                    }
+                                ],
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "Document content"
+                                },
+                                "url": {
+                                    "raw": "{{base_url}}/api/v1/buckets/{{nested_bucket}}/documents/report.pdf",
+                                    "host": [
+                                        "{{base_url}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "v1",
+                                        "buckets",
+                                        "{{nested_bucket}}",
+                                        "documents",
+                                        "report.pdf"
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            "name": "2.4 List with Delimiter",
+                            "event": [
+                                {
+                                    "listen": "test",
+                                    "script": {
+                                        "exec": [
+                                            "pm.test('Returns common prefixes', function () {",
+                                            "    pm.response.to.have.status(200);",
+                                            "    const jsonData = pm.response.json();",
+                                            "    pm.expect(jsonData.commonPrefixes).to.be.an('array');",
+                                            "    const prefixes = jsonData.commonPrefixes.map(p => p.prefix);",
+                                            "    pm.expect(prefixes).to.include('images/');",
+                                            "    pm.expect(prefixes).to.include('documents/');",
+                                            "});"
+                                        ],
+                                        "type": "text/javascript"
+                                    }
+                                }
+                            ],
+                            "request": {
+                                "method": "GET",
+                                "header": [],
+                                "url": {
+                                    "raw": "{{base_url}}/api/v1/buckets/{{nested_bucket}}?list&delimiter=/",
+                                    "host": [
+                                        "{{base_url}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "v1",
+                                        "buckets",
+                                        "{{nested_bucket}}"
+                                    ],
+                                    "query": [
+                                        {
+                                            "key": "list",
+                                            "value": null
+                                        },
+                                        {
+                                            "key": "delimiter",
+                                            "value": "/"
+                                        }
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            "name": "2.5 List images/ Prefix",
+                            "event": [
+                                {
+                                    "listen": "test",
+                                    "script": {
+                                        "exec": [
+                                            "pm.test('Returns only images', function () {",
+                                            "    pm.response.to.have.status(200);",
+                                            "    const jsonData = pm.response.json();",
+                                            "    pm.expect(jsonData.contents.length).to.equal(1);",
+                                            "    pm.expect(jsonData.contents[0].key).to.equal('images/photo.jpg');",
+                                            "});"
+                                        ],
+                                        "type": "text/javascript"
+                                    }
+                                }
+                            ],
+                            "request": {
+                                "method": "GET",
+                                "header": [],
+                                "url": {
+                                    "raw": "{{base_url}}/api/v1/buckets/{{nested_bucket}}?list&prefix=images/",
+                                    "host": [
+                                        "{{base_url}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "v1",
+                                        "buckets",
+                                        "{{nested_bucket}}"
+                                    ],
+                                    "query": [
+                                        {
+                                            "key": "list",
+                                            "value": null
+                                        },
+                                        {
+                                            "key": "prefix",
+                                            "value": "images/"
+                                        }
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            "name": "2.6 Cleanup - Delete Objects",
+                            "event": [
+                                {
+                                    "listen": "test",
+                                    "script": {
+                                        "exec": [
+                                            "pm.test('File deleted', function () {",
+                                            "    pm.response.to.have.status(204);",
+                                            "});"
+                                        ],
+                                        "type": "text/javascript"
+                                    }
+                                }
+                            ],
+                            "request": {
+                                "method": "DELETE",
+                                "header": [],
+                                "url": {
+                                    "raw": "{{base_url}}/api/v1/buckets/{{nested_bucket}}/images/photo.jpg",
+                                    "host": [
+                                        "{{base_url}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "v1",
+                                        "buckets",
+                                        "{{nested_bucket}}",
+                                        "images",
+                                        "photo.jpg"
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            "name": "2.7 Cleanup - Delete More",
+                            "event": [
+                                {
+                                    "listen": "test",
+                                    "script": {
+                                        "exec": [
+                                            "pm.test('File deleted', function () {",
+                                            "    pm.response.to.have.status(204);",
+                                            "});"
+                                        ],
+                                        "type": "text/javascript"
+                                    }
+                                }
+                            ],
+                            "request": {
+                                "method": "DELETE",
+                                "header": [],
+                                "url": {
+                                    "raw": "{{base_url}}/api/v1/buckets/{{nested_bucket}}/documents/report.pdf",
+                                    "host": [
+                                        "{{base_url}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "v1",
+                                        "buckets",
+                                        "{{nested_bucket}}",
+                                        "documents",
+                                        "report.pdf"
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            "name": "2.8 Cleanup - Delete Bucket",
+                            "event": [
+                                {
+                                    "listen": "test",
+                                    "script": {
+                                        "exec": [
+                                            "pm.test('Bucket deleted', function () {",
+                                            "    pm.response.to.have.status(204);",
+                                            "});",
+                                            "pm.environment.unset('nested_bucket');"
+                                        ],
+                                        "type": "text/javascript"
+                                    }
+                                }
+                            ],
+                            "request": {
+                                "method": "DELETE",
+                                "header": [],
+                                "url": {
+                                    "raw": "{{base_url}}/api/v1/buckets/{{nested_bucket}}",
+                                    "host": [
+                                        "{{base_url}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "v1",
+                                        "buckets",
+                                        "{{nested_bucket}}"
+                                    ]
+                                }
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "5. Error Cases",
+            "description": "Test error handling and edge cases",
+            "item": [
+                {
+                    "name": "Get Non-Existent Bucket",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Returns 404', function () {",
+                                    "    pm.response.to.have.status(404);",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "HEAD",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/buckets/non-existent-bucket-12345",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "buckets",
+                                "non-existent-bucket-12345"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Get Non-Existent Object",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Returns 404', function () {",
+                                    "    pm.response.to.have.status(404);",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/buckets/{{bucket_name}}/non-existent-file.txt",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "buckets",
+                                "{{bucket_name}}",
+                                "non-existent-file.txt"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Create Bucket with Invalid Name",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Returns 400', function () {",
+                                    "    pm.response.to.have.status(400);",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/buckets/INVALID_BUCKET_NAME!",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "buckets",
+                                "INVALID_BUCKET_NAME!"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Delete Non-Empty Bucket",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Returns 409 Conflict', function () {",
+                                    "    pm.response.to.have.status(409);",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "DELETE",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/buckets/{{bucket_name}}",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "buckets",
+                                "{{bucket_name}}"
+                            ]
+                        },
+                        "description": "Attempting to delete a non-empty bucket should fail. First upload a file to test-bucket."
+                    }
+                }
+            ]
+        }
+    ]
+}

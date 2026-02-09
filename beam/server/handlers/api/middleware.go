@@ -87,17 +87,10 @@ func (m *APIAuthMiddleware) Middleware(next http.Handler) http.Handler {
 			return
 		}
 
-		// Verify signature
-		// Note: TODO:  I will need to reconstruct the secret from a secure store
-		// For now, we verify by regenerating the signature with the stored hash
-		// This is a simplified approach - a full implementation would use proper HMAC verification
-		expectedSignature := crypto.GenerateSignature(apiKey.SecretHash, r.Method, r.URL.Path, timestamp)
-		if signature != expectedSignature {
-			// For development/testing, also accept direct secret key verification
-			if !crypto.VerifySignature(apiKey.SecretHash, r.Method, r.URL.Path, timestamp, signature) {
-				sendAPIError(w, "SignatureMismatch", "Invalid signature", http.StatusForbidden)
-				return
-			}
+		// Verify signature using the stored secret key
+		if !crypto.VerifySignature(apiKey.SecretKey, r.Method, r.URL.Path, timestamp, signature) {
+			sendAPIError(w, "SignatureMismatch", "Invalid signature", http.StatusForbidden)
+			return
 		}
 
 		// Update last used timestamp (async to not slow down request)
@@ -160,5 +153,5 @@ func (m *APIAuthMiddleware) verifyPresignedToken(r *http.Request, token string) 
 	}
 
 	// Verify token
-	return crypto.VerifyPresignedToken(apiKey.SecretHash, r.Method, bucket, key, expiresAt, token)
+	return crypto.VerifyPresignedToken(apiKey.SecretKey, r.Method, bucket, key, expiresAt, token)
 }

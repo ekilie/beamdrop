@@ -51,10 +51,13 @@ func main() {
 	logger.Info("Starting server with shared directory: %s", *sharedDir)
 
 	srv := server.New(*sharedDir, flags)
-	err:=config.CreateTrashBin(*sharedDir)
+
+	err := config.CreateTrashBin(*sharedDir)
+
 	if err != nil{
 		logger.Fatal("Failed to create trash bin: %v", err)
 	}
+
 	if err := srv.Start(); err != nil {
 		logger.Fatal("Server error: %v", err)
 	}

@@ -88,7 +88,7 @@ func (m *APIAuthMiddleware) Middleware(next http.Handler) http.Handler {
 		}
 
 		// Verify signature
-		// Note: In production, you'd need to reconstruct the secret from a secure store
+		// Note: TODO:  I will need to reconstruct the secret from a secure store
 		// For now, we verify by regenerating the signature with the stored hash
 		// This is a simplified approach - a full implementation would use proper HMAC verification
 		expectedSignature := crypto.GenerateSignature(apiKey.SecretHash, r.Method, r.URL.Path, timestamp)

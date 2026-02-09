@@ -6,7 +6,6 @@ import (
 	"errors"
 	"time"
 
-	"github.com/tachRoutine/beamdrop-go/pkg/crypto"
 	"github.com/tachRoutine/beamdrop-go/pkg/logger"
 	"gorm.io/gorm"
 )
@@ -16,8 +15,8 @@ type APIKey struct {
 	ID          uint       `gorm:"primaryKey" json:"id"`
 	Name        string     `gorm:"size:255;not null" json:"name"`
 	AccessKeyID string     `gorm:"column:access_key_id;uniqueIndex;size:24;not null" json:"accessKeyId"`
-	SecretHash  string     `gorm:"column:secret_hash;size:64;not null" json:"-"` // Stored as hash
-	Permissions string     `gorm:"type:text" json:"permissions"`                 // JSON permissions
+	SecretKey   string     `gorm:"column:secret_key;size:64;not null" json:"-"` // Stored for HMAC verification
+	Permissions string     `gorm:"type:text" json:"permissions"`                // JSON permissions
 	BucketScope string     `gorm:"column:bucket_scope;size:255" json:"bucketScope,omitempty"`
 	ExpiresAt   *time.Time `gorm:"column:expires_at" json:"expiresAt,omitempty"`
 	LastUsedAt  *time.Time `gorm:"column:last_used_at" json:"lastUsedAt,omitempty"`
@@ -56,9 +55,6 @@ func CreateAPIKey(name string, permissions string, bucketScope string, expiresIn
 		return nil, "", err
 	}
 
-	// Hash the secret key for storage
-	secretHash := crypto.HashSecret(secretKey)
-
 	var expiresAt *time.Time
 	if expiresIn != nil {
 		t := time.Now().Add(*expiresIn)
@@ -68,7 +64,7 @@ func CreateAPIKey(name string, permissions string, bucketScope string, expiresIn
 	apiKey := &APIKey{
 		Name:        name,
 		AccessKeyID: accessKeyID,
-		SecretHash:  secretHash,
+		SecretKey:   secretKey, // Store secret for HMAC verification
 		Permissions: permissions,
 		BucketScope: bucketScope,
 		ExpiresAt:   expiresAt,

@@ -11,6 +11,7 @@ import {
   MemoryStick,
   Key,
   Home,
+  Share2,
 } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
@@ -441,6 +442,15 @@ export function AppSidebar({ password = "" }: AppSidebarProps) {
                     >
                       <Home className="w-4 h-4" />
                       <span className="font-mono text-sm">HOME</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      onClick={() => navigate("/shares")}
+                      className={`hover:bg-sidebar-accent ${location.pathname === "/shares" ? "bg-sidebar-accent" : ""}`}
+                    >
+                      <Share2 className="w-4 h-4" />
+                      <span className="font-mono text-sm">SHARES</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                   <SidebarMenuItem>

@@ -13,7 +13,9 @@ import { AuthProvider, useAuth } from "@/context/auth";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
+import ShareAccess from "./pages/ShareAccess";
 import { ApiKeysPage } from "./components/ApiKeysPage";
+import { SharesManagementPage } from "./components/SharesManagementPage";
 import { Menu, LogOut, Loader2 } from "lucide-react";
 
 const queryClient = new QueryClient();
@@ -84,6 +86,7 @@ function MainLayout() {
           <main className="flex-1 overflow-y-auto scrollbar-thin">
             <Routes>
               <Route path="/" element={<Index />} />
+              <Route path="/shares" element={<SharesManagementPage />} />
               <Route path="/api-keys" element={<ApiKeysPage />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
@@ -103,9 +106,17 @@ const App = () => {
           <Sonner />
           <BrowserRouter>
             <AuthProvider>
-              <ProtectedRoute>
-                <MainLayout />
-              </ProtectedRoute>
+              <Routes>
+                {/* Public route for share access - no auth required */}
+                <Route path="/share/:token" element={<ShareAccess />} />
+                
+                {/* Protected routes */}
+                <Route path="*" element={
+                  <ProtectedRoute>
+                    <MainLayout />
+                  </ProtectedRoute>
+                } />
+              </Routes>
             </AuthProvider>
           </BrowserRouter>
         </TooltipProvider>

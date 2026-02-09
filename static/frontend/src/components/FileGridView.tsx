@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
-import { Download, Trash2, Star, Eye, Folder, MoreVertical, Edit, Copy, Move } from "lucide-react";
+import { Download, Trash2, Star, Eye, Folder, MoreVertical, Edit, Copy, Move, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -13,6 +13,7 @@ import { getFileIcon } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 import { RenameDialog } from "./RenameDialog";
 import { MoveDialog } from "./MoveDialog";
+import { ShareLinkDialog } from "./ShareLinkDialog";
 
 interface FileItem {
   name: string;
@@ -58,6 +59,10 @@ export const FileGridView: React.FC<FileGridViewProps> = ({
     open: false,
     fileName: "",
     mode: "move",
+  });
+  const [shareDialog, setShareDialog] = useState<{ open: boolean; fileName: string }>({
+    open: false,
+    fileName: "",
   });
 
   const handleFileClick = (file: FileItem) => {
@@ -196,6 +201,16 @@ export const FileGridView: React.FC<FileGridViewProps> = ({
                     <DropdownMenuItem
                       onClick={(e) => {
                         e.stopPropagation();
+                        setShareDialog({ open: true, fileName: file.name });
+                      }}
+                    >
+                      <Share2 className="w-4 h-4 mr-2" />
+                      Share Link
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      onClick={(e) => {
+                        e.stopPropagation();
                         setRenameDialog({ open: true, fileName: file.name });
                       }}
                     >
@@ -254,6 +269,13 @@ export const FileGridView: React.FC<FileGridViewProps> = ({
         currentPath={currentPath}
         onSuccess={onRefresh}
         mode={moveDialog.mode}
+      />
+
+      <ShareLinkDialog
+        open={shareDialog.open}
+        onOpenChange={(open) => setShareDialog({ ...shareDialog, open })}
+        fileName={shareDialog.fileName}
+        currentPath={currentPath}
       />
     </div>
   );

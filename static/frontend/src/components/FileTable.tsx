@@ -31,6 +31,7 @@ import {
   Edit,
   Copy,
   Move,
+  Share2,
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { getFileIcon } from "@/lib/utils";
@@ -38,6 +39,7 @@ import { cn } from "@/lib/utils";
 import { useSettings } from "@/context/settings";
 import { RenameDialog } from "./RenameDialog";
 import { MoveDialog } from "./MoveDialog";
+import { ShareLinkDialog } from "./ShareLinkDialog";
 
 interface FileItem {
   name: string;
@@ -89,6 +91,10 @@ const FileTable: React.FC<FileTableProps> = ({
     open: false,
     fileName: "",
     mode: "move",
+  });
+  const [shareDialog, setShareDialog] = useState<{ open: boolean; fileName: string }>({
+    open: false,
+    fileName: "",
   });
 
   if (!showHiddenFiles) {
@@ -392,6 +398,16 @@ const FileTable: React.FC<FileTableProps> = ({
                           <DropdownMenuItem
                             onClick={(e) => {
                               e.stopPropagation();
+                              setShareDialog({ open: true, fileName: file.name });
+                            }}
+                          >
+                            <Share2 className="w-4 h-4 mr-2" />
+                            Share Link
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            onClick={(e) => {
+                              e.stopPropagation();
                               setRenameDialog({ open: true, fileName: file.name });
                             }}
                           >
@@ -450,6 +466,13 @@ const FileTable: React.FC<FileTableProps> = ({
         currentPath={currentPath}
         onSuccess={onRefresh}
         mode={moveDialog.mode}
+      />
+
+      <ShareLinkDialog
+        open={shareDialog.open}
+        onOpenChange={(open) => setShareDialog({ ...shareDialog, open })}
+        fileName={shareDialog.fileName}
+        currentPath={currentPath}
       />
     </>
   );

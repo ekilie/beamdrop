@@ -18,8 +18,8 @@ import {
   Minimize,
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
-import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { oneLight, oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import Prism from 'prismjs';
+import 'prismjs/themes/prism-tomorrow.css';
 import { getFileIcon } from "@/lib/utils";
 import { useTheme } from "./ThemeProvider";
 import { EnhancedVideoPlayer } from "./EnhancedVideoPlayer";
@@ -43,13 +43,21 @@ export function FilePreview({ fileName, isOpen, onClose, currentPath = "." }: Fi
   const dialogRef = useRef<HTMLDivElement>(null);
 
   const fileExt = fileName.split(".").pop()?.toLowerCase() || "";
-  
+
   const isImage = ["jpg", "jpeg", "png", "gif", "webp", "svg", "bmp"].includes(fileExt);
   const isPdf = fileExt === "pdf";
-  const isVideo = ["mp4","mkv", "avi", "mov", "wmv", "flv", "webm"].includes(fileExt);
+  const isVideo = ["mp4", "mkv", "avi", "mov", "wmv", "flv", "webm"].includes(fileExt);
   const isAudio = ["mp3", "wav", "ogg", "flac", "aac"].includes(fileExt);
   const isText = ["txt", "md", "json", "xml", "csv", "log"].includes(fileExt);
   const isCode = ["js", "ts", "tsx", "jsx", "py", "java", "vint", "go", "php", "rb", "html", "css", "scss"].includes(fileExt);
+
+  useEffect(() => {
+    if (isCode && fileContent) {
+      setTimeout(() => {
+        Prism.highlightAll();
+      }, 0);
+    }
+  }, [fileContent, isCode]);
 
   useEffect(() => {
     if (isOpen) {
@@ -205,11 +213,11 @@ export function FilePreview({ fileName, isOpen, onClose, currentPath = "." }: Fi
     if (isText || isCode) {
       return (
         <div className="w-full">
-          <TextFilePreview 
+          <TextFilePreview
             key={refreshKey}
-            fileName={fileName} 
+            fileName={fileName}
             currentPath={currentPath}
-            onLoad={() => setLoading(false)} 
+            onLoad={() => setLoading(false)}
             onError={(err) => {
               setError(err);
               setLoading(false);
@@ -243,7 +251,7 @@ export function FilePreview({ fileName, isOpen, onClose, currentPath = "." }: Fi
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent 
+      <DialogContent
         ref={dialogRef}
         className="max-w-5xl max-h-[95vh] bg-card border-2 border-border overflow-hidden [&>button]:hidden"
       >
@@ -430,16 +438,10 @@ function TextFilePreview({ fileName, currentPath = ".", onLoad, onError, onConte
 
   const fileExt = fileName.split(".").pop()?.toLowerCase() || "";
   const isCode = ["js", "ts", "tsx", "jsx", "py", "java", "go", "php", "rb", "html", "css", "scss", "json", "xml", "yml", "yaml", "md", "sh", "bash", "c", "cpp", "cc", "cxx", "h", "hpp", "rs", "vue", "swift", "kt", "kts", "sql", "dockerfile"].includes(fileExt);
-  
+
   // Get the appropriate icon from the getFileIcon function
   const fileIcon = getFileIcon(fileName);
-  
-  // Determine the current effective theme
-  const currentTheme = theme === "system" 
-    ? (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light")
-    : theme;
 
-  const syntaxTheme = currentTheme === "dark" ? oneDark : oneLight;
   const language = getLanguageFromExtension(fileExt);
 
   return (
@@ -458,42 +460,13 @@ function TextFilePreview({ fileName, currentPath = ".", onLoad, onError, onConte
         )}
       </div>
       <div className="bg-background border-2 border-border rounded-lg overflow-hidden shadow-sm">
-        {isCode ? (
-          <SyntaxHighlighter
-            language={language}
-            style={syntaxTheme}
-            customStyle={{
-              margin: 0,
-              padding: '16px',
-              fontSize: '14px',
-              maxHeight: '50vh',
-              backgroundColor: 'transparent',
-              fontFamily: 'ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", Menlo, monospace',
-            }}
-            codeTagProps={{
-              style: {
-                fontFamily: 'inherit',
-              }
-            }}
-            wrapLines={true}
-            wrapLongLines={true}
-            showLineNumbers={content.split('\n').length > 1}
-            lineNumberStyle={{
-              minWidth: '3em',
-              paddingRight: '1em',
-              color: currentTheme === 'dark' ? '#6b7280' : '#9ca3af',
-              borderRight: `1px solid ${currentTheme === 'dark' ? '#374151' : '#e5e7eb'}`,
-            }}
-          >
-            {content}
-          </SyntaxHighlighter>
-        ) : (
-          <div className="p-4 max-h-[50vh] overflow-auto scrollbar-thin">
-            <pre className="text-sm font-mono text-foreground whitespace-pre-wrap">
+        <div className="p-4 max-h-[50vh] overflow-auto scrollbar-thin bg-muted/30">
+          <pre className={`text-sm font-mono ${isCode ? 'language-' + language : ''} whitespace-pre-wrap`}>
+            <code className={isCode ? `language-${language}` : undefined}>
               {content}
-            </pre>
-          </div>
-        )}
+            </code>
+          </pre>
+        </div>
       </div>
     </div>
   );

@@ -220,7 +220,7 @@ export function ShareLinkDialog({
               <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-md">
                 <p className="text-sm text-blue-700 dark:text-blue-400 flex items-center gap-2">
                   <Calendar className="w-4 h-4" />
-                  This link will expire in {expiresIn} hour{parseFloat(expiresIn) !== 1 ? 's' : ''}
+                  This link will expire in {expiresIn} hour{parseFloat(expiresIn) === 1 ? '' : 's'}
                 </p>
               </div>
             )}

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -39,7 +39,7 @@ export default function ShareAccess() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchShareInfo = async (pwd?: string) => {
+  const fetchShareInfo = useCallback(async (pwd?: string) => {
     if (!token) return;
 
     setIsLoading(true);
@@ -109,11 +109,11 @@ export default function ShareAccess() {
         variant: "destructive",
       });
     }
-  };
+  }, [token]);
 
   useEffect(() => {
     fetchShareInfo();
-  }, [token]);
+  }, [fetchShareInfo]);
 
   const handlePasswordSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -280,7 +280,7 @@ export default function ShareAccess() {
           
           <div className="mt-4 text-center">
             <Button onClick={() => navigate("/")} variant="outline">
-              Go to BeamDrop
+              Go to Beamdrop
             </Button>
           </div>
         </div>

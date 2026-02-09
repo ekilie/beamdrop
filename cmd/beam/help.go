@@ -13,11 +13,22 @@ Usage:
 Options:
   -dir string
 		Directory to share files from (default ".")
-  -h, --help
-  -v, --v 
-  		version
-  --no-qr 
-  		Disable QR code generation`
+  -port int
+		Set the port that beamdrop will run on (default: auto-detect)
+  -p string
+		Password for authentication
+  -tls-cert string
+		Path to TLS certificate file for HTTPS
+  -tls-key string
+		Path to TLS private key file for HTTPS
+  -allowed-origins string
+		Comma-separated list of allowed CORS origins (empty = CORS disabled for security)
+  -no-qr
+		Disable QR code generation
+  -h
+		Show this help message
+  -v
+		Show version information`
 }
 
 func PrintHelp() {

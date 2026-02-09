@@ -12,6 +12,11 @@ Beamdrop is a simple, self-hosted file sharing server built with Go and React. I
 - Password authentication support
 - QR code generation for easy access
 - Cross-platform support
+- **Security features**:
+  - HTTPS/TLS support for encrypted connections
+  - Configurable CORS with strict defaults (disabled by default)
+  - Security headers (HSTS, CSP, X-Frame-Options, etc.)
+  - HTTP method restrictions on all endpoints
 
 ## Installation
 
@@ -33,9 +38,14 @@ Available flags:
 - `-dir` - Directory to share files from (default: current directory)
 - `-port` - Port to run on (default: auto-detect available port)
 - `-p` - Password for authentication
+- `-tls-cert` - Path to TLS certificate file for HTTPS
+- `-tls-key` - Path to TLS private key file for HTTPS
+- `-allowed-origins` - Comma-separated list of allowed CORS origins (empty = disabled for security)
 - `-no-qr` - Disable QR code generation
 - `-v` - Show version information
 - `-h` - Show help message
+
+For more details on security features, see [docs/SECURITY.md](docs/SECURITY.md).
 
 ## Development
 

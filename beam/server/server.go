@@ -4,11 +4,14 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"os"
+	"strings"
 
 	"github.com/tachRoutine/beamdrop-go/config"
 	"github.com/tachRoutine/beamdrop-go/pkg/auth"
 	"github.com/tachRoutine/beamdrop-go/pkg/db"
 	"github.com/tachRoutine/beamdrop-go/pkg/logger"
+	"github.com/tachRoutine/beamdrop-go/pkg/middleware"
 	"github.com/tachRoutine/beamdrop-go/pkg/qr"
 )
 
@@ -38,8 +41,22 @@ func New(sharedDir string, flags config.Flags) *Server {
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// Increment request counter
 	db.IncrementRequests()
+	
+	// Build middleware chain
+	var handler http.Handler = s.mux
+	
 	// Apply auth middleware
-	s.authMiddleware.Middleware(s.mux).ServeHTTP(w, r)
+	handler = s.authMiddleware.Middleware(handler)
+	
+	// Apply CORS middleware
+	corsConfig := s.getCORSConfig()
+	handler = middleware.CORS(corsConfig)(handler)
+	
+	// Apply security headers middleware
+	enableHSTS := s.flags.TLSCert != "" && s.flags.TLSKey != ""
+	handler = middleware.SecurityHeaders(enableHSTS)(handler)
+	
+	handler.ServeHTTP(w, r)
 }
 
 func (s *Server) Start() error {
@@ -51,13 +68,42 @@ func (s *Server) Start() error {
 
 	port := s.getPort()
 	ip := GetLocalIP()
-	url := fmt.Sprintf("http://%s:%d", ip, port)
+	
+	// Determine protocol based on TLS configuration
+	protocol := "http"
+	if s.flags.TLSCert != "" && s.flags.TLSKey != "" {
+		protocol = "https"
+	}
+	
+	url := fmt.Sprintf("%s://%s:%d", protocol, ip, port)
 
 	if !s.flags.NoQR {
 		qr.ShowQrCode(url)
 	}
 
+	// Log CORS configuration
+	if s.flags.AllowedOrigins != "" {
+		logger.Info("CORS enabled for origins: %s", s.flags.AllowedOrigins)
+	} else {
+		logger.Info("CORS is disabled (most secure for local file sharing)")
+	}
+
 	logger.Info("Server started at %s sharing directory: %s", url, s.sharedDir)
+	
+	// Start with TLS if configured
+	if s.flags.TLSCert != "" && s.flags.TLSKey != "" {
+		// Validate that TLS files exist
+		if _, err := os.Stat(s.flags.TLSCert); os.IsNotExist(err) {
+			logger.Fatal("TLS certificate file not found: %s", s.flags.TLSCert)
+		}
+		if _, err := os.Stat(s.flags.TLSKey); os.IsNotExist(err) {
+			logger.Fatal("TLS key file not found: %s", s.flags.TLSKey)
+		}
+		
+		logger.Info("Starting server with TLS enabled")
+		return http.ListenAndServeTLS(fmt.Sprintf(":%d", port), s.flags.TLSCert, s.flags.TLSKey, s)
+	}
+	
 	return http.ListenAndServe(fmt.Sprintf(":%d", port), s)
 }
 
@@ -101,4 +147,20 @@ func GetLocalIP() string {
 	logger.Warn("No local IP found, using localhost")
 	logger.Info("This might be due to no active network connection.")
 	return "localhost"
+}
+
+// getCORSConfig returns CORS configuration based on flags
+func (s *Server) getCORSConfig() middleware.CORSConfig {
+	config := middleware.DefaultCORSConfig()
+	
+	// Parse allowed origins from comma-separated string
+	if s.flags.AllowedOrigins != "" {
+		origins := strings.Split(s.flags.AllowedOrigins, ",")
+		for i, origin := range origins {
+			origins[i] = strings.TrimSpace(origin)
+		}
+		config.AllowedOrigins = origins
+	}
+	
+	return config
 }

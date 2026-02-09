@@ -15,6 +15,9 @@ func main() {
 	help := flag.Bool("h", false, "Show help message")
 	password := flag.String("p", "", "Password authentication")
 	versionFlag := flag.Bool("v", false, "Show version information")
+	tlsCert := flag.String("tls-cert", "", "Path to TLS certificate file for HTTPS")
+	tlsKey := flag.String("tls-key", "", "Path to TLS private key file for HTTPS")
+	allowedOrigins := flag.String("allowed-origins", "", "Comma-separated list of allowed CORS origins (empty = CORS disabled)")
 
 	// NOTE:Here i default it to 0 so when it zero we know that the flag wasnt passed
 	// Since the flag is a non-boolean value
@@ -26,11 +29,14 @@ func main() {
 	flag.Parse()
 
 	flags := config.Flags{
-		SharedDir: *sharedDir,
-		NoQR:      *noQR,
-		Help:      *help,
-		Password:  *password,
-		Port:      *port,
+		SharedDir:      *sharedDir,
+		NoQR:           *noQR,
+		Help:           *help,
+		Password:       *password,
+		Port:           *port,
+		TLSCert:        *tlsCert,
+		TLSKey:         *tlsKey,
+		AllowedOrigins: *allowedOrigins,
 	}
 
 	if flag.NArg() > 0 {

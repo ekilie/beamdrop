@@ -50,11 +50,14 @@ type Config struct {
 }
 
 type Flags struct {
-	SharedDir string
-	NoQR      bool
-	Port      int
-	Help      bool
-	Password  string
+	SharedDir      string
+	NoQR           bool
+	Port           int
+	Help           bool
+	Password       string
+	TLSCert        string
+	TLSKey         string
+	AllowedOrigins string // Comma-separated list of allowed CORS origins
 }
 
 func GetDBPath() string {

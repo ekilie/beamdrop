@@ -11,6 +11,7 @@ Beamdrop is a simple, self-hosted file sharing server built with Go and React. I
 - Real-time statistics via WebSocket
 - Password authentication support
 - QR code generation for easy access
+- **Shareable Links**: Generate unique links to share files/folders with optional password protection and expiry
 - Cross-platform support
 - **Security features**:
   - HTTPS/TLS support for encrypted connections
@@ -46,6 +47,42 @@ Available flags:
 - `-h` - Show help message
 
 For more details on security features, see [docs/SECURITY.md](docs/SECURITY.md).
+
+## Shareable Links
+
+Beamdrop supports creating shareable links for files and folders, similar to Google Drive:
+
+### Creating a Shareable Link
+
+1. Navigate to the file browser
+2. Right-click on a file or folder and select "Share Link" from the context menu
+3. Configure optional settings:
+   - **Password**: Protect the link with a password
+   - **Expiry**: Set when the link should expire (in hours)
+4. Click "Generate Link" to create the shareable URL
+5. Copy the link and share it with others
+
+### Managing Shareable Links
+
+- View all active shareable links in the "Shares" section of the sidebar
+- See access statistics including view count
+- Delete links when they're no longer needed
+- Links are automatically removed after expiration
+
+### Security Considerations
+
+- Password-protected links require the correct password to access
+- Expired links are automatically rejected
+- Access to shareable links is tracked for monitoring
+- Links can be revoked at any time by deleting them
+- Public share links bypass authentication but can still be password-protected
+
+### API Endpoints
+
+- `POST /api/shares` - Create a new shareable link
+- `GET /api/shares/list` - List all shareable links
+- `DELETE /api/shares/delete?token=<token>` - Delete a shareable link
+- `GET /share/<token>` - Public access endpoint (no auth required)
 
 ## Development
 

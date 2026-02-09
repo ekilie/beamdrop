@@ -70,6 +70,51 @@ func (h *FileOperationsHandler) Move(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+func (h *FileOperationsHandler) Trash(w http.ResponseWriter, r *http.Request) {
+	trashBinPath := filepath.Join(h.sharedDir, ".beamdrop_trash")
+	if r.Method != "POST" {
+		sendJSONError(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var req struct {
+		SourcePath string `json:"sourcePath"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		logger.Error("Invalid move request: %v", err)
+		sendJSONError(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	sourcePath, err := ResolvePath(h.sharedDir, req.SourcePath)
+	if err != nil {
+		sendJSONError(w, "Invalid source path", http.StatusBadRequest)
+		return
+	}
+
+	targetPath := filepath.Join(trashBinPath, path.Base(req.SourcePath))
+	trashRelativePath := path.Join(".beamdrop_trash", path.Base(req.SourcePath))
+
+	if _, err := os.Stat(sourcePath); os.IsNotExist(err) {
+		sendJSONError(w, "Source file not found", http.StatusNotFound)
+		return
+	}
+
+	if err := os.Rename(sourcePath, targetPath); err != nil {
+		logger.Error("Failed to move file to trash from %s to %s: %v", sourcePath, targetPath, err)
+		sendJSONError(w, "Failed to move file to trash", http.StatusInternalServerError)
+		return
+	}
+
+	logger.Info("File moved to trash: %s -> %s", req.SourcePath, trashRelativePath)
+	sendJSONSuccess(w, map[string]string{
+		"message": "File moved to trash successfully",
+		"from":    req.SourcePath,
+		"to":      trashRelativePath,
+	})
+}
+
 func (h *FileOperationsHandler) Copy(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "POST" {
 		sendJSONError(w, "Method not allowed", http.StatusMethodNotAllowed)

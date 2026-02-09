@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"path"
+	"strings"
 	"time"
 
 	"github.com/tachRoutine/beamdrop-go/config"
@@ -123,18 +124,24 @@ func (h *FileHandler) Upload(w http.ResponseWriter, r *http.Request) {
 		detectedMIME := http.DetectContentType(buffer[:n])
 		logger.Debug("Detected MIME type: %s for file: %s", detectedMIME, header.Filename)
 
+		// Extract base MIME type (remove parameters like charset)
+		baseMIME := detectedMIME
+		if idx := strings.Index(detectedMIME, ";"); idx != -1 {
+			baseMIME = strings.TrimSpace(detectedMIME[:idx])
+		}
+
 		// Check if MIME type is allowed
 		allowed := false
 		for _, allowedType := range config.AllowedMIMETypes {
-			if detectedMIME == allowedType {
+			if baseMIME == allowedType {
 				allowed = true
 				break
 			}
 		}
 
 		if !allowed {
-			logger.Error("File type %s not allowed for file: %s", detectedMIME, header.Filename)
-			sendJSONError(w, fmt.Sprintf("File type '%s' is not allowed", detectedMIME), http.StatusUnsupportedMediaType)
+			logger.Error("File type %s not allowed for file: %s", baseMIME, header.Filename)
+			sendJSONError(w, fmt.Sprintf("File type '%s' is not allowed", baseMIME), http.StatusUnsupportedMediaType)
 			return
 		}
 

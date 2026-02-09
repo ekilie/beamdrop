@@ -124,7 +124,7 @@ func (h *ObjectHandler) putObject(w http.ResponseWriter, r *http.Request, bucket
 	logger.Info("Object uploaded: %s/%s (%d bytes)", bucket, key, info.Size)
 
 	w.Header().Set("ETag", `"`+info.ETag+`"`)
-	sendJSON(w, map[string]interface{}{
+	sendJSON(w, map[string]any{
 		"bucket": bucket,
 		"key":    key,
 		"etag":   info.ETag,
@@ -173,7 +173,7 @@ func (h *ObjectHandler) putObjectMultipart(w http.ResponseWriter, r *http.Reques
 	logger.Info("Object uploaded (multipart): %s/%s (%d bytes)", bucket, key, info.Size)
 
 	w.Header().Set("ETag", `"`+info.ETag+`"`)
-	sendJSON(w, map[string]interface{}{
+	sendJSON(w, map[string]any{
 		"bucket": bucket,
 		"key":    key,
 		"etag":   info.ETag,
@@ -254,7 +254,7 @@ func (h *ObjectHandler) listObjects(w http.ResponseWriter, r *http.Request, buck
 		return
 	}
 
-	sendJSON(w, map[string]interface{}{
+	sendJSON(w, map[string]any{
 		"bucket":         bucket,
 		"prefix":         result.Prefix,
 		"delimiter":      result.Delimiter,

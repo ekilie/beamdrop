@@ -71,7 +71,7 @@ func (h *BucketHandler) listBuckets(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response := map[string]interface{}{
+	response := map[string]any{
 		"buckets": buckets,
 		"count":   len(buckets),
 	}
@@ -95,7 +95,7 @@ func (h *BucketHandler) createBucket(w http.ResponseWriter, r *http.Request, nam
 	}
 
 	logger.Info("Bucket created: %s", name)
-	sendJSON(w, map[string]interface{}{
+	sendJSON(w, map[string]any{
 		"bucket":   name,
 		"created":  time.Now().UTC().Format(time.RFC3339),
 		"location": "/api/v1/buckets/" + name,
@@ -137,7 +137,7 @@ func (h *BucketHandler) getBucketInfo(w http.ResponseWriter, r *http.Request, na
 		return
 	}
 
-	sendJSON(w, map[string]interface{}{
+	sendJSON(w, map[string]any{
 		"bucket": name,
 		"exists": true,
 	}, http.StatusOK)
@@ -145,7 +145,7 @@ func (h *BucketHandler) getBucketInfo(w http.ResponseWriter, r *http.Request, na
 
 // Helper functions
 
-func sendJSON(w http.ResponseWriter, data interface{}, status int) {
+func sendJSON(w http.ResponseWriter, data any, status int) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	json.NewEncoder(w).Encode(data)
@@ -154,7 +154,7 @@ func sendJSON(w http.ResponseWriter, data interface{}, status int) {
 func sendAPIError(w http.ResponseWriter, code, message string, status int) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
-	json.NewEncoder(w).Encode(map[string]interface{}{
+	json.NewEncoder(w).Encode(map[string]any{
 		"error": map[string]string{
 			"code":    code,
 			"message": message,

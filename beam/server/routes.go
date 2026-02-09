@@ -52,6 +52,7 @@ func (s *Server) setupRoutes() {
 func (s *Server) setupAPIRoutes() {
 	bucketHandler := api.NewBucketHandler(s.sharedDir)
 	objectHandler := api.NewObjectHandler(s.sharedDir)
+	keysHandler := api.NewKeysHandler()
 
 	// API auth middleware (disabled by default for now - enable with -api-auth flag)
 	apiAuth := api.NewAPIAuthMiddleware(s.flags.APIAuth)
@@ -81,4 +82,7 @@ func (s *Server) setupAPIRoutes() {
 			bucketHandler.Handle(w, r)
 		})).ServeHTTP(w, r)
 	})
+
+	// API key management endpoint (no auth required - managed via web UI with session auth)
+	s.mux.HandleFunc("/api/v1/keys", keysHandler.Handle)
 }

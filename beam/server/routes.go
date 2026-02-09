@@ -31,6 +31,7 @@ func (s *Server) setupRoutes() {
 	s.mux.HandleFunc("/download", fileHandler.Download)
 	s.mux.HandleFunc("/upload", fileHandler.Upload)
 	s.mux.HandleFunc("/move", fileOpsHandler.Move)
+	s.mux.HandleFunc("/trash", fileOpsHandler.Trash)
 	s.mux.HandleFunc("/copy", fileOpsHandler.Copy)
 	s.mux.HandleFunc("/mkdir", fileOpsHandler.Mkdir)
 	s.mux.HandleFunc("/rename", fileOpsHandler.Rename)

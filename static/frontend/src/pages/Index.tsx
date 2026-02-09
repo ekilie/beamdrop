@@ -206,28 +206,32 @@ const Index = () => {
     event.stopPropagation();
     try {
       const filePath = currentPath === "." ? fileName : `${currentPath}/${fileName}`;
-      const response = await fetch(`/delete?file=${encodeURIComponent(filePath)}`, {
-        method: 'DELETE',
+      const response = await fetch('/trash', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ sourcePath: filePath }),
       });
-      
+
       if (response.ok) {
         fetchFiles();
         toast({
-          title: "File Deleted",
-          description: `${fileName} has been deleted.`,
+          title: "Moved to Trash",
+          description: `${fileName} has been moved to trash.`,
         });
       } else {
         const error = await response.json();
         toast({
           title: "Error",
-          description: error.error || "Failed to delete file",
+          description: error.error || "Failed to move file to trash",
           variant: "destructive",
         });
       }
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to delete file",
+        description: "Failed to move file to trash",
         variant: "destructive",
       });
     }
@@ -249,7 +253,7 @@ const Index = () => {
         const result = await response.json();
         // Refresh files list to get updated isStarred status from backend
         await fetchFiles();
-        
+
         // Show appropriate toast message
         const isStarred = result.starred === "true";
         toast({
@@ -342,13 +346,13 @@ const Index = () => {
                   </Button>
                 </div>
                 <CreateFolderDialog currentPath={currentPath} onSuccess={() => fetchFiles()} />
-                <CodeEditorDialog 
-                  currentPath={currentPath} 
+                <CodeEditorDialog
+                  currentPath={currentPath}
                   onSaveSuccess={() => fetchFiles()}
                 />
-                <AdvancedSearch 
-                  currentPath={currentPath} 
-                  onNavigate={handleNavigate} 
+                <AdvancedSearch
+                  currentPath={currentPath}
+                  onNavigate={handleNavigate}
                   onPreview={handlePreview}
                 />
                 <FileUploadDialog />
@@ -427,8 +431,8 @@ const Index = () => {
                   )}
                 </div>
               ) : filteredFiles.length === 0 ? (
-                <EmptyState 
-                  searchTerm={searchTerm} 
+                <EmptyState
+                  searchTerm={searchTerm}
                   onUploadClick={() => setUploadDialogOpen(true)}
                 />
               ) : viewMode === "table" ? (

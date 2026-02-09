@@ -82,7 +82,7 @@ func (h *FileOperationsHandler) Trash(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		logger.Error("Invalid move request: %v", err)
+		logger.Error("Invalid trash request: %v", err)
 		sendJSONError(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}

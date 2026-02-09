@@ -44,6 +44,13 @@ func (s *Server) setupRoutes() {
 	s.mux.HandleFunc("/star", fileOpsHandler.Star)
 	s.mux.HandleFunc("/starred", fileOpsHandler.Starred)
 
+	// Shareable links
+	shareLinkHandler := handlers.NewShareableLinkHandler(s.sharedDir)
+	s.mux.HandleFunc("/api/shares", shareLinkHandler.Create)
+	s.mux.HandleFunc("/api/shares/list", shareLinkHandler.List)
+	s.mux.HandleFunc("/api/shares/delete", shareLinkHandler.Delete)
+	s.mux.HandleFunc("/share/", shareLinkHandler.Access) // Public access endpoint
+
 	// S3-like API endpoints
 	s.setupAPIRoutes()
 }

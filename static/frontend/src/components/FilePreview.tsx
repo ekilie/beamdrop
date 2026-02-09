@@ -285,6 +285,7 @@ export function FilePreview({ fileName, isOpen, onClose, currentPath = "." }: Fi
                 size="sm"
                 onClick={toggleFullscreen}
                 className="shrink-0 sm:hidden p-2"
+                aria-label={isFullscreen ? "Exit fullscreen mode" : "Toggle fullscreen mode"}
               >
                 {isFullscreen ? (
                   <Minimize className="w-4 h-4" />
@@ -319,6 +320,7 @@ export function FilePreview({ fileName, isOpen, onClose, currentPath = "." }: Fi
                         variant="outline"
                         size="sm"
                         className="shrink-0 sm:hidden p-2"
+                        aria-label="Edit file"
                       >
                         <Edit className="w-4 h-4" />
                       </Button>
@@ -340,6 +342,7 @@ export function FilePreview({ fileName, isOpen, onClose, currentPath = "." }: Fi
                 size="sm"
                 onClick={handleDownload}
                 className="shrink-0 sm:hidden p-2"
+                aria-label="Download file"
               >
                 <Download className="w-4 h-4" />
               </Button>

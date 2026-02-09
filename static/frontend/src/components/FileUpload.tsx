@@ -18,6 +18,18 @@ export const FileUpload = ({ onUploadSuccess }: FileUploadProps) => {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
+  const validateFileSize = (file: File): boolean => {
+    if (file.size > MAX_UPLOAD_SIZE) {
+      toast({
+        title: "Error",
+        description: `File is too large. Maximum size is ${(MAX_UPLOAD_SIZE / 1024 / 1024).toFixed(0)}MB`,
+        variant: "destructive",
+      });
+      return false;
+    }
+    return true;
+  };
+
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(true);
@@ -35,29 +47,15 @@ export const FileUpload = ({ onUploadSuccess }: FileUploadProps) => {
     const files = Array.from(e.dataTransfer.files);
     if (files.length > 0) {
       const file = files[0];
-      if (file.size > MAX_UPLOAD_SIZE) {
-        toast({
-          title: "Error",
-          description: `File is too large. Maximum size is ${(MAX_UPLOAD_SIZE / 1024 / 1024).toFixed(0)}MB`,
-          variant: "destructive",
-        });
-        return;
+      if (validateFileSize(file)) {
+        setSelectedFile(file);
       }
-      setSelectedFile(file);
     }
   }, []);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      if (file.size > MAX_UPLOAD_SIZE) {
-        toast({
-          title: "Error",
-          description: `File is too large. Maximum size is ${(MAX_UPLOAD_SIZE / 1024 / 1024).toFixed(0)}MB`,
-          variant: "destructive",
-        });
-        return;
-      }
+    if (file && validateFileSize(file)) {
       setSelectedFile(file);
     }
   };

@@ -47,4 +47,5 @@ cmd/*/*
 !cmd/*/*.json
 
 
-.beamdrop_trash/*/beamdrop
+.beamdrop_trash/*
+/beamdrop

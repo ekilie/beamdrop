@@ -61,6 +61,7 @@ func (s *Server) Start() error {
 	return http.ListenAndServe(fmt.Sprintf(":%d", port), s)
 }
 
+// getPort returns the port to use for the server, either from the flags or by finding an available port
 func (s *Server) getPort() int {
 	// Find an available port from the default ports list
 	port, err := config.FindAvailablePort()

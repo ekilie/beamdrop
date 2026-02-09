@@ -89,6 +89,16 @@ func createConfigDir() {
 	}
 }
 
+// CreateTrashBin creates the trash bin directory if it doesn't exist
+// inside the sharedDir
+func CreateTrashBin(sharedDir string) error{
+	trashBinDir := filepath.Join(sharedDir, ".beamdrop_trash")
+	if err := os.MkdirAll(trashBinDir,0755); err != nil {	
+		return err
+	}
+	return nil
+}
+
 func createConfigDb() {
 	file, err := os.Create(ConfigPath)
 	if err != nil {

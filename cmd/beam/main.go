@@ -43,7 +43,6 @@ func main() {
 		return
 	}
 	if *help {
-		// logger.Debug("Help flag provided, showing help")
 		PrintHelp()
 		return
 	}

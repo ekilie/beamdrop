@@ -32,5 +32,5 @@ Options:
 }
 
 func PrintHelp() {
-	logger.Info(Help())
+	logger.Info("%s", Help())
 }

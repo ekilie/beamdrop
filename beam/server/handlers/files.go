@@ -7,8 +7,10 @@ import (
 	"net/http"
 	"os"
 	"path"
+	"strings"
 	"time"
 
+	"github.com/tachRoutine/beamdrop-go/config"
 	"github.com/tachRoutine/beamdrop-go/pkg/db"
 	"github.com/tachRoutine/beamdrop-go/pkg/logger"
 )
@@ -84,13 +86,72 @@ func (h *FileHandler) Download(w http.ResponseWriter, r *http.Request) {
 
 func (h *FileHandler) Upload(w http.ResponseWriter, r *http.Request) {
 	logger.Info("Upload request received")
+	
+	// Set max upload size limit on the request body
+	r.Body = http.MaxBytesReader(w, r.Body, config.MaxUploadSize)
+	
 	file, header, err := r.FormFile("file")
 	if err != nil {
 		logger.Error("Invalid upload request: %v", err)
+		if err.Error() == "http: request body too large" {
+			sendJSONError(w, fmt.Sprintf("File too large. Maximum size is %s", FormatFileSize(config.MaxUploadSize)), http.StatusRequestEntityTooLarge)
+			return
+		}
 		sendJSONError(w, "Invalid upload", http.StatusBadRequest)
 		return
 	}
 	defer file.Close()
+
+	// Check file size against limit
+	if header.Size > config.MaxUploadSize {
+		logger.Error("File size %d exceeds limit %d", header.Size, config.MaxUploadSize)
+		sendJSONError(w, fmt.Sprintf("File size exceeds maximum allowed size of %s", FormatFileSize(config.MaxUploadSize)), http.StatusRequestEntityTooLarge)
+		return
+	}
+
+	// Validate MIME type if restrictions are configured
+	if len(config.AllowedMIMETypes) > 0 {
+		// Read the first 512 bytes to detect content type
+		buffer := make([]byte, 512)
+		n, err := file.Read(buffer)
+		if err != nil && err != io.EOF {
+			logger.Error("Failed to read file for MIME detection: %v", err)
+			sendJSONError(w, "Failed to process file", http.StatusInternalServerError)
+			return
+		}
+
+		// Detect MIME type
+		detectedMIME := http.DetectContentType(buffer[:n])
+		logger.Debug("Detected MIME type: %s for file: %s", detectedMIME, header.Filename)
+
+		// Extract base MIME type (remove parameters like charset)
+		baseMIME := detectedMIME
+		if idx := strings.Index(detectedMIME, ";"); idx != -1 {
+			baseMIME = strings.TrimSpace(detectedMIME[:idx])
+		}
+
+		// Check if MIME type is allowed
+		allowed := false
+		for _, allowedType := range config.AllowedMIMETypes {
+			if baseMIME == allowedType {
+				allowed = true
+				break
+			}
+		}
+
+		if !allowed {
+			logger.Error("File type %s not allowed for file: %s", baseMIME, header.Filename)
+			sendJSONError(w, fmt.Sprintf("File type '%s' is not allowed", baseMIME), http.StatusUnsupportedMediaType)
+			return
+		}
+
+		// Reset file pointer to beginning after reading for MIME detection
+		if _, err := file.Seek(0, 0); err != nil {
+			logger.Error("Failed to reset file pointer: %v", err)
+			sendJSONError(w, "Failed to process file", http.StatusInternalServerError)
+			return
+		}
+	}
 
 	filePath := h.sharedDir + "/" + header.Filename
 	logger.Info("Uploading file: %s (size: %s)", header.Filename, FormatFileSize(header.Size))

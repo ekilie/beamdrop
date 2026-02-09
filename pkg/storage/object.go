@@ -202,10 +202,6 @@ func (om *ObjectManager) ListObjects(bucket, prefix, delimiter string, maxKeys i
 	}
 
 	bucketPath, _ := om.bucketManager.GetBucketPath(bucket)
-	searchPath := bucketPath
-	if prefix != "" {
-		searchPath = filepath.Join(bucketPath, filepath.FromSlash(prefix))
-	}
 
 	result := &ListObjectsResult{
 		Prefix:         prefix,

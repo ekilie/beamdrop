@@ -3,7 +3,7 @@ package main
 import "github.com/tachRoutine/beamdrop-go/pkg/logger"
 
 func Help() string {
-	return `beamdrop - A simple file sharing tool
+	return `beamdrop - A simple file sharing tool with S3-like API
 
 NOTE: YOU NEED TO BE IN THE SAME NETWORK AS THE RECEIVER
 
@@ -23,12 +23,26 @@ Options:
 		Path to TLS private key file for HTTPS
   -allowed-origins string
 		Comma-separated list of allowed CORS origins (empty = CORS disabled for security)
+  -api-auth
+		Enable API key authentication for S3-like API endpoints
   -no-qr
 		Disable QR code generation
   -h
 		Show this help message
   -v
-		Show version information`
+		Show version information
+
+S3-like API:
+  When running, beamdrop exposes an S3-compatible API at /api/v1/
+  Buckets are stored under the shared directory in a 'buckets' folder.
+  
+  Endpoints:
+    GET    /api/v1/buckets           - List all buckets
+    PUT    /api/v1/buckets/{name}    - Create bucket
+    DELETE /api/v1/buckets/{name}    - Delete bucket
+    GET    /api/v1/buckets/{b}/{key} - Download object
+    PUT    /api/v1/buckets/{b}/{key} - Upload object
+    DELETE /api/v1/buckets/{b}/{key} - Delete object`
 }
 
 func PrintHelp() {

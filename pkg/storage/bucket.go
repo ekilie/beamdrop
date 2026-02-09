@@ -1,5 +1,4 @@
 package storage
-package storage
 
 import (
 	"errors"
@@ -7,169 +6,169 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"time"
 )
 
 var (
 	ErrInvalidBucketName = errors.New("invalid bucket name")
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-}	CreatedAt interface{} // time.Time	Name      stringtype BucketInfo struct {// BucketInfo contains bucket metadata}	return filepath.Join(bm.basePath, name), nil	}		return "", err	if err := ValidateBucketName(name); err != nil {func (bm *BucketManager) GetBucketPath(name string) (string, error) {// GetBucketPath returns the filesystem path for a bucket}	return buckets, nil	}		}			})				CreatedAt: info.ModTime(),				Name:      entry.Name(),			buckets = append(buckets, BucketInfo{			}				continue			if err != nil {			info, err := entry.Info()		if entry.IsDir() && ValidateBucketName(entry.Name()) == nil {	for _, entry := range entries {	var buckets []BucketInfo	}		return nil, err		}			return []BucketInfo{}, nil		if os.IsNotExist(err) {	if err != nil {	entries, err := os.ReadDir(bm.basePath)func (bm *BucketManager) ListBuckets() ([]BucketInfo, error) {// ListBuckets returns all bucket names}	return err == nil && info.IsDir()	info, err := os.Stat(bucketPath)	bucketPath := filepath.Join(bm.basePath, name)	}		return false	if err := ValidateBucketName(name); err != nil {func (bm *BucketManager) BucketExists(name string) bool {// BucketExists checks if a bucket exists}	return os.Remove(bucketPath)	}		return ErrBucketNotEmpty	if len(entries) > 0 {	}		return err	if err != nil {	entries, err := os.ReadDir(bucketPath)	// Check if bucket is empty	}		return ErrBucketNotFound	if !info.IsDir() {	}		return err	if err != nil {	}		return ErrBucketNotFound	if os.IsNotExist(err) {	info, err := os.Stat(bucketPath)	// Check if bucket exists	bucketPath := filepath.Join(bm.basePath, name)	}		return err	if err := ValidateBucketName(name); err != nil {func (bm *BucketManager) DeleteBucket(name string) error {// DeleteBucket deletes a bucket if it's empty}	return os.MkdirAll(bucketPath, 0755)	}		return ErrBucketExists	if _, err := os.Stat(bucketPath); err == nil {	// Check if bucket already exists		bucketPath := filepath.Join(bm.basePath, name)	}		return err	if err := ValidateBucketName(name); err != nil {func (bm *BucketManager) CreateBucket(name string) error {// CreateBucket creates a new bucket directory}	return nil	}		return ErrInvalidKey	if len(key) > 1024 {	// Key length limit (S3 allows 1024 bytes)	}		return ErrInvalidKey	if strings.HasPrefix(key, "/") {	// Prevent absolute paths	}		return ErrInvalidKey	if strings.Contains(key, "..") {	// Prevent path traversal	}		return ErrInvalidKey	if key == "" {func ValidateObjectKey(key string) error {// ValidateObjectKey checks if an object key is valid}	return nil	}		return ErrInvalidBucketName	if regexp.MustCompile(`^\d+\.\d+\.\d+\.\d+$`).MatchString(name) {	// Prevent IP-like names	}		return ErrInvalidBucketName	if !bucketNameRegex.MatchString(name) {	}		return ErrInvalidBucketName	if len(name) < 3 || len(name) > 63 {func ValidateBucketName(name string) error {// ValidateBucketName checks if a bucket name is valid}	return os.MkdirAll(bm.basePath, 0755)func (bm *BucketManager) EnsureBucketsDir() error {// EnsureBucketsDir ensures the buckets directory exists}	return &BucketManager{basePath: bucketsPath}	bucketsPath := filepath.Join(sharedDir, "buckets")func NewBucketManager(sharedDir string) *BucketManager {// NewBucketManager creates a new bucket manager}	basePath string // Path to buckets directorytype BucketManager struct {// BucketManager handles bucket filesystem operationsvar bucketNameRegex = regexp.MustCompile(`^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$`)// - must start and end with letter or number// - lowercase letters, numbers, hyphens, dots// - 3-63 characters// bucketNameRegex validates bucket names (similar to S3 rules))	ErrInvalidKey        = errors.New("invalid object key")	ErrObjectNotFound    = errors.New("object not found")	ErrBucketExists      = errors.New("bucket already exists")	ErrBucketNotEmpty    = errors.New("bucket is not empty")	ErrBucketNotFound    = errors.New("bucket not found")
+	ErrBucketNotFound    = errors.New("bucket not found")
+	ErrBucketNotEmpty    = errors.New("bucket is not empty")
+	ErrBucketExists      = errors.New("bucket already exists")
+	ErrObjectNotFound    = errors.New("object not found")
+	ErrInvalidKey        = errors.New("invalid object key")
+)
+
+// bucketNameRegex validates bucket names (similar to S3 rules)
+// - 3-63 characters
+// - lowercase letters, numbers, hyphens, dots
+// - must start and end with letter or number
+var bucketNameRegex = regexp.MustCompile(`^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$`)
+
+// BucketManager handles bucket filesystem operations
+type BucketManager struct {
+	basePath string // Path to buckets directory
+}
+
+// NewBucketManager creates a new bucket manager
+func NewBucketManager(sharedDir string) *BucketManager {
+	bucketsPath := filepath.Join(sharedDir, "buckets")
+	return &BucketManager{basePath: bucketsPath}
+}
+
+// EnsureBucketsDir ensures the buckets directory exists
+func (bm *BucketManager) EnsureBucketsDir() error {
+	return os.MkdirAll(bm.basePath, 0755)
+}
+
+// ValidateBucketName checks if a bucket name is valid
+func ValidateBucketName(name string) error {
+	if len(name) < 3 || len(name) > 63 {
+		return ErrInvalidBucketName
+	}
+	if !bucketNameRegex.MatchString(name) {
+		return ErrInvalidBucketName
+	}
+	// Prevent IP-like names
+	if regexp.MustCompile(`^\d+\.\d+\.\d+\.\d+$`).MatchString(name) {
+		return ErrInvalidBucketName
+	}
+	return nil
+}
+
+// ValidateObjectKey checks if an object key is valid
+func ValidateObjectKey(key string) error {
+	if key == "" {
+		return ErrInvalidKey
+	}
+	// Prevent path traversal
+	if strings.Contains(key, "..") {
+		return ErrInvalidKey
+	}
+	// Prevent absolute paths
+	if strings.HasPrefix(key, "/") {
+		return ErrInvalidKey
+	}
+	// Key length limit (S3 allows 1024 bytes)
+	if len(key) > 1024 {
+		return ErrInvalidKey
+	}
+	return nil
+}
+
+// CreateBucket creates a new bucket directory
+func (bm *BucketManager) CreateBucket(name string) error {
+	if err := ValidateBucketName(name); err != nil {
+		return err
+	}
+
+	bucketPath := filepath.Join(bm.basePath, name)
+
+	// Check if bucket already exists
+	if _, err := os.Stat(bucketPath); err == nil {
+		return ErrBucketExists
+	}
+
+	return os.MkdirAll(bucketPath, 0755)
+}
+
+// DeleteBucket deletes a bucket if it's empty
+func (bm *BucketManager) DeleteBucket(name string) error {
+	if err := ValidateBucketName(name); err != nil {
+		return err
+	}
+
+	bucketPath := filepath.Join(bm.basePath, name)
+
+	// Check if bucket exists
+	info, err := os.Stat(bucketPath)
+	if os.IsNotExist(err) {
+		return ErrBucketNotFound
+	}
+	if err != nil {
+		return err
+	}
+	if !info.IsDir() {
+		return ErrBucketNotFound
+	}
+
+	// Check if bucket is empty
+	entries, err := os.ReadDir(bucketPath)
+	if err != nil {
+		return err
+	}
+	if len(entries) > 0 {
+		return ErrBucketNotEmpty
+	}
+
+	return os.Remove(bucketPath)
+}
+
+// BucketExists checks if a bucket exists
+func (bm *BucketManager) BucketExists(name string) bool {
+	if err := ValidateBucketName(name); err != nil {
+		return false
+	}
+	bucketPath := filepath.Join(bm.basePath, name)
+	info, err := os.Stat(bucketPath)
+	return err == nil && info.IsDir()
+}
+
+// ListBuckets returns all bucket names
+func (bm *BucketManager) ListBuckets() ([]BucketInfo, error) {
+	entries, err := os.ReadDir(bm.basePath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return []BucketInfo{}, nil
+		}
+		return nil, err
+	}
+
+	var buckets []BucketInfo
+	for _, entry := range entries {
+		if entry.IsDir() && ValidateBucketName(entry.Name()) == nil {
+			info, err := entry.Info()
+			if err != nil {
+				continue
+			}
+			buckets = append(buckets, BucketInfo{
+				Name:      entry.Name(),
+				CreatedAt: info.ModTime(),
+			})
+		}
+	}
+	return buckets, nil
+}
+
+// GetBucketPath returns the filesystem path for a bucket
+func (bm *BucketManager) GetBucketPath(name string) (string, error) {
+	if err := ValidateBucketName(name); err != nil {
+		return "", err
+	}
+	return filepath.Join(bm.basePath, name), nil
+}
+
+// BucketInfo contains bucket metadata
+type BucketInfo struct {
+	Name      string    `json:"name"`
+	CreatedAt time.Time `json:"createdAt"`
+}

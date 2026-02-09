@@ -9,7 +9,10 @@ import {
   Activity,
   Cpu,
   MemoryStick,
+  Key,
+  Home,
 } from "lucide-react";
+import { useNavigate, useLocation } from "react-router-dom";
 import {
   Sidebar,
   SidebarContent,
@@ -62,6 +65,8 @@ interface AppSidebarProps {
 
 export function AppSidebar({ password = "" }: AppSidebarProps) {
   const { state } = useSidebar();
+  const navigate = useNavigate();
+  const location = useLocation();
   const [stats, setStats] = useState<SidebarStats>({
     downloads: 0,
     uploads: 0,
@@ -420,6 +425,37 @@ export function AppSidebar({ password = "" }: AppSidebarProps) {
 
         {!isCollapsed && (
           <>
+            <Separator className="my-4 bg-sidebar-border" />
+
+            {/* Navigation */}
+            <SidebarGroup>
+              <SidebarGroupLabel className="text-sidebar-foreground/80 font-mono text-xs">
+                NAVIGATION
+              </SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      onClick={() => navigate("/")}
+                      className={`hover:bg-sidebar-accent ${location.pathname === "/" ? "bg-sidebar-accent" : ""}`}
+                    >
+                      <Home className="w-4 h-4" />
+                      <span className="font-mono text-sm">HOME</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      onClick={() => navigate("/api-keys")}
+                      className={`hover:bg-sidebar-accent ${location.pathname === "/api-keys" ? "bg-sidebar-accent" : ""}`}
+                    >
+                      <Key className="w-4 h-4" />
+                      <span className="font-mono text-sm">API KEYS</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+
             <Separator className="my-4 bg-sidebar-border" />
 
             {/* Quick Actions */}

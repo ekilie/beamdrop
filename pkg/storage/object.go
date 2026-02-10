@@ -11,6 +11,16 @@ import (
 	"time"
 )
 
+// ListObjectsResult contains the result of a list objects operation
+type ListObjectsResult struct {
+	Prefix         string       `json:"prefix"`
+	Delimiter      string       `json:"delimiter,omitempty"`
+	MaxKeys        int          `json:"maxKeys"`
+	IsTruncated    bool         `json:"isTruncated"`
+	Contents       []ObjectInfo `json:"contents"`
+	CommonPrefixes []string     `json:"commonPrefixes,omitempty"`
+}
+
 // ObjectManager handles object filesystem operations
 type ObjectManager struct {
 	bucketManager *BucketManager
@@ -320,12 +330,4 @@ func (om *ObjectManager) ListObjects(bucket, prefix, delimiter string, maxKeys i
 	return result, nil
 }
 
-// ListObjectsResult contains the result of a list objects operation
-type ListObjectsResult struct {
-	Prefix         string       `json:"prefix"`
-	Delimiter      string       `json:"delimiter,omitempty"`
-	MaxKeys        int          `json:"maxKeys"`
-	IsTruncated    bool         `json:"isTruncated"`
-	Contents       []ObjectInfo `json:"contents"`
-	CommonPrefixes []string     `json:"commonPrefixes,omitempty"`
-}
+

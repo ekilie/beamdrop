@@ -9,6 +9,12 @@ import (
 	"time"
 )
 
+// BucketInfo contains bucket metadata
+type BucketInfo struct {
+	Name      string    `json:"name"`
+	CreatedAt time.Time `json:"createdAt"`
+}
+
 var (
 	ErrInvalidBucketName = errors.New("invalid bucket name")
 	ErrBucketNotFound    = errors.New("bucket not found")
@@ -167,8 +173,4 @@ func (bm *BucketManager) GetBucketPath(name string) (string, error) {
 	return filepath.Join(bm.basePath, name), nil
 }
 
-// BucketInfo contains bucket metadata
-type BucketInfo struct {
-	Name      string    `json:"name"`
-	CreatedAt time.Time `json:"createdAt"`
-}
+

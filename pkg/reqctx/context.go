@@ -41,11 +41,11 @@ type TimeoutConfig struct {
 // DefaultTimeoutConfig returns the default timeout configuration
 func DefaultTimeoutConfig() *TimeoutConfig {
 	return &TimeoutConfig{
-		UploadTimeout:   30 * time.Minute,  // Large files may take time
-		DownloadTimeout: 30 * time.Minute,  // Large files may take time
-		DefaultTimeout:  30 * time.Second,  // General API operations
-		DatabaseTimeout: 10 * time.Second,  // DB operations
-		StorageTimeout:  5 * time.Minute,   // Storage operations
+		UploadTimeout:   30 * time.Minute, // Large files may take time
+		DownloadTimeout: 30 * time.Minute, // Large files may take time
+		DefaultTimeout:  30 * time.Second, // General API operations
+		DatabaseTimeout: 10 * time.Second, // DB operations
+		StorageTimeout:  5 * time.Minute,  // Storage operations
 	}
 }
 

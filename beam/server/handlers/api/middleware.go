@@ -7,6 +7,7 @@ import (
 
 	"github.com/tachRoutine/beamdrop-go/pkg/crypto"
 	"github.com/tachRoutine/beamdrop-go/pkg/db"
+	"github.com/tachRoutine/beamdrop-go/pkg/errors"
 	"github.com/tachRoutine/beamdrop-go/pkg/logger"
 )
 
@@ -35,27 +36,27 @@ func (m *APIAuthMiddleware) Middleware(next http.Handler) http.Handler {
 				next.ServeHTTP(w, r)
 				return
 			}
-			sendAPIError(w, "AccessDenied", "Invalid or expired presigned URL", http.StatusForbidden)
+			errors.Forbidden("Invalid or expired presigned URL").WriteHTTPResponse(w)
 			return
 		}
 
 		// Check Authorization header
 		authHeader := r.Header.Get("Authorization")
 		if authHeader == "" {
-			sendAPIError(w, "AccessDenied", "Missing Authorization header", http.StatusUnauthorized)
+			errors.Unauthorized("Missing Authorization header").WriteHTTPResponse(w)
 			return
 		}
 
 		// Parse "Bearer <access_key_id>:<signature>" format
 		if !strings.HasPrefix(authHeader, "Bearer ") {
-			sendAPIError(w, "AccessDenied", "Invalid Authorization header format", http.StatusUnauthorized)
+			errors.Unauthorized("Invalid Authorization header format").WriteHTTPResponse(w)
 			return
 		}
 
 		credentials := strings.TrimPrefix(authHeader, "Bearer ")
 		parts := strings.SplitN(credentials, ":", 2)
 		if len(parts) != 2 {
-			sendAPIError(w, "AccessDenied", "Invalid credentials format", http.StatusUnauthorized)
+			errors.Unauthorized("Invalid credentials format").WriteHTTPResponse(w)
 			return
 		}
 
@@ -65,12 +66,12 @@ func (m *APIAuthMiddleware) Middleware(next http.Handler) http.Handler {
 		// Validate timestamp header
 		timestamp := r.Header.Get("X-Beamdrop-Date")
 		if timestamp == "" {
-			sendAPIError(w, "AccessDenied", "Missing X-Beamdrop-Date header", http.StatusUnauthorized)
+			errors.Unauthorized("Missing X-Beamdrop-Date header").WriteHTTPResponse(w)
 			return
 		}
 
 		if !crypto.IsTimestampValid(timestamp) {
-			sendAPIError(w, "SignatureExpired", "Request timestamp is too old or in the future", http.StatusUnauthorized)
+			errors.New(errors.CodeTokenExpired, errors.CategoryAuth, "Request timestamp is too old or in the future", http.StatusUnauthorized).WriteHTTPResponse(w)
 			return
 		}
 
@@ -78,18 +79,18 @@ func (m *APIAuthMiddleware) Middleware(next http.Handler) http.Handler {
 		apiKey, err := db.GetAPIKeyByAccessID(accessKeyID)
 		if err != nil {
 			logger.Error("Failed to look up API key: %v", err)
-			sendAPIError(w, "InternalError", "Authentication error", http.StatusInternalServerError)
+			errors.InternalError("Authentication error").WithCause(err).WriteHTTPResponse(w)
 			return
 		}
 
 		if apiKey == nil {
-			sendAPIError(w, "AccessDenied", "Invalid access key", http.StatusForbidden)
+			errors.InvalidAPIKey().WriteHTTPResponse(w)
 			return
 		}
 
 		// Verify signature using the stored secret key
 		if !crypto.VerifySignature(apiKey.SecretKey, r.Method, r.URL.Path, timestamp, signature) {
-			sendAPIError(w, "SignatureMismatch", "Invalid signature", http.StatusForbidden)
+			errors.Forbidden("Invalid signature").WriteHTTPResponse(w)
 			return
 		}
 

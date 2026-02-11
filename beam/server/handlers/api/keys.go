@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/tachRoutine/beamdrop-go/pkg/db"
+	"github.com/tachRoutine/beamdrop-go/pkg/errors"
 	"github.com/tachRoutine/beamdrop-go/pkg/logger"
 )
 
@@ -27,7 +28,7 @@ func (h *KeysHandler) Handle(w http.ResponseWriter, r *http.Request) {
 	case http.MethodDelete:
 		h.deleteKey(w, r)
 	default:
-		sendAPIError(w, "MethodNotAllowed", "Method not allowed", http.StatusMethodNotAllowed)
+		errors.New(errors.CodeInvalidRequest, errors.CategoryValidation, "Method not allowed", http.StatusMethodNotAllowed).WriteHTTPResponse(w)
 	}
 }
 
@@ -35,7 +36,7 @@ func (h *KeysHandler) listKeys(w http.ResponseWriter, r *http.Request) {
 	keys, err := db.ListAPIKeys()
 	if err != nil {
 		logger.Error("Failed to list API keys: %v", err)
-		sendAPIError(w, "InternalError", "Failed to list API keys", http.StatusInternalServerError)
+		errors.DatabaseError("Failed to list API keys").WithCause(err).WriteHTTPResponse(w)
 		return
 	}
 
@@ -82,12 +83,12 @@ func (h *KeysHandler) createKey(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		sendAPIError(w, "InvalidRequest", "Invalid request body", http.StatusBadRequest)
+		errors.InvalidRequest("Invalid request body").WriteHTTPResponse(w)
 		return
 	}
 
 	if req.Name == "" {
-		sendAPIError(w, "InvalidRequest", "Name is required", http.StatusBadRequest)
+		errors.MissingField("name").WriteHTTPResponse(w)
 		return
 	}
 
@@ -100,7 +101,7 @@ func (h *KeysHandler) createKey(w http.ResponseWriter, r *http.Request) {
 	apiKey, secretKey, err := db.CreateAPIKey(req.Name, req.Permissions, req.BucketScope, expiresIn)
 	if err != nil {
 		logger.Error("Failed to create API key: %v", err)
-		sendAPIError(w, "InternalError", "Failed to create API key", http.StatusInternalServerError)
+		errors.DatabaseError("Failed to create API key").WithCause(err).WriteHTTPResponse(w)
 		return
 	}
 
@@ -123,18 +124,18 @@ func (h *KeysHandler) createKey(w http.ResponseWriter, r *http.Request) {
 func (h *KeysHandler) deleteKey(w http.ResponseWriter, r *http.Request) {
 	accessKeyID := r.URL.Query().Get("accessKeyId")
 	if accessKeyID == "" {
-		sendAPIError(w, "InvalidRequest", "Access key ID is required", http.StatusBadRequest)
+		errors.MissingField("accessKeyId").WriteHTTPResponse(w)
 		return
 	}
 
 	err := db.DeleteAPIKey(accessKeyID)
 	if err != nil {
 		if err.Error() == "API key not found" {
-			sendAPIError(w, "KeyNotFound", "API key not found", http.StatusNotFound)
+			errors.New(errors.CodeObjectNotFound, errors.CategoryNotFound, "API key not found", http.StatusNotFound).WriteHTTPResponse(w)
 			return
 		}
 		logger.Error("Failed to delete API key: %v", err)
-		sendAPIError(w, "InternalError", "Failed to delete API key", http.StatusInternalServerError)
+		errors.DatabaseError("Failed to delete API key").WithCause(err).WriteHTTPResponse(w)
 		return
 	}
 

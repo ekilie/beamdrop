@@ -91,9 +91,8 @@ func (aw *AtomicWriter) Commit() error {
     }
 
     // Step 4: Sync the directory to ensure the rename is persisted
-    // (optional but recommended for maximum durability)
     if err := syncDir(filepath.Dir(aw.targetPath)); err != nil {
-        // Log but don't fail - the file is already in place
+        // We Log but don't fail - the file is already in place
         logger.Warn("Failed to sync directory: %v", err)
     }
 

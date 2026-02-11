@@ -7,12 +7,14 @@ import (
 	"net/http"
 	"os"
 	"path"
+	"slices"
 	"strings"
 	"time"
 
 	"github.com/tachRoutine/beamdrop-go/config"
 	"github.com/tachRoutine/beamdrop-go/pkg/db"
 	"github.com/tachRoutine/beamdrop-go/pkg/logger"
+	"github.com/tachRoutine/beamdrop-go/pkg/storage"
 )
 
 type FileHandler struct {
@@ -28,7 +30,7 @@ func (h *FileHandler) ListFiles(w http.ResponseWriter, r *http.Request) {
 		sendJSONError(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
-	
+
 	logger.Debug("Listing files from directory: %s", h.sharedDir)
 	w.Header().Set("Content-Type", "application/json")
 
@@ -75,7 +77,7 @@ func (h *FileHandler) Download(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
-	
+
 	filename := r.URL.Query().Get("file")
 	filePath := h.sharedDir + "/" + filename
 
@@ -99,12 +101,12 @@ func (h *FileHandler) Upload(w http.ResponseWriter, r *http.Request) {
 		sendJSONError(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
-	
+
 	logger.Info("Upload request received")
-	
+
 	// Set max upload size limit on the request body
 	r.Body = http.MaxBytesReader(w, r.Body, config.MaxUploadSize)
-	
+
 	file, header, err := r.FormFile("file")
 	if err != nil {
 		logger.Error("Invalid upload request: %v", err)
@@ -146,13 +148,7 @@ func (h *FileHandler) Upload(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// Check if MIME type is allowed
-		allowed := false
-		for _, allowedType := range config.AllowedMIMETypes {
-			if baseMIME == allowedType {
-				allowed = true
-				break
-			}
-		}
+		allowed := slices.Contains(config.AllowedMIMETypes, baseMIME)
 
 		if !allowed {
 			logger.Error("File type %s not allowed for file: %s", baseMIME, header.Filename)
@@ -171,22 +167,15 @@ func (h *FileHandler) Upload(w http.ResponseWriter, r *http.Request) {
 	filePath := h.sharedDir + "/" + header.Filename
 	logger.Info("Uploading file: %s (size: %s)", header.Filename, FormatFileSize(header.Size))
 
-	out, err := os.Create(filePath)
+	// Use atomic write for crash safety
+	n, err := storage.AtomicWriteFile(filePath, file)
 	if err != nil {
-		logger.Error("Failed to create file %s: %v", filePath, err)
+		logger.Error("Failed to write file %s: %v", filePath, err)
 		sendJSONError(w, "Failed to save file", http.StatusInternalServerError)
 		return
 	}
-	defer out.Close()
 
-	_, err = io.Copy(out, file)
-	if err != nil {
-		logger.Error("Failed to write file %s: %v", filePath, err)
-		sendJSONError(w, "Failed to write file", http.StatusInternalServerError)
-		return
-	}
-
-	logger.Info("File uploaded successfully: %s", header.Filename)
+	logger.Info("File uploaded successfully: %s (%d bytes)", header.Filename, n)
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	db.IncrementUploads()

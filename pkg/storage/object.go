@@ -14,14 +14,6 @@ import (
 type ObjectManager struct {
 	bucketManager *BucketManager
 }
-
-// NewObjectManager creates a new object manager
-func NewObjectManager(sharedDir string) *ObjectManager {
-	return &ObjectManager{
-		bucketManager: NewBucketManager(sharedDir),
-	}
-}
-
 // ObjectInfo contains object metadata
 type ObjectInfo struct {
 	Key          string    `json:"key"`
@@ -31,64 +23,70 @@ type ObjectInfo struct {
 	ContentType  string    `json:"contentType,omitempty"`
 }
 
+// NewObjectManager creates a new object manager
+func NewObjectManager(sharedDir string) *ObjectManager {
+	return &ObjectManager{
+		bucketManager: NewBucketManager(sharedDir),
+	}
+}
+
+
+
 // PutObject writes an object to storage
 func (om *ObjectManager) PutObject(bucket, key string, reader io.Reader) (*ObjectInfo, error) {
-	if err := ValidateBucketName(bucket); err != nil {
-		return nil, err
-	}
-	if err := ValidateObjectKey(key); err != nil {
-		return nil, err
-	}
+    if err := ValidateBucketName(bucket); err != nil {
+        return nil, err
+    }
+    if err := ValidateObjectKey(key); err != nil {
+        return nil, err
+    }
 
-	if !om.bucketManager.BucketExists(bucket) {
-		return nil, ErrBucketNotFound
-	}
+    if !om.bucketManager.BucketExists(bucket) {
+        return nil, ErrBucketNotFound
+    }
 
-	bucketPath, _ := om.bucketManager.GetBucketPath(bucket)
-	objectPath := filepath.Join(bucketPath, filepath.FromSlash(key))
+    bucketPath, _ := om.bucketManager.GetBucketPath(bucket)
+    objectPath := filepath.Join(bucketPath, filepath.FromSlash(key))
 
-	// Create parent directories if needed
-	if err := os.MkdirAll(filepath.Dir(objectPath), 0755); err != nil {
-		return nil, err
-	}
+    // Create parent directories if needed
+    if err := os.MkdirAll(filepath.Dir(objectPath), 0755); err != nil {
+        return nil, err
+    }
 
-	// Create temporary file for atomic write
-	tmpFile, err := os.CreateTemp(filepath.Dir(objectPath), ".tmp-")
-	if err != nil {
-		return nil, err
-	}
-	tmpPath := tmpFile.Name()
-	defer os.Remove(tmpPath) // Clean up temp file on error
+    // Using AtomicWriter for crash-safe writes
+    writer, err := NewAtomicWriter(objectPath)
+    if err != nil {
+        return nil, err
+    }
 
-	// Write content and calculate ETag (MD5)
-	hash := md5.New()
-	multiWriter := io.MultiWriter(tmpFile, hash)
+    // Write content and calculate ETag (MD5) simultaneously
+    hash := md5.New()
+    multiWriter := io.MultiWriter(writer, hash)
 
-	size, err := io.Copy(multiWriter, reader)
-	if err != nil {
-		tmpFile.Close()
-		return nil, err
-	}
-	tmpFile.Close()
+    size, err := io.Copy(multiWriter, reader)
+    if err != nil {
+        writer.Abort()
+        return nil, err
+    }
 
-	// Atomic rename
-	if err := os.Rename(tmpPath, objectPath); err != nil {
-		return nil, err
-	}
+    // Commit the atomic write (fsync + rename)
+    if err := writer.Commit(); err != nil {
+        return nil, err
+    }
 
-	etag := hex.EncodeToString(hash.Sum(nil))
+    etag := hex.EncodeToString(hash.Sum(nil))
 
-	info, err := os.Stat(objectPath)
-	if err != nil {
-		return nil, err
-	}
+    info, err := os.Stat(objectPath)
+    if err != nil {
+        return nil, err
+    }
 
-	return &ObjectInfo{
-		Key:          key,
-		Size:         size,
-		LastModified: info.ModTime(),
-		ETag:         etag,
-	}, nil
+    return &ObjectInfo{
+        Key:          key,
+        Size:         size,
+        LastModified: info.ModTime(),
+        ETag:         etag,
+    }, nil
 }
 
 // GetObject retrieves an object from storage

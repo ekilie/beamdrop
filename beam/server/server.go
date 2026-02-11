@@ -13,6 +13,7 @@ import (
 	"github.com/tachRoutine/beamdrop-go/pkg/logger"
 	"github.com/tachRoutine/beamdrop-go/pkg/middleware"
 	"github.com/tachRoutine/beamdrop-go/pkg/qr"
+	"github.com/tachRoutine/beamdrop-go/pkg/storage"
 )
 
 type Server struct {
@@ -41,26 +42,31 @@ func New(sharedDir string, flags config.Flags) *Server {
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// Increment request counter
 	db.IncrementRequests()
-	
+
 	// Build middleware chain
 	var handler http.Handler = s.mux
-	
+
 	// Apply auth middleware
 	handler = s.authMiddleware.Middleware(handler)
-	
+
 	// Apply CORS middleware
 	corsConfig := s.getCORSConfig()
 	handler = middleware.CORS(corsConfig)(handler)
-	
+
 	// Apply security headers middleware
 	enableHSTS := s.flags.TLSCert != "" && s.flags.TLSKey != ""
 	handler = middleware.SecurityHeaders(enableHSTS)(handler)
-	
+
 	handler.ServeHTTP(w, r)
 }
 
 func (s *Server) Start() error {
 	db.AutoMigrate()
+
+	// Cleaningup any orphaned temp files from interrupted writes
+	if err := storage.CleanupOrphanedTempFiles(s.sharedDir); err != nil {
+		logger.Warn("Failed to clean up orphaned temp files: %v", err)
+	}
 
 	if s.flags.Password != "" {
 		logger.Info("Password is enabled")
@@ -68,13 +74,13 @@ func (s *Server) Start() error {
 
 	port := s.getPort()
 	ip := GetLocalIP()
-	
+
 	// Determine protocol based on TLS configuration
 	protocol := "http"
 	if s.flags.TLSCert != "" && s.flags.TLSKey != "" {
 		protocol = "https"
 	}
-	
+
 	url := fmt.Sprintf("%s://%s:%d", protocol, ip, port)
 
 	if !s.flags.NoQR {
@@ -89,7 +95,7 @@ func (s *Server) Start() error {
 	}
 
 	logger.Info("Server started at %s sharing directory: %s", url, s.sharedDir)
-	
+
 	// Start with TLS if configured
 	if s.flags.TLSCert != "" && s.flags.TLSKey != "" {
 		// Validate that TLS files exist
@@ -99,11 +105,11 @@ func (s *Server) Start() error {
 		if _, err := os.Stat(s.flags.TLSKey); os.IsNotExist(err) {
 			logger.Fatal("TLS key file not found: %s", s.flags.TLSKey)
 		}
-		
+
 		logger.Info("Starting server with TLS enabled")
 		return http.ListenAndServeTLS(fmt.Sprintf(":%d", port), s.flags.TLSCert, s.flags.TLSKey, s)
 	}
-	
+
 	return http.ListenAndServe(fmt.Sprintf(":%d", port), s)
 }
 
@@ -152,7 +158,7 @@ func GetLocalIP() string {
 // getCORSConfig returns CORS configuration based on flags
 func (s *Server) getCORSConfig() middleware.CORSConfig {
 	config := middleware.DefaultCORSConfig()
-	
+
 	// Parse allowed origins from comma-separated string
 	if s.flags.AllowedOrigins != "" {
 		origins := strings.Split(s.flags.AllowedOrigins, ",")
@@ -161,6 +167,6 @@ func (s *Server) getCORSConfig() middleware.CORSConfig {
 		}
 		config.AllowedOrigins = origins
 	}
-	
+
 	return config
 }

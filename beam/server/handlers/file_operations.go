@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/tachRoutine/beamdrop-go/pkg/db"
+	"github.com/tachRoutine/beamdrop-go/pkg/errors"
 	"github.com/tachRoutine/beamdrop-go/pkg/logger"
 )
 
@@ -24,7 +25,7 @@ func NewFileOperationsHandler(sharedDir string) *FileOperationsHandler {
 
 func (h *FileOperationsHandler) Move(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "POST" {
-		sendJSONError(w, "Method not allowed", http.StatusMethodNotAllowed)
+		errors.New(errors.CodeInvalidRequest, errors.CategoryValidation, "Method not allowed", http.StatusMethodNotAllowed).WriteHTTPResponse(w)
 		return
 	}
 
@@ -35,30 +36,30 @@ func (h *FileOperationsHandler) Move(w http.ResponseWriter, r *http.Request) {
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		logger.Error("Invalid move request: %v", err)
-		sendJSONError(w, "Invalid request body", http.StatusBadRequest)
+		errors.InvalidRequest("Invalid request body").WriteHTTPResponse(w)
 		return
 	}
 
 	sourcePath, err := ResolvePath(h.sharedDir, req.SourcePath)
 	if err != nil {
-		sendJSONError(w, "Invalid source path", http.StatusBadRequest)
+		errors.InvalidPath("Invalid source path").WriteHTTPResponse(w)
 		return
 	}
 
 	targetPath, err := ResolvePath(h.sharedDir, req.TargetPath)
 	if err != nil {
-		sendJSONError(w, "Invalid target path", http.StatusBadRequest)
+		errors.InvalidPath("Invalid target path").WriteHTTPResponse(w)
 		return
 	}
 
 	if _, err := os.Stat(sourcePath); os.IsNotExist(err) {
-		sendJSONError(w, "Source file not found", http.StatusNotFound)
+		errors.FileNotFound(req.SourcePath).WriteHTTPResponse(w)
 		return
 	}
 
 	if err := os.Rename(sourcePath, targetPath); err != nil {
 		logger.Error("Failed to move file from %s to %s: %v", sourcePath, targetPath, err)
-		sendJSONError(w, "Failed to move file", http.StatusInternalServerError)
+		errors.IOError("Failed to move file").WithCause(err).WriteHTTPResponse(w)
 		return
 	}
 
@@ -73,7 +74,7 @@ func (h *FileOperationsHandler) Move(w http.ResponseWriter, r *http.Request) {
 func (h *FileOperationsHandler) Trash(w http.ResponseWriter, r *http.Request) {
 	trashBinPath := filepath.Join(h.sharedDir, ".beamdrop_trash")
 	if r.Method != "POST" {
-		sendJSONError(w, "Method not allowed", http.StatusMethodNotAllowed)
+		errors.New(errors.CodeInvalidRequest, errors.CategoryValidation, "Method not allowed", http.StatusMethodNotAllowed).WriteHTTPResponse(w)
 		return
 	}
 
@@ -83,13 +84,13 @@ func (h *FileOperationsHandler) Trash(w http.ResponseWriter, r *http.Request) {
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		logger.Error("Invalid trash request: %v", err)
-		sendJSONError(w, "Invalid request body", http.StatusBadRequest)
+		errors.InvalidRequest("Invalid request body").WriteHTTPResponse(w)
 		return
 	}
 
 	sourcePath, err := ResolvePath(h.sharedDir, req.SourcePath)
 	if err != nil {
-		sendJSONError(w, "Invalid source path", http.StatusBadRequest)
+		errors.InvalidPath("Invalid source path").WriteHTTPResponse(w)
 		return
 	}
 
@@ -97,13 +98,13 @@ func (h *FileOperationsHandler) Trash(w http.ResponseWriter, r *http.Request) {
 	trashRelativePath := path.Join(".beamdrop_trash", path.Base(req.SourcePath))
 
 	if _, err := os.Stat(sourcePath); os.IsNotExist(err) {
-		sendJSONError(w, "Source file not found", http.StatusNotFound)
+		errors.FileNotFound(req.SourcePath).WriteHTTPResponse(w)
 		return
 	}
 
 	if err := os.Rename(sourcePath, targetPath); err != nil {
 		logger.Error("Failed to move file to trash from %s to %s: %v", sourcePath, targetPath, err)
-		sendJSONError(w, "Failed to move file to trash", http.StatusInternalServerError)
+		errors.IOError("Failed to move file to trash").WithCause(err).WriteHTTPResponse(w)
 		return
 	}
 
@@ -117,7 +118,7 @@ func (h *FileOperationsHandler) Trash(w http.ResponseWriter, r *http.Request) {
 
 func (h *FileOperationsHandler) Copy(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "POST" {
-		sendJSONError(w, "Method not allowed", http.StatusMethodNotAllowed)
+		errors.New(errors.CodeInvalidRequest, errors.CategoryValidation, "Method not allowed", http.StatusMethodNotAllowed).WriteHTTPResponse(w)
 		return
 	}
 
@@ -128,26 +129,26 @@ func (h *FileOperationsHandler) Copy(w http.ResponseWriter, r *http.Request) {
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		logger.Error("Invalid copy request: %v", err)
-		sendJSONError(w, "Invalid request body", http.StatusBadRequest)
+		errors.InvalidRequest("Invalid request body").WriteHTTPResponse(w)
 		return
 	}
 
 	sourcePath, err := ResolvePath(h.sharedDir, req.SourcePath)
 	if err != nil {
-		sendJSONError(w, "Invalid source path", http.StatusBadRequest)
+		errors.InvalidPath("Invalid source path").WriteHTTPResponse(w)
 		return
 	}
 
 	targetPath, err := ResolvePath(h.sharedDir, req.TargetPath)
 	if err != nil {
-		sendJSONError(w, "Invalid target path", http.StatusBadRequest)
+		errors.InvalidPath("Invalid target path").WriteHTTPResponse(w)
 		return
 	}
 
 	sourceFile, err := os.Open(sourcePath)
 	if err != nil {
 		logger.Error("Failed to open source file %s: %v", sourcePath, err)
-		sendJSONError(w, "Source file not found", http.StatusNotFound)
+		errors.FileNotFound(req.SourcePath).WriteHTTPResponse(w)
 		return
 	}
 	defer sourceFile.Close()
@@ -155,14 +156,14 @@ func (h *FileOperationsHandler) Copy(w http.ResponseWriter, r *http.Request) {
 	targetFile, err := os.Create(targetPath)
 	if err != nil {
 		logger.Error("Failed to create target file %s: %v", targetPath, err)
-		sendJSONError(w, "Failed to create target file", http.StatusInternalServerError)
+		errors.WriteFailed("Failed to create target file").WithCause(err).WriteHTTPResponse(w)
 		return
 	}
 	defer targetFile.Close()
 
 	if _, err := io.Copy(targetFile, sourceFile); err != nil {
 		logger.Error("Failed to copy file from %s to %s: %v", sourcePath, targetPath, err)
-		sendJSONError(w, "Failed to copy file", http.StatusInternalServerError)
+		errors.IOError("Failed to copy file").WithCause(err).WriteHTTPResponse(w)
 		return
 	}
 
@@ -176,7 +177,7 @@ func (h *FileOperationsHandler) Copy(w http.ResponseWriter, r *http.Request) {
 
 func (h *FileOperationsHandler) Mkdir(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "POST" {
-		sendJSONError(w, "Method not allowed", http.StatusMethodNotAllowed)
+		errors.New(errors.CodeInvalidRequest, errors.CategoryValidation, "Method not allowed", http.StatusMethodNotAllowed).WriteHTTPResponse(w)
 		return
 	}
 
@@ -186,24 +187,24 @@ func (h *FileOperationsHandler) Mkdir(w http.ResponseWriter, r *http.Request) {
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		logger.Error("Invalid mkdir request: %v", err)
-		sendJSONError(w, "Invalid request body", http.StatusBadRequest)
+		errors.InvalidRequest("Invalid request body").WriteHTTPResponse(w)
 		return
 	}
 
 	targetPath, err := ResolvePath(h.sharedDir, req.DirPath)
 	if err != nil {
-		sendJSONError(w, "Invalid directory path", http.StatusBadRequest)
+		errors.InvalidPath("Invalid directory path").WriteHTTPResponse(w)
 		return
 	}
 
 	if _, err := os.Stat(targetPath); !os.IsNotExist(err) {
-		sendJSONError(w, "Directory already exists", http.StatusConflict)
+		errors.FileExists(req.DirPath).WriteHTTPResponse(w)
 		return
 	}
 
 	if err := os.MkdirAll(targetPath, 0755); err != nil {
 		logger.Error("Failed to create directory %s: %v", targetPath, err)
-		sendJSONError(w, "Failed to create directory", http.StatusInternalServerError)
+		errors.IOError("Failed to create directory").WithCause(err).WriteHTTPResponse(w)
 		return
 	}
 
@@ -216,7 +217,7 @@ func (h *FileOperationsHandler) Mkdir(w http.ResponseWriter, r *http.Request) {
 
 func (h *FileOperationsHandler) Rename(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "POST" {
-		sendJSONError(w, "Method not allowed", http.StatusMethodNotAllowed)
+		errors.New(errors.CodeInvalidRequest, errors.CategoryValidation, "Method not allowed", http.StatusMethodNotAllowed).WriteHTTPResponse(w)
 		return
 	}
 
@@ -227,18 +228,18 @@ func (h *FileOperationsHandler) Rename(w http.ResponseWriter, r *http.Request) {
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		logger.Error("Invalid rename request: %v", err)
-		sendJSONError(w, "Invalid request body", http.StatusBadRequest)
+		errors.InvalidRequest("Invalid request body").WriteHTTPResponse(w)
 		return
 	}
 
 	oldPath, err := ResolvePath(h.sharedDir, req.OldPath)
 	if err != nil {
-		sendJSONError(w, "Invalid old path", http.StatusBadRequest)
+		errors.InvalidPath("Invalid old path").WriteHTTPResponse(w)
 		return
 	}
 
 	if _, err := os.Stat(oldPath); os.IsNotExist(err) {
-		sendJSONError(w, "File or directory not found", http.StatusNotFound)
+		errors.FileNotFound(req.OldPath).WriteHTTPResponse(w)
 		return
 	}
 
@@ -253,18 +254,18 @@ func (h *FileOperationsHandler) Rename(w http.ResponseWriter, r *http.Request) {
 
 	newFullPath, err := ResolvePath(h.sharedDir, newPath)
 	if err != nil {
-		sendJSONError(w, "Invalid new name", http.StatusBadRequest)
+		errors.InvalidPath("Invalid new name").WriteHTTPResponse(w)
 		return
 	}
 
 	if _, err := os.Stat(newFullPath); !os.IsNotExist(err) {
-		sendJSONError(w, "Target name already exists", http.StatusConflict)
+		errors.FileExists(newPath).WriteHTTPResponse(w)
 		return
 	}
 
 	if err := os.Rename(oldPath, newFullPath); err != nil {
 		logger.Error("Failed to rename %s to %s: %v", oldPath, newFullPath, err)
-		sendJSONError(w, "Failed to rename", http.StatusInternalServerError)
+		errors.IOError("Failed to rename").WithCause(err).WriteHTTPResponse(w)
 		return
 	}
 
@@ -278,7 +279,7 @@ func (h *FileOperationsHandler) Rename(w http.ResponseWriter, r *http.Request) {
 
 func (h *FileOperationsHandler) Write(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "POST" {
-		sendJSONError(w, "Method not allowed", http.StatusMethodNotAllowed)
+		errors.New(errors.CodeInvalidRequest, errors.CategoryValidation, "Method not allowed", http.StatusMethodNotAllowed).WriteHTTPResponse(w)
 		return
 	}
 
@@ -289,18 +290,18 @@ func (h *FileOperationsHandler) Write(w http.ResponseWriter, r *http.Request) {
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		logger.Error("Invalid write request: %v", err)
-		sendJSONError(w, "Invalid request body", http.StatusBadRequest)
+		errors.InvalidRequest("Invalid request body").WriteHTTPResponse(w)
 		return
 	}
 
 	if req.FilePath == "" {
-		sendJSONError(w, "File path is required", http.StatusBadRequest)
+		errors.MissingField("filePath").WriteHTTPResponse(w)
 		return
 	}
 
 	targetPath, err := ResolvePath(h.sharedDir, req.FilePath)
 	if err != nil {
-		sendJSONError(w, "Invalid file path", http.StatusBadRequest)
+		errors.InvalidPath("Invalid file path").WriteHTTPResponse(w)
 		return
 	}
 
@@ -308,14 +309,14 @@ func (h *FileOperationsHandler) Write(w http.ResponseWriter, r *http.Request) {
 	parentDir := path.Dir(targetPath)
 	if err := os.MkdirAll(parentDir, 0755); err != nil {
 		logger.Error("Failed to create parent directory %s: %v", parentDir, err)
-		sendJSONError(w, "Failed to create parent directory", http.StatusInternalServerError)
+		errors.IOError("Failed to create parent directory").WithCause(err).WriteHTTPResponse(w)
 		return
 	}
 
 	// Write file content
 	if err := os.WriteFile(targetPath, []byte(req.Content), 0644); err != nil {
 		logger.Error("Failed to write file %s: %v", targetPath, err)
-		sendJSONError(w, "Failed to write file", http.StatusInternalServerError)
+		errors.WriteFailed("Failed to write file").WithCause(err).WriteHTTPResponse(w)
 		return
 	}
 
@@ -328,13 +329,13 @@ func (h *FileOperationsHandler) Write(w http.ResponseWriter, r *http.Request) {
 
 func (h *FileOperationsHandler) Search(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "GET" {
-		sendJSONError(w, "Method not allowed", http.StatusMethodNotAllowed)
+		errors.New(errors.CodeInvalidRequest, errors.CategoryValidation, "Method not allowed", http.StatusMethodNotAllowed).WriteHTTPResponse(w)
 		return
 	}
 
 	query := r.URL.Query().Get("q")
 	if query == "" {
-		sendJSONError(w, "Search query is required", http.StatusBadRequest)
+		errors.MissingField("q").WriteHTTPResponse(w)
 		return
 	}
 
@@ -345,7 +346,7 @@ func (h *FileOperationsHandler) Search(w http.ResponseWriter, r *http.Request) {
 
 	targetPath, err := ResolvePath(h.sharedDir, searchPath)
 	if err != nil {
-		sendJSONError(w, "Invalid search path", http.StatusBadRequest)
+		errors.InvalidPath("Invalid search path").WriteHTTPResponse(w)
 		return
 	}
 
@@ -353,7 +354,7 @@ func (h *FileOperationsHandler) Search(w http.ResponseWriter, r *http.Request) {
 	err = searchFiles(targetPath, query, searchPath, &results)
 	if err != nil {
 		logger.Error("Search failed: %v", err)
-		sendJSONError(w, "Search failed", http.StatusInternalServerError)
+		errors.InternalError("Search failed").WithCause(err).WriteHTTPResponse(w)
 		return
 	}
 
@@ -369,7 +370,7 @@ func (h *FileOperationsHandler) Search(w http.ResponseWriter, r *http.Request) {
 
 func (h *FileOperationsHandler) Star(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "POST" {
-		sendJSONError(w, "Method not allowed", http.StatusMethodNotAllowed)
+		errors.New(errors.CodeInvalidRequest, errors.CategoryValidation, "Method not allowed", http.StatusMethodNotAllowed).WriteHTTPResponse(w)
 		return
 	}
 
@@ -379,18 +380,18 @@ func (h *FileOperationsHandler) Star(w http.ResponseWriter, r *http.Request) {
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		logger.Error("Invalid star request: %v", err)
-		sendJSONError(w, "Invalid request body", http.StatusBadRequest)
+		errors.InvalidRequest("Invalid request body").WriteHTTPResponse(w)
 		return
 	}
 
 	target, err := ResolvePath(h.sharedDir, req.FilePath)
 	if err != nil {
-		sendJSONError(w, "Invalid file path", http.StatusBadRequest)
+		errors.InvalidPath("Invalid file path").WriteHTTPResponse(w)
 		return
 	}
 
 	if _, err := os.Stat(target); os.IsNotExist(err) {
-		sendJSONError(w, "File not found", http.StatusNotFound)
+		errors.FileNotFound(req.FilePath).WriteHTTPResponse(w)
 		return
 	}
 
@@ -399,7 +400,7 @@ func (h *FileOperationsHandler) Star(w http.ResponseWriter, r *http.Request) {
 	if isStarred {
 		if err := db.UnstarFile(req.FilePath); err != nil {
 			logger.Error("Failed to unstar file %s: %v", req.FilePath, err)
-			sendJSONError(w, "Failed to unstar file", http.StatusInternalServerError)
+			errors.DatabaseError("Failed to unstar file").WithCause(err).WriteHTTPResponse(w)
 			return
 		}
 		logger.Info("File unstarred: %s", req.FilePath)
@@ -407,7 +408,7 @@ func (h *FileOperationsHandler) Star(w http.ResponseWriter, r *http.Request) {
 	} else {
 		if err := db.StarFile(req.FilePath); err != nil {
 			logger.Error("Failed to star file %s: %v", req.FilePath, err)
-			sendJSONError(w, "Failed to star file", http.StatusInternalServerError)
+			errors.DatabaseError("Failed to star file").WithCause(err).WriteHTTPResponse(w)
 			return
 		}
 		logger.Info("File starred: %s", req.FilePath)
@@ -417,14 +418,14 @@ func (h *FileOperationsHandler) Star(w http.ResponseWriter, r *http.Request) {
 
 func (h *FileOperationsHandler) Starred(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "GET" {
-		sendJSONError(w, "Method not allowed", http.StatusMethodNotAllowed)
+		errors.New(errors.CodeInvalidRequest, errors.CategoryValidation, "Method not allowed", http.StatusMethodNotAllowed).WriteHTTPResponse(w)
 		return
 	}
 
 	starredFiles, err := db.GetStarredFiles()
 	if err != nil {
 		logger.Error("Failed to retrieve starred files: %v", err)
-		sendJSONError(w, "Failed to retrieve starred files", http.StatusInternalServerError)
+		errors.DatabaseError("Failed to retrieve starred files").WithCause(err).WriteHTTPResponse(w)
 		return
 	}
 

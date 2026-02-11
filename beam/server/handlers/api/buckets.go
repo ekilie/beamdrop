@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/tachRoutine/beamdrop-go/pkg/errors"
 	"github.com/tachRoutine/beamdrop-go/pkg/logger"
 	"github.com/tachRoutine/beamdrop-go/pkg/storage"
 )
@@ -42,24 +43,24 @@ func (h *BucketHandler) Handle(w http.ResponseWriter, r *http.Request) {
 		}
 	case http.MethodPut:
 		if bucketName == "" {
-			sendAPIError(w, "BucketNameRequired", "Bucket name is required", http.StatusBadRequest)
+			errors.MissingField("bucket").WriteHTTPResponse(w)
 			return
 		}
 		h.createBucket(w, r, bucketName)
 	case http.MethodDelete:
 		if bucketName == "" {
-			sendAPIError(w, "BucketNameRequired", "Bucket name is required", http.StatusBadRequest)
+			errors.MissingField("bucket").WriteHTTPResponse(w)
 			return
 		}
 		h.deleteBucket(w, r, bucketName)
 	case http.MethodHead:
 		if bucketName == "" {
-			sendAPIError(w, "BucketNameRequired", "Bucket name is required", http.StatusBadRequest)
+			errors.MissingField("bucket").WriteHTTPResponse(w)
 			return
 		}
 		h.headBucket(w, r, bucketName)
 	default:
-		sendAPIError(w, "MethodNotAllowed", "Method not allowed", http.StatusMethodNotAllowed)
+		errors.New(errors.CodeInvalidRequest, errors.CategoryValidation, "Method not allowed", http.StatusMethodNotAllowed).WriteHTTPResponse(w)
 	}
 }
 
@@ -67,7 +68,7 @@ func (h *BucketHandler) listBuckets(w http.ResponseWriter, r *http.Request) {
 	buckets, err := h.bucketManager.ListBuckets()
 	if err != nil {
 		logger.Error("Failed to list buckets: %v", err)
-		sendAPIError(w, "InternalError", "Failed to list buckets", http.StatusInternalServerError)
+		errors.InternalError("Failed to list buckets").WithCause(err).WriteHTTPResponse(w)
 		return
 	}
 
@@ -84,12 +85,12 @@ func (h *BucketHandler) createBucket(w http.ResponseWriter, r *http.Request, nam
 	if err != nil {
 		switch err {
 		case storage.ErrInvalidBucketName:
-			sendAPIError(w, "InvalidBucketName", "Invalid bucket name. Must be 3-63 lowercase alphanumeric characters, hyphens, or dots.", http.StatusBadRequest)
+			errors.InvalidBucketName("Invalid bucket name. Must be 3-63 lowercase alphanumeric characters, hyphens, or dots.").WriteHTTPResponse(w)
 		case storage.ErrBucketExists:
-			sendAPIError(w, "BucketAlreadyExists", "Bucket already exists", http.StatusConflict)
+			errors.BucketExists(name).WriteHTTPResponse(w)
 		default:
 			logger.Error("Failed to create bucket %s: %v", name, err)
-			sendAPIError(w, "InternalError", "Failed to create bucket", http.StatusInternalServerError)
+			errors.InternalError("Failed to create bucket").WithCause(err).WriteHTTPResponse(w)
 		}
 		return
 	}
@@ -107,14 +108,14 @@ func (h *BucketHandler) deleteBucket(w http.ResponseWriter, r *http.Request, nam
 	if err != nil {
 		switch err {
 		case storage.ErrInvalidBucketName:
-			sendAPIError(w, "InvalidBucketName", "Invalid bucket name", http.StatusBadRequest)
+			errors.InvalidBucketName("Invalid bucket name").WriteHTTPResponse(w)
 		case storage.ErrBucketNotFound:
-			sendAPIError(w, "BucketNotFound", "Bucket not found", http.StatusNotFound)
+			errors.BucketNotFound(name).WriteHTTPResponse(w)
 		case storage.ErrBucketNotEmpty:
-			sendAPIError(w, "BucketNotEmpty", "Bucket is not empty", http.StatusConflict)
+			errors.BucketNotEmpty(name).WriteHTTPResponse(w)
 		default:
 			logger.Error("Failed to delete bucket %s: %v", name, err)
-			sendAPIError(w, "InternalError", "Failed to delete bucket", http.StatusInternalServerError)
+			errors.InternalError("Failed to delete bucket").WithCause(err).WriteHTTPResponse(w)
 		}
 		return
 	}
@@ -133,7 +134,7 @@ func (h *BucketHandler) headBucket(w http.ResponseWriter, r *http.Request, name 
 
 func (h *BucketHandler) getBucketInfo(w http.ResponseWriter, r *http.Request, name string) {
 	if !h.bucketManager.BucketExists(name) {
-		sendAPIError(w, "BucketNotFound", "Bucket not found", http.StatusNotFound)
+		errors.BucketNotFound(name).WriteHTTPResponse(w)
 		return
 	}
 
@@ -149,15 +150,4 @@ func sendJSON(w http.ResponseWriter, data any, status int) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	json.NewEncoder(w).Encode(data)
-}
-
-func sendAPIError(w http.ResponseWriter, code, message string, status int) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(status)
-	json.NewEncoder(w).Encode(map[string]any{
-		"error": map[string]string{
-			"code":    code,
-			"message": message,
-		},
-	})
 }

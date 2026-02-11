@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/tachRoutine/beamdrop-go/pkg/errors"
 	"github.com/tachRoutine/beamdrop-go/pkg/logger"
 	"github.com/tachRoutine/beamdrop-go/pkg/storage"
 )
@@ -32,7 +33,7 @@ func (h *ObjectHandler) Handle(w http.ResponseWriter, r *http.Request) {
 	parts := strings.SplitN(path, "/", 2)
 
 	if len(parts) < 1 || parts[0] == "" {
-		sendAPIError(w, "InvalidRequest", "Bucket name is required", http.StatusBadRequest)
+		errors.MissingField("bucket").WriteHTTPResponse(w)
 		return
 	}
 
@@ -48,7 +49,7 @@ func (h *ObjectHandler) Handle(w http.ResponseWriter, r *http.Request) {
 			h.listObjects(w, r, bucket)
 			return
 		}
-		sendAPIError(w, "InvalidRequest", "Object key is required", http.StatusBadRequest)
+		errors.MissingField("key").WriteHTTPResponse(w)
 		return
 	}
 
@@ -64,7 +65,7 @@ func (h *ObjectHandler) Handle(w http.ResponseWriter, r *http.Request) {
 	case http.MethodHead:
 		h.headObject(w, r, bucket, key)
 	default:
-		sendAPIError(w, "MethodNotAllowed", "Method not allowed", http.StatusMethodNotAllowed)
+		errors.New(errors.CodeInvalidRequest, errors.CategoryValidation, "Method not allowed", http.StatusMethodNotAllowed).WriteHTTPResponse(w)
 	}
 }
 
@@ -73,14 +74,14 @@ func (h *ObjectHandler) getObject(w http.ResponseWriter, r *http.Request, bucket
 	if err != nil {
 		switch err {
 		case storage.ErrBucketNotFound:
-			sendAPIError(w, "BucketNotFound", "Bucket not found", http.StatusNotFound)
+			errors.BucketNotFound(bucket).WriteHTTPResponse(w)
 		case storage.ErrObjectNotFound:
-			sendAPIError(w, "KeyNotFound", "Object not found", http.StatusNotFound)
+			errors.ObjectNotFound(key).WriteHTTPResponse(w)
 		case storage.ErrInvalidKey:
-			sendAPIError(w, "InvalidKey", "Invalid object key", http.StatusBadRequest)
+			errors.InvalidObjectKey("Invalid object key").WriteHTTPResponse(w)
 		default:
 			logger.Error("Failed to get object %s/%s: %v", bucket, key, err)
-			sendAPIError(w, "InternalError", "Failed to retrieve object", http.StatusInternalServerError)
+			errors.ReadFailed("Failed to retrieve object").WithCause(err).WriteHTTPResponse(w)
 		}
 		return
 	}
@@ -105,7 +106,7 @@ func (h *ObjectHandler) getObject(w http.ResponseWriter, r *http.Request, bucket
 func (h *ObjectHandler) putObject(w http.ResponseWriter, r *http.Request, bucket, key string) {
 	// Check bucket exists
 	if !h.bucketManager.BucketExists(bucket) {
-		sendAPIError(w, "BucketNotFound", "Bucket not found", http.StatusNotFound)
+		errors.BucketNotFound(bucket).WriteHTTPResponse(w)
 		return
 	}
 
@@ -113,10 +114,10 @@ func (h *ObjectHandler) putObject(w http.ResponseWriter, r *http.Request, bucket
 	if err != nil {
 		switch err {
 		case storage.ErrInvalidKey:
-			sendAPIError(w, "InvalidKey", "Invalid object key", http.StatusBadRequest)
+			errors.InvalidObjectKey("Invalid object key").WriteHTTPResponse(w)
 		default:
 			logger.Error("Failed to put object %s/%s: %v", bucket, key, err)
-			sendAPIError(w, "InternalError", "Failed to store object", http.StatusInternalServerError)
+			errors.WriteFailed("Failed to store object").WithCause(err).WriteHTTPResponse(w)
 		}
 		return
 	}
@@ -136,19 +137,19 @@ func (h *ObjectHandler) putObject(w http.ResponseWriter, r *http.Request, bucket
 func (h *ObjectHandler) putObjectMultipart(w http.ResponseWriter, r *http.Request, bucket, key string) {
 	// Check bucket exists
 	if !h.bucketManager.BucketExists(bucket) {
-		sendAPIError(w, "BucketNotFound", "Bucket not found", http.StatusNotFound)
+		errors.BucketNotFound(bucket).WriteHTTPResponse(w)
 		return
 	}
 
 	// Parse multipart form (max 10GB)
 	if err := r.ParseMultipartForm(10 << 30); err != nil {
-		sendAPIError(w, "InvalidRequest", "Failed to parse multipart form", http.StatusBadRequest)
+		errors.InvalidRequest("Failed to parse multipart form").WithCause(err).WriteHTTPResponse(w)
 		return
 	}
 
 	file, header, err := r.FormFile("file")
 	if err != nil {
-		sendAPIError(w, "InvalidRequest", "File field required", http.StatusBadRequest)
+		errors.MissingField("file").WriteHTTPResponse(w)
 		return
 	}
 	defer file.Close()
@@ -162,10 +163,10 @@ func (h *ObjectHandler) putObjectMultipart(w http.ResponseWriter, r *http.Reques
 	if err != nil {
 		switch err {
 		case storage.ErrInvalidKey:
-			sendAPIError(w, "InvalidKey", "Invalid object key", http.StatusBadRequest)
+			errors.InvalidObjectKey("Invalid object key").WriteHTTPResponse(w)
 		default:
 			logger.Error("Failed to put object %s/%s: %v", bucket, key, err)
-			sendAPIError(w, "InternalError", "Failed to store object", http.StatusInternalServerError)
+			errors.WriteFailed("Failed to store object").WithCause(err).WriteHTTPResponse(w)
 		}
 		return
 	}
@@ -187,14 +188,14 @@ func (h *ObjectHandler) deleteObject(w http.ResponseWriter, r *http.Request, buc
 	if err != nil {
 		switch err {
 		case storage.ErrBucketNotFound:
-			sendAPIError(w, "BucketNotFound", "Bucket not found", http.StatusNotFound)
+			errors.BucketNotFound(bucket).WriteHTTPResponse(w)
 		case storage.ErrObjectNotFound:
-			sendAPIError(w, "KeyNotFound", "Object not found", http.StatusNotFound)
+			errors.ObjectNotFound(key).WriteHTTPResponse(w)
 		case storage.ErrInvalidKey:
-			sendAPIError(w, "InvalidKey", "Invalid object key", http.StatusBadRequest)
+			errors.InvalidObjectKey("Invalid object key").WriteHTTPResponse(w)
 		default:
 			logger.Error("Failed to delete object %s/%s: %v", bucket, key, err)
-			sendAPIError(w, "InternalError", "Failed to delete object", http.StatusInternalServerError)
+			errors.New(errors.CodeDeleteFailed, errors.CategoryStorage, "Failed to delete object", http.StatusInternalServerError).WithCause(err).WriteHTTPResponse(w)
 		}
 		return
 	}
@@ -246,10 +247,10 @@ func (h *ObjectHandler) listObjects(w http.ResponseWriter, r *http.Request, buck
 	if err != nil {
 		switch err {
 		case storage.ErrBucketNotFound:
-			sendAPIError(w, "BucketNotFound", "Bucket not found", http.StatusNotFound)
+			errors.BucketNotFound(bucket).WriteHTTPResponse(w)
 		default:
 			logger.Error("Failed to list objects in %s: %v", bucket, err)
-			sendAPIError(w, "InternalError", "Failed to list objects", http.StatusInternalServerError)
+			errors.InternalError("Failed to list objects").WithCause(err).WriteHTTPResponse(w)
 		}
 		return
 	}

@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 	"os"
@@ -13,6 +12,7 @@ import (
 
 	"github.com/tachRoutine/beamdrop-go/config"
 	"github.com/tachRoutine/beamdrop-go/pkg/db"
+	"github.com/tachRoutine/beamdrop-go/pkg/errors"
 	"github.com/tachRoutine/beamdrop-go/pkg/logger"
 	"github.com/tachRoutine/beamdrop-go/pkg/storage"
 )
@@ -27,7 +27,7 @@ func NewFileHandler(sharedDir string) *FileHandler {
 
 func (h *FileHandler) ListFiles(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
-		sendJSONError(w, "Method not allowed", http.StatusMethodNotAllowed)
+		errors.New(errors.CodeInvalidRequest, errors.CategoryValidation, "Method not allowed", http.StatusMethodNotAllowed).WriteHTTPResponse(w)
 		return
 	}
 
@@ -37,7 +37,7 @@ func (h *FileHandler) ListFiles(w http.ResponseWriter, r *http.Request) {
 	reqPath := r.URL.Query().Get("path")
 	target, err := ResolvePath(h.sharedDir, reqPath)
 	if err != nil {
-		http.Error(w, `{"error":"invalid path"}`, http.StatusBadRequest)
+		errors.InvalidPath("Invalid path").WriteHTTPResponse(w)
 		return
 	}
 
@@ -48,7 +48,7 @@ func (h *FileHandler) ListFiles(w http.ResponseWriter, r *http.Request) {
 
 	files, err := os.ReadDir(target)
 	if err != nil {
-		http.Error(w, fmt.Sprintf(`{"error":"%v"}`, err), http.StatusInternalServerError)
+		errors.InternalError("Failed to read directory").WithCause(err).WriteHTTPResponse(w)
 		return
 	}
 
@@ -98,7 +98,7 @@ func (h *FileHandler) Download(w http.ResponseWriter, r *http.Request) {
 
 func (h *FileHandler) Upload(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
-		sendJSONError(w, "Method not allowed", http.StatusMethodNotAllowed)
+		errors.New(errors.CodeInvalidRequest, errors.CategoryValidation, "Method not allowed", http.StatusMethodNotAllowed).WriteHTTPResponse(w)
 		return
 	}
 
@@ -111,10 +111,10 @@ func (h *FileHandler) Upload(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		logger.Error("Invalid upload request: %v", err)
 		if err.Error() == "http: request body too large" {
-			sendJSONError(w, fmt.Sprintf("File too large. Maximum size is %s", FormatFileSize(config.MaxUploadSize)), http.StatusRequestEntityTooLarge)
+			errors.FileTooLarge(FormatFileSize(config.MaxUploadSize)).WriteHTTPResponse(w)
 			return
 		}
-		sendJSONError(w, "Invalid upload", http.StatusBadRequest)
+		errors.InvalidRequest("Invalid upload").WriteHTTPResponse(w)
 		return
 	}
 	defer file.Close()
@@ -122,7 +122,7 @@ func (h *FileHandler) Upload(w http.ResponseWriter, r *http.Request) {
 	// Check file size against limit
 	if header.Size > config.MaxUploadSize {
 		logger.Error("File size %d exceeds limit %d", header.Size, config.MaxUploadSize)
-		sendJSONError(w, fmt.Sprintf("File size exceeds maximum allowed size of %s", FormatFileSize(config.MaxUploadSize)), http.StatusRequestEntityTooLarge)
+		errors.FileTooLarge(FormatFileSize(config.MaxUploadSize)).WriteHTTPResponse(w)
 		return
 	}
 
@@ -133,7 +133,7 @@ func (h *FileHandler) Upload(w http.ResponseWriter, r *http.Request) {
 		n, err := file.Read(buffer)
 		if err != nil && err != io.EOF {
 			logger.Error("Failed to read file for MIME detection: %v", err)
-			sendJSONError(w, "Failed to process file", http.StatusInternalServerError)
+			errors.IOError("Failed to process file").WithCause(err).WriteHTTPResponse(w)
 			return
 		}
 
@@ -152,14 +152,14 @@ func (h *FileHandler) Upload(w http.ResponseWriter, r *http.Request) {
 
 		if !allowed {
 			logger.Error("File type %s not allowed for file: %s", baseMIME, header.Filename)
-			sendJSONError(w, fmt.Sprintf("File type '%s' is not allowed", baseMIME), http.StatusUnsupportedMediaType)
+			errors.InvalidMIMEType(baseMIME).WriteHTTPResponse(w)
 			return
 		}
 
 		// Reset file pointer to beginning after reading for MIME detection
 		if _, err := file.Seek(0, 0); err != nil {
 			logger.Error("Failed to reset file pointer: %v", err)
-			sendJSONError(w, "Failed to process file", http.StatusInternalServerError)
+			errors.IOError("Failed to process file").WithCause(err).WriteHTTPResponse(w)
 			return
 		}
 	}
@@ -171,7 +171,7 @@ func (h *FileHandler) Upload(w http.ResponseWriter, r *http.Request) {
 	n, err := storage.AtomicWriteFile(filePath, file)
 	if err != nil {
 		logger.Error("Failed to write file %s: %v", filePath, err)
-		sendJSONError(w, "Failed to save file", http.StatusInternalServerError)
+		errors.WriteFailed("Failed to save file").WithCause(err).WriteHTTPResponse(w)
 		return
 	}
 
@@ -182,9 +182,7 @@ func (h *FileHandler) Upload(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]string{"message": "Uploaded", "file": header.Filename})
 }
 
-// Helper function
+// Helper function - kept for backward compatibility with file_operations.go
 func sendJSONError(w http.ResponseWriter, message string, statusCode int) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(statusCode)
-	json.NewEncoder(w).Encode(map[string]string{"error": message})
+	errors.New(errors.CodeInternalError, errors.CategoryInternal, message, statusCode).WriteHTTPResponse(w)
 }

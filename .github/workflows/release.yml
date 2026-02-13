@@ -98,20 +98,20 @@ jobs:
           BUILD_DATE="$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
           MODULE="github.com/tachRoutine/beamdrop-go"
           LDFLAGS="-s -w -X '${MODULE}/config.VERSION=${VERSION}' -X '${MODULE}/config.Commit=${COMMIT}' -X '${MODULE}/config.BuildDate=${BUILD_DATE}'"
-          go build -ldflags "${LDFLAGS}" -o beam${{ matrix.ext }} ./cmd/beam
+          go build -ldflags "${LDFLAGS}" -o beamdrop${{ matrix.ext }} ./cmd/beam
 
       - name: Package (tar.gz)
         if: matrix.archive == 'tar.gz'
-        run: tar czf beam-${{ matrix.os }}-${{ matrix.arch }}.tar.gz beam${{ matrix.ext }}
+        run: tar czf beamdrop-${{ matrix.os }}-${{ matrix.arch }}.tar.gz beamdrop${{ matrix.ext }}
 
       - name: Package (zip)
         if: matrix.archive == 'zip'
-        run: zip beam-${{ matrix.os }}-${{ matrix.arch }}.zip beam${{ matrix.ext }}
+        run: zip beamdrop-${{ matrix.os }}-${{ matrix.arch }}.zip beamdrop${{ matrix.ext }}
 
       - uses: actions/upload-artifact@v4
         with:
-          name: beam-${{ matrix.os }}-${{ matrix.arch }}
-          path: beam-${{ matrix.os }}-${{ matrix.arch }}.${{ matrix.archive }}
+          name: beamdrop-${{ matrix.os }}-${{ matrix.arch }}
+          path: beamdrop-${{ matrix.os }}-${{ matrix.arch }}.${{ matrix.archive }}
 
   release:
     name: Create GitHub Release

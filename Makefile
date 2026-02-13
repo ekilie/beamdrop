@@ -1,7 +1,7 @@
 .PHONY: run build dev build-all build-linux build-darwin build-windows deps clean build-ui release checksums
 
 # ── Variables ──────────────────────────────────────────────────────────────────
-APP_NAME    := beam
+APP_NAME    := beamdrop
 MODULE      := github.com/tachRoutine/beamdrop-go
 VERSION     ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo "dev")
 COMMIT      := $(shell git rev-parse --short HEAD 2>/dev/null || echo "unknown")
@@ -15,13 +15,13 @@ CGO_ENABLED ?= 0
 
 # ── Development ───────────────────────────────────────────────────────────────
 run: build
-	./cmd/beam/beam -p="tach"
+	./cmd/beam/beamdrop -p="tach"
 
 build-ui:
 	cd ./static/frontend && bun install && bun run build
 
 build: deps build-ui
-	CGO_ENABLED=1 go build -ldflags "$(LDFLAGS)" -o ./cmd/beam/beam ./cmd/beam
+	CGO_ENABLED=1 go build -ldflags "$(LDFLAGS)" -o ./cmd/beam/beamdrop ./cmd/beam
 
 dev:
 	go run ./cmd/beam --dir="."
@@ -97,5 +97,5 @@ deps:
 	go mod tidy
 
 clean:
-	rm -f ./cmd/beam/beam
+	rm -f ./cmd/beam/beamdrop
 	rm -rf $(BUILD_DIR)

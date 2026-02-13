@@ -238,11 +238,11 @@ export const FileUploadModule = ({
       {/* File List */}
       {uploadFiles.length > 0 && (
         <div className="space-y-4">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
             <h4 className="font-mono font-bold uppercase tracking-wide text-foreground text-sm">
               Upload Queue ({uploadFiles.length})
             </h4>
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-shrink-0">
               <Button
                 variant="outline"
                 size="sm"

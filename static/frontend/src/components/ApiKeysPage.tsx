@@ -266,9 +266,9 @@ export function ApiKeysPage() {
                             <TableRow>
                                 <TableHead className="font-mono uppercase text-xs">Name</TableHead>
                                 <TableHead className="font-mono uppercase text-xs">Access Key ID</TableHead>
-                                <TableHead className="font-mono uppercase text-xs">Scope</TableHead>
-                                <TableHead className="font-mono uppercase text-xs">Created</TableHead>
-                                <TableHead className="font-mono uppercase text-xs">Last Used</TableHead>
+                                <TableHead className="font-mono uppercase text-xs hidden md:table-cell">Scope</TableHead>
+                                <TableHead className="font-mono uppercase text-xs hidden lg:table-cell">Created</TableHead>
+                                <TableHead className="font-mono uppercase text-xs hidden lg:table-cell">Last Used</TableHead>
                                 <TableHead className="font-mono uppercase text-xs">Status</TableHead>
                                 <TableHead className="font-mono uppercase text-xs text-right">Actions</TableHead>
                             </TableRow>
@@ -279,13 +279,13 @@ export function ApiKeysPage() {
                                     <TableCell className="font-mono font-medium">{key.name}</TableCell>
                                     <TableCell>
                                         <div className="flex items-center gap-2">
-                                            <code className="text-xs bg-muted px-2 py-1 rounded font-mono">
+                                            <code className="text-xs bg-muted px-2 py-1 rounded font-mono max-w-[120px] sm:max-w-none truncate inline-block">
                                                 {key.accessKeyId}
                                             </code>
                                             <Button
                                                 variant="ghost"
                                                 size="icon"
-                                                className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                                                className="h-6 w-6 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity shrink-0"
                                                 onClick={() => handleCopyKey(key.accessKeyId)}
                                             >
                                                 {copiedId === key.accessKeyId ? (
@@ -296,7 +296,7 @@ export function ApiKeysPage() {
                                             </Button>
                                         </div>
                                     </TableCell>
-                                    <TableCell>
+                                    <TableCell className="hidden md:table-cell">
                                         {key.bucketScope ? (
                                             <Badge variant="outline" className="font-mono text-xs">
                                                 {key.bucketScope}
@@ -305,10 +305,10 @@ export function ApiKeysPage() {
                                             <span className="text-muted-foreground text-xs font-mono">All buckets</span>
                                         )}
                                     </TableCell>
-                                    <TableCell className="text-xs font-mono text-muted-foreground">
+                                    <TableCell className="text-xs font-mono text-muted-foreground hidden lg:table-cell">
                                         {formatDate(key.createdAt)}
                                     </TableCell>
-                                    <TableCell className="text-xs font-mono text-muted-foreground">
+                                    <TableCell className="text-xs font-mono text-muted-foreground hidden lg:table-cell">
                                         {key.lastUsedAt ? formatDate(key.lastUsedAt) : "Never"}
                                     </TableCell>
                                     <TableCell>

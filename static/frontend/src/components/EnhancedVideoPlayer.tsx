@@ -191,8 +191,8 @@ export function EnhancedVideoPlayer({
         </div>
 
         {/* Controls */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
+        <div className="flex items-center justify-between flex-wrap gap-y-2">
+          <div className="flex items-center gap-1 sm:gap-2">
             <Button
               variant="ghost"
               size="icon"
@@ -249,7 +249,7 @@ export function EnhancedVideoPlayer({
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 sm:gap-2">
             {/* Playback Speed */}
             <Popover>
               <PopoverTrigger asChild>

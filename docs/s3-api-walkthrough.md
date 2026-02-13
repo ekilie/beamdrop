@@ -16,14 +16,15 @@ A plain-English, file-by-file explanation of how the S3-compatible API works ins
 8. [Storage Layer — ObjectManager (`pkg/storage/object.go`)](#8-object-manager)
 9. [Atomic Writes (`pkg/storage/atomic.go`)](#9-atomic-writes)
 10. [File-Level Locking (`pkg/storage/locks.go`)](#10-file-locking)
-11. [API Key Management — Database (`pkg/db/api_keys.go`)](#11-api-key-database)
-12. [API Key Management — Handler (`beam/server/handlers/api/keys.go`)](#12-keys-handler)
-13. [Cryptography & Signatures (`pkg/crypto/signature.go`)](#13-cryptography)
-14. [Error Handling (`pkg/errors/errors.go`)](#14-error-handling)
-15. [How It All Connects — Diagrams](#15-diagrams)
-16. [Example Walkthrough: Uploading a File](#16-example-upload)
-17. [Example Walkthrough: Downloading a File](#17-example-download)
-18. [Glossary](#18-glossary)
+11. [Database Transaction Safety (`pkg/db/`)](#11-db-transaction-safety)
+12. [API Key Management — Database (`pkg/db/api_keys.go`)](#12-api-key-database)
+13. [API Key Management — Handler (`beam/server/handlers/api/keys.go`)](#13-keys-handler)
+14. [Cryptography & Signatures (`pkg/crypto/signature.go`)](#14-cryptography)
+15. [Error Handling (`pkg/errors/errors.go`)](#15-error-handling)
+16. [How It All Connects — Diagrams](#16-diagrams)
+17. [Example Walkthrough: Uploading a File](#17-example-upload)
+18. [Example Walkthrough: Downloading a File](#18-example-download)
+19. [Glossary](#19-glossary)
 
 ---
 
@@ -827,8 +828,169 @@ The `LockManager` is created inside `NewObjectManager()` and runs a deadlock det
 
 ---
 
-<a name="11-api-key-database"></a>
-## 11. API Key Management — Database (`pkg/db/api_keys.go`)
+<a name="11-db-transaction-safety"></a>
+## 11. Database Transaction Safety — `pkg/db/`
+
+Beamdrop uses SQLite via GORM for metadata storage (API keys, shareable links, starred files, server stats). Operations that touch **both the database and the filesystem** need special care — if one succeeds and the other fails, the system ends up in an inconsistent state.
+
+This section covers three mechanisms that keep data consistent.
+
+### The Problem
+
+Consider creating a shareable link:
+
+```
+Step 1: Verify file exists on disk         ✅
+Step 2: Insert link record into SQLite     ✅
+Step 3: ... later, file is deleted ...
+Step 4: User clicks the link → 404!  💥  (orphaned DB record)
+```
+
+Or the reverse: a multi-step DB operation where the first insert succeeds but the second fails, leaving half-written data.
+
+### 11a. Transaction Helper — `pkg/db/transaction.go`
+
+For operations that involve **multiple DB writes** that should be all-or-nothing:
+
+```go
+func WithTransaction(fn func(tx *gorm.DB) error) error {
+    tx := db.Begin()
+    defer func() {
+        if r := recover(); r != nil {
+            tx.Rollback()
+            panic(r)  // re-panic after rollback
+        }
+    }()
+
+    if err := fn(tx); err != nil {
+        tx.Rollback()
+        return err
+    }
+    return tx.Commit().Error
+}
+```
+
+**Usage example:** Creating an API key and immediately disabling it atomically:
+
+```go
+err := db.WithTransaction(func(tx *gorm.DB) error {
+    if err := tx.Create(&apiKey).Error; err != nil {
+        return err  // → Rollback
+    }
+    return tx.Model(&APIKey{}).Where("access_key_id = ?", id).Update("disabled", true).Error
+})
+// If either step fails, neither is committed
+```
+
+**Key behaviors:**
+- If `fn` returns an error → transaction is **rolled back**
+- If `fn` panics → transaction is **rolled back**, then panic propagates
+- If `fn` returns nil → transaction is **committed**
+
+### 11b. Saga Pattern — `pkg/db/saga.go`
+
+Transactions only work within a single database. When you need to coordinate **DB writes + filesystem writes**, you need the **saga pattern** — a sequence of steps where each step has a compensating "undo" action.
+
+```go
+type SagaStep struct {
+    Name       string        // Human-readable label
+    Action     func() error  // Forward action (DB insert, FS write, etc.)
+    Compensate func() error  // Rollback action (DB delete, FS remove, etc.)
+}
+```
+
+**How it works:**
+
+```
+Step 1: Insert DB record       ✅  (compensate = DELETE record)
+Step 2: Write file to disk     ✅  (compensate = remove file)
+Step 3: Update another record  💥  FAILS!
+        → Compensate step 2: remove file
+        → Compensate step 1: DELETE record
+        → Return original error
+```
+
+Compensation always runs in **reverse order** — most recent successful step first.
+
+**Usage example:** Creating a shareable link with filesystem verification:
+
+```go
+saga := db.NewSaga("create-shareable-link")
+
+saga.AddStep(db.SagaStep{
+    Name: "verify-path-exists",
+    Action: func() error {
+        _, err := os.Stat(fullPath)
+        return err
+    },
+    Compensate: nil, // Nothing to undo
+})
+
+saga.AddStep(db.SagaStep{
+    Name: "insert-link-record",
+    Action: func() error {
+        return db.GetDB().Create(&link).Error
+    },
+    Compensate: func() error {
+        return db.GetDB().Delete(&link).Error  // Undo the insert
+    },
+})
+
+if err := saga.Execute(); err != nil {
+    // All completed steps have been compensated
+    return err
+}
+```
+
+### 11c. Orphaned Records Cleanup — `pkg/db/cleanup.go`
+
+Even with sagas, records can become orphaned over time (e.g., files deleted outside beamdrop, manual filesystem cleanup). The `OrphanCleaner` runs a background job to find and remove them.
+
+```go
+type OrphanCleaner struct {
+    sharedDir string       // Base directory to resolve paths against
+    stopCh    chan struct{} // Shutdown signal
+}
+```
+
+**What it cleans up:**
+
+| Record Type | Condition for Removal |
+|-------------|----------------------|
+| Starred files | `os.Stat(sharedDir + filePath)` returns "not found" |
+| Shareable links | Target path no longer exists on disk |
+| Expired links | `expiresAt` is in the past |
+
+**How it runs:**
+
+```go
+cleaner := db.NewOrphanCleaner(sharedDir)
+cleaner.Start()  // Runs every hour in a background goroutine
+// ...
+cleaner.Stop()   // On server shutdown
+```
+
+The cleaner runs once immediately on startup (to catch anything from while the server was down), then repeats every hour.
+
+**Example log output:**
+```
+INFO: Orphan cleanup: removed 3 starred files, 1 shareable links, 2 expired links
+```
+
+### When Each Mechanism Is Used
+
+| Scenario | Mechanism |
+|----------|----------|
+| Multiple DB writes that must be atomic | `WithTransaction()` |
+| DB write + filesystem write together | `Saga` |
+| Records referencing deleted files | `OrphanCleaner` |
+| Expired shareable links | `OrphanCleaner` |
+| API key create + immediate disable | `WithTransaction()` |
+
+---
+
+<a name="12-api-key-database"></a>
+## 12. API Key Management — Database (`pkg/db/api_keys.go`)
 
 API keys are stored in a SQLite database using GORM (a Go ORM).
 
@@ -879,8 +1041,8 @@ The secret key is **private** — it's used to sign requests and is **only shown
 
 ---
 
-<a name="12-keys-handler"></a>
-## 12. API Key Management — Handler (`beam/server/handlers/api/keys.go`)
+<a name="13-keys-handler"></a>
+## 13. API Key Management — Handler (`beam/server/handlers/api/keys.go`)
 
 This handler provides the HTTP API for managing API keys from the web UI or curl.
 
@@ -954,8 +1116,8 @@ Notice: **no `secretKey`** in the list response. It's intentionally excluded.
 
 ---
 
-<a name="13-cryptography"></a>
-## 13. Cryptography & Signatures — `pkg/crypto/signature.go`
+<a name="14-cryptography"></a>
+## 14. Cryptography & Signatures — `pkg/crypto/signature.go`
 
 This package handles all the signing and verification logic.
 
@@ -1002,8 +1164,8 @@ Requests must have a timestamp within **15 minutes** of the server's clock. This
 
 ---
 
-<a name="14-error-handling"></a>
-## 14. Error Handling — `pkg/errors/errors.go`
+<a name="15-error-handling"></a>
+## 15. Error Handling — `pkg/errors/errors.go`
 
 Beamdrop has a structured error system with **codes**, **categories**, and **HTTP status mapping**.
 
@@ -1051,8 +1213,8 @@ Each error factory function (like `errors.BucketNotFound()`) creates a structure
 
 ---
 
-<a name="15-diagrams"></a>
-## 15. How It All Connects — Diagrams
+<a name="16-diagrams"></a>
+## 16. How It All Connects — Diagrams
 
 ### File Dependency Graph
 
@@ -1069,6 +1231,16 @@ beam/server/routes.go
     │       └── pkg/storage/bucket.go            (bucket existence check)
     └── beam/server/handlers/api/keys.go         (API key management)
             └── pkg/db/api_keys.go               (database CRUD)
+
+beam/server/handlers/shareable_links.go
+    └── pkg/db/shareable_links.go                (shareable link CRUD)
+
+beam/server/handlers/file_operations.go
+    └── pkg/db/starred.go                        (starred files CRUD)
+
+pkg/db/transaction.go                            (DB transaction wrapper)
+pkg/db/saga.go                                   (saga pattern for DB+FS coordination)
+pkg/db/cleanup.go                                (orphaned record cleanup job)
 
 beam/server/handlers/api/middleware.go
     ├── pkg/crypto/signature.go                  (HMAC signing/verification)
@@ -1132,8 +1304,8 @@ pkg/errors/errors.go                             (used by all handlers)
 
 ---
 
-<a name="16-example-upload"></a>
-## 16. Example Walkthrough: Uploading a File
+<a name="17-example-upload"></a>
+## 17. Example Walkthrough: Uploading a File
 
 ### Using curl (with auth disabled)
 
@@ -1197,8 +1369,8 @@ The `vacation/` directory was auto-created by `os.MkdirAll` in `PutObject()`.
 
 ---
 
-<a name="17-example-download"></a>
-## 17. Example Walkthrough: Downloading a File
+<a name="18-example-download"></a>
+## 18. Example Walkthrough: Downloading a File
 
 ```bash
 # Download the file
@@ -1217,8 +1389,8 @@ curl "http://localhost:7777/api/v1/buckets/photos?prefix=vacation/&delimiter=/"
 
 ---
 
-<a name="18-glossary"></a>
-## 18. Glossary
+<a name="19-glossary"></a>
+## 19. Glossary
 
 | Term | Meaning |
 |------|---------|
@@ -1238,6 +1410,10 @@ curl "http://localhost:7777/api/v1/buckets/photos?prefix=vacation/&delimiter=/"
 | **Read Lock** | A shared lock — multiple goroutines can hold it simultaneously. Used for downloads and HEAD requests. |
 | **Lock Timeout** | Max time to wait for a lock (default 30s). Returns HTTP 423 if exceeded. |
 | **Deadlock Detection** | Background scan that warns when a write lock is held too long (>5 min). |
+| **Transaction** | A group of DB operations that either all succeed or all roll back. Uses `WithTransaction()`. |
+| **Saga** | A pattern for coordinating operations across different systems (DB + filesystem) with compensating rollbacks. |
+| **Compensation** | The undo action for a saga step — e.g., deleting a DB record if the subsequent file write fails. |
+| **Orphan Cleaner** | Background job that removes DB records pointing to files that no longer exist on disk. |
 | **Sentinel Error** | A named error variable (e.g., `ErrBucketNotFound`) used for error comparison. |
 | **Mux** | HTTP request multiplexer — matches URLs to handler functions. |
 

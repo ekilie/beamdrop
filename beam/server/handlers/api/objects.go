@@ -1,6 +1,7 @@
 package api
 
 import (
+	stderrors "errors"
 	"io"
 	"net/http"
 	"path/filepath"
@@ -70,15 +71,17 @@ func (h *ObjectHandler) Handle(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *ObjectHandler) getObject(w http.ResponseWriter, r *http.Request, bucket, key string) {
-	file, info, err := h.objectManager.GetObject(bucket, key)
+	file, info, unlock, err := h.objectManager.GetObject(bucket, key)
 	if err != nil {
-		switch err {
-		case storage.ErrBucketNotFound:
+		switch {
+		case stderrors.Is(err, storage.ErrBucketNotFound):
 			errors.BucketNotFound(bucket).WriteHTTPResponse(w)
-		case storage.ErrObjectNotFound:
+		case stderrors.Is(err, storage.ErrObjectNotFound):
 			errors.ObjectNotFound(key).WriteHTTPResponse(w)
-		case storage.ErrInvalidKey:
+		case stderrors.Is(err, storage.ErrInvalidKey):
 			errors.InvalidObjectKey("Invalid object key").WriteHTTPResponse(w)
+		case stderrors.Is(err, storage.ErrLockTimeout):
+			errors.ObjectLocked(key).WithCause(err).WriteHTTPResponse(w)
 		default:
 			logger.Error("Failed to get object %s/%s: %v", bucket, key, err)
 			errors.ReadFailed("Failed to retrieve object").WithCause(err).WriteHTTPResponse(w)
@@ -86,6 +89,7 @@ func (h *ObjectHandler) getObject(w http.ResponseWriter, r *http.Request, bucket
 		return
 	}
 	defer file.Close()
+	defer unlock()
 
 	// Set response headers
 	w.Header().Set("Content-Length", strconv.FormatInt(info.Size, 10))
@@ -112,9 +116,11 @@ func (h *ObjectHandler) putObject(w http.ResponseWriter, r *http.Request, bucket
 
 	info, err := h.objectManager.PutObject(bucket, key, r.Body)
 	if err != nil {
-		switch err {
-		case storage.ErrInvalidKey:
+		switch {
+		case stderrors.Is(err, storage.ErrInvalidKey):
 			errors.InvalidObjectKey("Invalid object key").WriteHTTPResponse(w)
+		case stderrors.Is(err, storage.ErrLockTimeout):
+			errors.ObjectLocked(key).WithCause(err).WriteHTTPResponse(w)
 		default:
 			logger.Error("Failed to put object %s/%s: %v", bucket, key, err)
 			errors.WriteFailed("Failed to store object").WithCause(err).WriteHTTPResponse(w)
@@ -161,9 +167,11 @@ func (h *ObjectHandler) putObjectMultipart(w http.ResponseWriter, r *http.Reques
 
 	info, err := h.objectManager.PutObject(bucket, key, file)
 	if err != nil {
-		switch err {
-		case storage.ErrInvalidKey:
+		switch {
+		case stderrors.Is(err, storage.ErrInvalidKey):
 			errors.InvalidObjectKey("Invalid object key").WriteHTTPResponse(w)
+		case stderrors.Is(err, storage.ErrLockTimeout):
+			errors.ObjectLocked(key).WithCause(err).WriteHTTPResponse(w)
 		default:
 			logger.Error("Failed to put object %s/%s: %v", bucket, key, err)
 			errors.WriteFailed("Failed to store object").WithCause(err).WriteHTTPResponse(w)
@@ -186,13 +194,15 @@ func (h *ObjectHandler) putObjectMultipart(w http.ResponseWriter, r *http.Reques
 func (h *ObjectHandler) deleteObject(w http.ResponseWriter, r *http.Request, bucket, key string) {
 	err := h.objectManager.DeleteObject(bucket, key)
 	if err != nil {
-		switch err {
-		case storage.ErrBucketNotFound:
+		switch {
+		case stderrors.Is(err, storage.ErrBucketNotFound):
 			errors.BucketNotFound(bucket).WriteHTTPResponse(w)
-		case storage.ErrObjectNotFound:
+		case stderrors.Is(err, storage.ErrObjectNotFound):
 			errors.ObjectNotFound(key).WriteHTTPResponse(w)
-		case storage.ErrInvalidKey:
+		case stderrors.Is(err, storage.ErrInvalidKey):
 			errors.InvalidObjectKey("Invalid object key").WriteHTTPResponse(w)
+		case stderrors.Is(err, storage.ErrLockTimeout):
+			errors.ObjectLocked(key).WithCause(err).WriteHTTPResponse(w)
 		default:
 			logger.Error("Failed to delete object %s/%s: %v", bucket, key, err)
 			errors.New(errors.CodeDeleteFailed, errors.CategoryStorage, "Failed to delete object", http.StatusInternalServerError).WithCause(err).WriteHTTPResponse(w)
@@ -207,11 +217,13 @@ func (h *ObjectHandler) deleteObject(w http.ResponseWriter, r *http.Request, buc
 func (h *ObjectHandler) headObject(w http.ResponseWriter, r *http.Request, bucket, key string) {
 	info, err := h.objectManager.HeadObject(bucket, key)
 	if err != nil {
-		switch err {
-		case storage.ErrBucketNotFound:
+		switch {
+		case stderrors.Is(err, storage.ErrBucketNotFound):
 			w.WriteHeader(http.StatusNotFound)
-		case storage.ErrObjectNotFound:
+		case stderrors.Is(err, storage.ErrObjectNotFound):
 			w.WriteHeader(http.StatusNotFound)
+		case stderrors.Is(err, storage.ErrLockTimeout):
+			w.WriteHeader(http.StatusLocked)
 		default:
 			w.WriteHeader(http.StatusInternalServerError)
 		}

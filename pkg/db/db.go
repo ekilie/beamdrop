@@ -3,11 +3,11 @@ package db
 import (
 	"sync"
 
+	"github.com/glebarez/sqlite"
 	"github.com/tachRoutine/beamdrop-go/config"
 	"github.com/tachRoutine/beamdrop-go/pkg/logger"
-	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
-	 gormlogger "gorm.io/gorm/logger" 
+	gormlogger "gorm.io/gorm/logger"
 )
 
 var (

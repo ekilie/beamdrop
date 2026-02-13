@@ -77,7 +77,7 @@ export const FileGridView: React.FC<FileGridViewProps> = ({
   const getFilePreviewBg = (fileName: string) => {
     const ext = fileName.split(".").pop()?.toLowerCase();
     const imageExts = ["jpg", "jpeg", "png", "gif", "webp", "svg"];
-    
+
     if (imageExts.includes(ext || "")) {
       const filePath = currentPath === "." ? fileName : `${currentPath}/${fileName}`;
       return `/preview?file=${encodeURIComponent(filePath)}`;
@@ -125,7 +125,7 @@ export const FileGridView: React.FC<FileGridViewProps> = ({
                   </div>
                 </div>
               )}
-              
+
               {/* Star Badge */}
               {isStarred && (
                 <div className="absolute top-2 left-2">

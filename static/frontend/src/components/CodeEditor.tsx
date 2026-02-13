@@ -98,7 +98,7 @@ export function CodeEditor({
   const { theme } = useTheme();
 
   // Determine the current effective theme
-  const currentTheme = theme === "system" 
+  const currentTheme = theme === "system"
     ? (typeof window !== 'undefined' && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light")
     : theme;
 
@@ -157,7 +157,7 @@ export function CodeEditor({
     setIsSaving(true);
     try {
       const filePath = currentPath === "." ? fileName : `${currentPath}/${fileName}`;
-      
+
       const response = await fetch("/write", {
         method: "POST",
         headers: {
@@ -180,7 +180,7 @@ export function CodeEditor({
       });
 
       setHasChanges(false);
-      
+
       if (onSave) {
         onSave(fileName, content);
       }
@@ -217,7 +217,7 @@ export function CodeEditor({
     if (!isCode || !code || !code.trim()) {
       return code;
     }
-    
+
     // Map language names to Prism language identifiers
     const prismLanguageMap: { [key: string]: string } = {
       'javascript': 'javascript',
@@ -242,18 +242,18 @@ export function CodeEditor({
       'rust': 'rust',
       'sql': 'sql',
     };
-    
+
     const prismLang = prismLanguageMap[language];
-    
+
     if (!prismLang) {
       return code;
     }
-    
+
     const prismLanguage = Prism.languages[prismLang];
     if (!prismLanguage || typeof prismLanguage !== 'object') {
       return code;
     }
-    
+
     try {
       return Prism.highlight(code, prismLanguage, prismLang);
     } catch (e) {

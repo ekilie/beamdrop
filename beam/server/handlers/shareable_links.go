@@ -266,10 +266,93 @@ func (h *ShareableLinkHandler) Access(w http.ResponseWriter, r *http.Request) {
 			"isDir": true,
 		})
 	} else {
-		// For files, serve the file for download
-		w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"", filepath.Base(link.Path)))
-		http.ServeFile(w, r, fullPath)
+		mode := r.URL.Query().Get("mode")
+
+		if mode == "download" {
+			// Force download with attachment header
+			w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"", filepath.Base(link.Path)))
+			http.ServeFile(w, r, fullPath)
+		} else if mode == "inline" {
+			// Serve file inline for preview embedding
+			w.Header().Set("Content-Disposition", fmt.Sprintf("inline; filename=\"%s\"", filepath.Base(link.Path)))
+			http.ServeFile(w, r, fullPath)
+		} else {
+			// Default: return file metadata as JSON for the preview page
+			contentType := detectContentType(fullPath)
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(map[string]interface{}{
+				"path":        link.Path,
+				"name":        filepath.Base(link.Path),
+				"size":        FormatFileSize(fileInfo.Size()),
+				"sizeBytes":   fileInfo.Size(),
+				"contentType": contentType,
+				"isDir":       false,
+				"isFile":      true,
+			})
+		}
 	}
 
 	logger.Info("Shareable link accessed: %s for path: %s", token, link.Path)
+}
+
+// detectContentType determines the MIME type of a file based on extension
+func detectContentType(filePath string) string {
+	ext := strings.ToLower(filepath.Ext(filePath))
+	switch ext {
+	// Images
+	case ".jpg", ".jpeg":
+		return "image/jpeg"
+	case ".png":
+		return "image/png"
+	case ".gif":
+		return "image/gif"
+	case ".webp":
+		return "image/webp"
+	case ".svg":
+		return "image/svg+xml"
+	case ".bmp":
+		return "image/bmp"
+	case ".ico":
+		return "image/x-icon"
+	// Videos
+	case ".mp4":
+		return "video/mp4"
+	case ".webm":
+		return "video/webm"
+	case ".ogg", ".ogv":
+		return "video/ogg"
+	case ".mov":
+		return "video/quicktime"
+	// Audio
+	case ".mp3":
+		return "audio/mpeg"
+	case ".wav":
+		return "audio/wav"
+	case ".flac":
+		return "audio/flac"
+	case ".aac":
+		return "audio/aac"
+	case ".oga":
+		return "audio/ogg"
+	// Documents
+	case ".pdf":
+		return "application/pdf"
+	// Text
+	case ".txt":
+		return "text/plain"
+	case ".html", ".htm":
+		return "text/html"
+	case ".css":
+		return "text/css"
+	case ".js":
+		return "text/javascript"
+	case ".json":
+		return "application/json"
+	case ".xml":
+		return "text/xml"
+	case ".md":
+		return "text/markdown"
+	default:
+		return "application/octet-stream"
+	}
 }

@@ -1,6 +1,12 @@
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,13 +18,17 @@ import {
   FolderIcon,
   Loader2,
   AlertCircle,
-  Eye,
-  Calendar
+  FileQuestion,
 } from "lucide-react";
 import { getFileIcon } from "@/lib/utils";
 
 interface ShareFileInfo {
   path: string;
+  name?: string;
+  size?: string;
+  sizeBytes?: number;
+  contentType?: string;
+  isFile?: boolean;
   files?: Array<{
     name: string;
     size: string;
@@ -30,6 +40,149 @@ interface ShareFileInfo {
   requiresPassword?: boolean;
 }
 
+type PreviewType = "image" | "video" | "audio" | "pdf" | "unsupported";
+
+function getPreviewType(contentType: string): PreviewType {
+  if (contentType.startsWith("image/")) return "image";
+  if (contentType.startsWith("video/")) return "video";
+  if (contentType.startsWith("audio/")) return "audio";
+  if (contentType === "application/pdf") return "pdf";
+  return "unsupported";
+}
+
+function getInlineUrl(token: string, password?: string): string {
+  let url = `/api/shares/access/${token}?mode=inline`;
+  if (password) url += `&password=${encodeURIComponent(password)}`;
+  return url;
+}
+
+function getDownloadUrl(token: string, password?: string): string {
+  let url = `/api/shares/access/${token}?mode=download`;
+  if (password) url += `&password=${encodeURIComponent(password)}`;
+  return url;
+}
+
+function FilePreview({
+  fileInfo,
+  token,
+  password,
+}: {
+  fileInfo: ShareFileInfo;
+  token: string;
+  password?: string;
+}) {
+  const previewType = getPreviewType(fileInfo.contentType || "");
+  const inlineUrl = getInlineUrl(token, password);
+  const downloadUrl = getDownloadUrl(token, password);
+
+  return (
+    <div className="min-h-screen bg-background p-4">
+      <div className="max-w-4xl mx-auto space-y-4">
+        {/* File info header */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3 min-w-0 flex-1">
+                <div className="flex-shrink-0">
+                  {getFileIcon(fileInfo.name || "", "w-6 h-6")}
+                </div>
+                <div className="min-w-0">
+                  <CardTitle className="truncate text-lg">
+                    {fileInfo.name}
+                  </CardTitle>
+                  <CardDescription>{fileInfo.size}</CardDescription>
+                </div>
+              </div>
+              <Button asChild>
+                <a href={downloadUrl} download>
+                  <Download className="w-4 h-4 mr-2" />
+                  Download
+                </a>
+              </Button>
+            </div>
+          </CardHeader>
+        </Card>
+
+        {/* Preview area */}
+        <Card>
+          <CardContent className="p-0 overflow-hidden">
+            {previewType === "image" && (
+              <div className="flex items-center justify-center bg-muted/30 p-4">
+                <img
+                  src={inlineUrl}
+                  alt={fileInfo.name}
+                  className="max-w-full max-h-[70vh] object-contain rounded"
+                />
+              </div>
+            )}
+
+            {previewType === "video" && (
+              <div className="flex items-center justify-center bg-black">
+                <video
+                  src={inlineUrl}
+                  controls
+                  className="max-w-full max-h-[70vh]"
+                  preload="metadata"
+                >
+                  Your browser does not support the video tag.
+                </video>
+              </div>
+            )}
+
+            {previewType === "audio" && (
+              <div className="flex flex-col items-center justify-center gap-4 p-12 bg-muted/30">
+                <FileIcon className="w-16 h-16 text-muted-foreground" />
+                <p className="text-sm text-muted-foreground font-mono">
+                  {fileInfo.name}
+                </p>
+                <audio
+                  src={inlineUrl}
+                  controls
+                  preload="metadata"
+                  className="w-full max-w-md"
+                >
+                  Your browser does not support the audio tag.
+                </audio>
+              </div>
+            )}
+
+            {previewType === "pdf" && (
+              <div className="w-full" style={{ height: "80vh" }}>
+                <iframe
+                  src={inlineUrl}
+                  className="w-full h-full border-0"
+                  title={fileInfo.name}
+                />
+              </div>
+            )}
+
+            {previewType === "unsupported" && (
+              <div className="flex flex-col items-center justify-center gap-6 py-20 px-4">
+                <FileQuestion className="w-20 h-20 text-muted-foreground" />
+                <div className="text-center space-y-2">
+                  <h3 className="text-lg font-semibold">
+                    File preview not supported
+                  </h3>
+                  <p className="text-sm text-muted-foreground max-w-sm">
+                    This file type ({fileInfo.contentType || "unknown"}) cannot
+                    be previewed. You can download it instead.
+                  </p>
+                </div>
+                <Button asChild size="lg">
+                  <a href={downloadUrl} download>
+                    <Download className="w-5 h-5 mr-2" />
+                    Download File
+                  </a>
+                </Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+}
+
 export default function ShareAccess() {
   const { token } = useParams<{ token: string }>();
   const navigate = useNavigate();
@@ -39,77 +192,50 @@ export default function ShareAccess() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchShareInfo = useCallback(async (pwd?: string) => {
-    if (!token) return;
+  const fetchShareInfo = useCallback(
+    async (pwd?: string) => {
+      if (!token) return;
 
-    setIsLoading(true);
-    setError(null);
+      setIsLoading(true);
+      setError(null);
 
-    try {
-      const url = `/api/shares/access/${token}${pwd ? `?password=${encodeURIComponent(pwd)}` : ""}`;
-      const response = await fetch(url);
+      try {
+        const url = `/api/shares/access/${token}${pwd ? `?password=${encodeURIComponent(pwd)}` : ""}`;
+        const response = await fetch(url);
 
-      if (response.status === 401) {
-        const data = await response.json();
-        if (data.requiresPassword) {
-          setRequiresPassword(true);
-          setFileInfo(data);
-          setIsLoading(false);
-          return;
+        if (response.status === 401) {
+          const data = await response.json();
+          if (data.requiresPassword) {
+            setRequiresPassword(true);
+            setFileInfo(data);
+            setIsLoading(false);
+            return;
+          }
+          throw new Error("Invalid password");
         }
-        throw new Error("Invalid password");
-      }
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to access shared link");
-      }
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || "Failed to access shared link");
+        }
 
-      const contentType = response.headers.get("content-type");
-
-      if (contentType?.includes("application/json")) {
-        // It's a directory
+        // Response is always JSON now (metadata for files, listing for dirs)
         const data = await response.json();
         setFileInfo(data);
         setRequiresPassword(false);
-      } else {
-        // It's a file - trigger download
-        const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-
-        // Try to get filename from response headers
-        const contentDisposition = response.headers.get("content-disposition");
-        let filename = "download";
-        if (contentDisposition) {
-          const match = contentDisposition.match(/filename="?(.+)"?/);
-          if (match) filename = match[1];
-        }
-
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        window.URL.revokeObjectURL(url);
-        document.body.removeChild(a);
-
+        setIsLoading(false);
+      } catch (error: any) {
+        setError(error.message);
+        setIsLoading(false);
         toast({
-          title: "Download started",
-          description: "Your file is being downloaded",
+          title: "Error",
+          description: error.message,
+          variant: "destructive",
         });
       }
-
-      setIsLoading(false);
-    } catch (error: any) {
-      setError(error.message);
-      setIsLoading(false);
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    }
-  }, [token]);
+    },
+    [token]
+  );
 
   useEffect(() => {
     fetchShareInfo();
@@ -129,25 +255,20 @@ export default function ShareAccess() {
   };
 
   const downloadFile = async (filePath: string) => {
+    if (!token) return;
     try {
-      const response = await fetch(`/api/shares/access/${token}?password=${encodeURIComponent(password)}`);
-      if (!response.ok) throw new Error("Failed to download file");
-
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
+      const url = getDownloadUrl(token, password);
       const a = document.createElement("a");
       a.href = url;
       a.download = filePath.split("/").pop() || "download";
       document.body.appendChild(a);
       a.click();
-      window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
-
       toast({
         title: "Download started",
         description: "Your file is being downloaded",
       });
-    } catch (error) {
+    } catch {
       toast({
         title: "Error",
         description: "Failed to download file",
@@ -181,7 +302,11 @@ export default function ShareAccess() {
           </CardHeader>
           <CardContent>
             <p className="text-muted-foreground mb-4">{error}</p>
-            <Button onClick={() => navigate("/")} variant="outline" className="w-full">
+            <Button
+              onClick={() => navigate("/")}
+              variant="outline"
+              className="w-full"
+            >
               Go to Home
             </Button>
           </CardContent>
@@ -190,7 +315,7 @@ export default function ShareAccess() {
     );
   }
 
-  if (requiresPassword && !fileInfo?.files) {
+  if (requiresPassword && !fileInfo?.files && !fileInfo?.isFile) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background p-4">
         <Card className="w-full max-w-md">
@@ -200,7 +325,8 @@ export default function ShareAccess() {
               Password Required
             </CardTitle>
             <CardDescription>
-              This shared link is protected. Please enter the password to access it.
+              This shared link is protected. Please enter the password to access
+              it.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -226,6 +352,13 @@ export default function ShareAccess() {
     );
   }
 
+  // Preview a single file
+  if (fileInfo?.isFile && token) {
+    return (
+      <FilePreview fileInfo={fileInfo} token={token} password={password} />
+    );
+  }
+
   // Display directory contents
   if (fileInfo?.isDir && fileInfo.files) {
     return (
@@ -238,7 +371,8 @@ export default function ShareAccess() {
                 Shared Folder: {fileInfo.path}
               </CardTitle>
               <CardDescription>
-                {fileInfo.files.length} item{fileInfo.files.length !== 1 ? "s" : ""}
+                {fileInfo.files.length} item
+                {fileInfo.files.length !== 1 ? "s" : ""}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -259,7 +393,7 @@ export default function ShareAccess() {
                       <div className="min-w-0 flex-1">
                         <p className="font-mono truncate">{file.name}</p>
                         <p className="text-xs text-muted-foreground">
-                          {file.size} • {file.modTime}
+                          {file.size} &bull; {file.modTime}
                         </p>
                       </div>
                     </div>

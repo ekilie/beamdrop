@@ -43,12 +43,12 @@ build-all: deps build-ui
 	# Windows arm64
 	GOOS=windows GOARCH=arm64 CGO_ENABLED=0 go build -ldflags "$(LDFLAGS)" -o $(BUILD_DIR)/$(APP_NAME)-windows-arm64.exe ./cmd/beam
 	@echo "==> Packaging archives..."
-	cd $(BUILD_DIR) && tar czf $(APP_NAME)-darwin-arm64.tar.gz  $(APP_NAME)-darwin-arm64
-	cd $(BUILD_DIR) && tar czf $(APP_NAME)-darwin-amd64.tar.gz  $(APP_NAME)-darwin-amd64
-	cd $(BUILD_DIR) && tar czf $(APP_NAME)-linux-amd64.tar.gz   $(APP_NAME)-linux-amd64
-	cd $(BUILD_DIR) && tar czf $(APP_NAME)-linux-arm64.tar.gz   $(APP_NAME)-linux-arm64
-	cd $(BUILD_DIR) && zip     $(APP_NAME)-windows-amd64.zip    $(APP_NAME)-windows-amd64.exe
-	cd $(BUILD_DIR) && zip     $(APP_NAME)-windows-arm64.zip    $(APP_NAME)-windows-arm64.exe
+	cd $(BUILD_DIR) && cp $(APP_NAME)-darwin-arm64 $(APP_NAME) && tar czf $(APP_NAME)-darwin-arm64.tar.gz  $(APP_NAME) && rm $(APP_NAME)
+	cd $(BUILD_DIR) && cp $(APP_NAME)-darwin-amd64 $(APP_NAME) && tar czf $(APP_NAME)-darwin-amd64.tar.gz  $(APP_NAME) && rm $(APP_NAME)
+	cd $(BUILD_DIR) && cp $(APP_NAME)-linux-amd64  $(APP_NAME) && tar czf $(APP_NAME)-linux-amd64.tar.gz   $(APP_NAME) && rm $(APP_NAME)
+	cd $(BUILD_DIR) && cp $(APP_NAME)-linux-arm64  $(APP_NAME) && tar czf $(APP_NAME)-linux-arm64.tar.gz   $(APP_NAME) && rm $(APP_NAME)
+	cd $(BUILD_DIR) && cp $(APP_NAME)-windows-amd64.exe $(APP_NAME).exe && zip $(APP_NAME)-windows-amd64.zip $(APP_NAME).exe && rm $(APP_NAME).exe
+	cd $(BUILD_DIR) && cp $(APP_NAME)-windows-arm64.exe $(APP_NAME).exe && zip $(APP_NAME)-windows-arm64.zip $(APP_NAME).exe && rm $(APP_NAME).exe
 	@echo "==> Done! Binaries in $(BUILD_DIR)/"
 
 # ── Individual platform builds ───────────────────────────────────────────────
@@ -57,24 +57,24 @@ build-darwin: deps build-ui
 	mkdir -p $(BUILD_DIR)
 	GOOS=darwin GOARCH=arm64 CGO_ENABLED=0 go build -ldflags "$(LDFLAGS)" -o $(BUILD_DIR)/$(APP_NAME)-darwin-arm64 ./cmd/beam
 	GOOS=darwin GOARCH=amd64 CGO_ENABLED=0 go build -ldflags "$(LDFLAGS)" -o $(BUILD_DIR)/$(APP_NAME)-darwin-amd64 ./cmd/beam
-	cd $(BUILD_DIR) && tar czf $(APP_NAME)-darwin-arm64.tar.gz $(APP_NAME)-darwin-arm64
-	cd $(BUILD_DIR) && tar czf $(APP_NAME)-darwin-amd64.tar.gz $(APP_NAME)-darwin-amd64
+	cd $(BUILD_DIR) && cp $(APP_NAME)-darwin-arm64 $(APP_NAME) && tar czf $(APP_NAME)-darwin-arm64.tar.gz $(APP_NAME) && rm $(APP_NAME)
+	cd $(BUILD_DIR) && cp $(APP_NAME)-darwin-amd64 $(APP_NAME) && tar czf $(APP_NAME)-darwin-amd64.tar.gz $(APP_NAME) && rm $(APP_NAME)
 
 build-linux: deps build-ui
 	@echo "==> Building for Linux..."
 	mkdir -p $(BUILD_DIR)
 	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -ldflags "$(LDFLAGS)" -o $(BUILD_DIR)/$(APP_NAME)-linux-amd64 ./cmd/beam
 	GOOS=linux GOARCH=arm64 CGO_ENABLED=0 go build -ldflags "$(LDFLAGS)" -o $(BUILD_DIR)/$(APP_NAME)-linux-arm64 ./cmd/beam
-	cd $(BUILD_DIR) && tar czf $(APP_NAME)-linux-amd64.tar.gz $(APP_NAME)-linux-amd64
-	cd $(BUILD_DIR) && tar czf $(APP_NAME)-linux-arm64.tar.gz $(APP_NAME)-linux-arm64
+	cd $(BUILD_DIR) && cp $(APP_NAME)-linux-amd64 $(APP_NAME) && tar czf $(APP_NAME)-linux-amd64.tar.gz $(APP_NAME) && rm $(APP_NAME)
+	cd $(BUILD_DIR) && cp $(APP_NAME)-linux-arm64 $(APP_NAME) && tar czf $(APP_NAME)-linux-arm64.tar.gz $(APP_NAME) && rm $(APP_NAME)
 
 build-windows: deps build-ui
 	@echo "==> Building for Windows..."
 	mkdir -p $(BUILD_DIR)
 	GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -ldflags "$(LDFLAGS)" -o $(BUILD_DIR)/$(APP_NAME)-windows-amd64.exe ./cmd/beam
 	GOOS=windows GOARCH=arm64 CGO_ENABLED=0 go build -ldflags "$(LDFLAGS)" -o $(BUILD_DIR)/$(APP_NAME)-windows-arm64.exe ./cmd/beam
-	cd $(BUILD_DIR) && zip $(APP_NAME)-windows-amd64.zip $(APP_NAME)-windows-amd64.exe
-	cd $(BUILD_DIR) && zip $(APP_NAME)-windows-arm64.zip $(APP_NAME)-windows-arm64.exe
+	cd $(BUILD_DIR) && cp $(APP_NAME)-windows-amd64.exe $(APP_NAME).exe && zip $(APP_NAME)-windows-amd64.zip $(APP_NAME).exe && rm $(APP_NAME).exe
+	cd $(BUILD_DIR) && cp $(APP_NAME)-windows-arm64.exe $(APP_NAME).exe && zip $(APP_NAME)-windows-arm64.zip $(APP_NAME).exe && rm $(APP_NAME).exe
 
 # ── SHA256 checksums ─────────────────────────────────────────────────────────
 checksums:

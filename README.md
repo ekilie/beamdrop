@@ -33,9 +33,41 @@ cd beamdrop
 make build
 ```
 
-### Binary
+### macOS (Apple Silicon)
 
-Download the latest release from the releases page.
+```bash
+curl -L https://github.com/ekilie/beamdrop/releases/latest/download/beamdrop-darwin-arm64.tar.gz -o beamdrop-darwin-arm64.tar.gz
+sudo tar -C /usr/local/bin -xzf beamdrop-darwin-arm64.tar.gz
+rm beamdrop-darwin-arm64.tar.gz
+```
+
+### macOS (Intel)
+
+```bash
+curl -L https://github.com/ekilie/beamdrop/releases/latest/download/beamdrop-darwin-amd64.tar.gz -o beamdrop-darwin-amd64.tar.gz
+sudo tar -C /usr/local/bin -xzf beamdrop-darwin-amd64.tar.gz
+rm beamdrop-darwin-amd64.tar.gz
+```
+
+### Linux (amd64)
+
+```bash
+curl -L https://github.com/ekilie/beamdrop/releases/latest/download/beamdrop-linux-amd64.tar.gz -o beamdrop-linux-amd64.tar.gz
+sudo tar -C /usr/local/bin -xzf beamdrop-linux-amd64.tar.gz
+rm beamdrop-linux-amd64.tar.gz
+```
+
+### Linux (arm64)
+
+```bash
+curl -L https://github.com/ekilie/beamdrop/releases/latest/download/beamdrop-linux-arm64.tar.gz -o beamdrop-linux-arm64.tar.gz
+sudo tar -C /usr/local/bin -xzf beamdrop-linux-arm64.tar.gz
+rm beamdrop-linux-arm64.tar.gz
+```
+
+### Windows
+
+Download the latest `.zip` from the [releases page](https://github.com/ekilie/beamdrop/releases), extract it, and add `beamdrop.exe` to your PATH.
 
 ## Quick Start
 
@@ -43,26 +75,26 @@ Download the latest release from the releases page.
 
 ```bash
 # Share current directory
-./beamdrop
+beamdrop
 
 # Share specific directory
-./beamdrop -dir /path/to/share
+beamdrop -dir /path/to/share
 
 # With password protection
-./beamdrop -dir /path/to/share -p mysecretpassword
+beamdrop -dir /path/to/share -p mysecretpassword
 
 # With custom port
-./beamdrop -dir /path/to/share -port 9000
+beamdrop -dir /path/to/share -port 9000
 ```
 
 ### With S3-Compatible API
 
 ```bash
 # Enable API authentication
-./beamdrop -dir /path/to/share -api-auth
+beamdrop -dir /path/to/share -api-auth
 
 # With HTTPS
-./beamdrop -dir /path/to/share -api-auth -tls-cert cert.pem -tls-key key.pem
+beamdrop -dir /path/to/share -api-auth -tls-cert cert.pem -tls-key key.pem
 ```
 
 ## Configuration

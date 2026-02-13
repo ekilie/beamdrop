@@ -102,11 +102,13 @@ jobs:
 
       - name: Package (tar.gz)
         if: matrix.archive == 'tar.gz'
-        run: tar czf beamdrop-${{ matrix.os }}-${{ matrix.arch }}.tar.gz beamdrop${{ matrix.ext }}
+        run: tar czf beamdrop-${{ matrix.os }}-${{ matrix.arch }}.tar.gz beamdrop
 
       - name: Package (zip)
         if: matrix.archive == 'zip'
-        run: zip beamdrop-${{ matrix.os }}-${{ matrix.arch }}.zip beamdrop${{ matrix.ext }}
+        run: |
+          mv beamdrop${{ matrix.ext }} beamdrop.exe
+          zip beamdrop-${{ matrix.os }}-${{ matrix.arch }}.zip beamdrop.exe
 
       - uses: actions/upload-artifact@v4
         with:

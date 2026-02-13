@@ -15,14 +15,15 @@ A plain-English, file-by-file explanation of how the S3-compatible API works ins
 7. [Storage Layer — BucketManager (`pkg/storage/bucket.go`)](#7-bucket-manager)
 8. [Storage Layer — ObjectManager (`pkg/storage/object.go`)](#8-object-manager)
 9. [Atomic Writes (`pkg/storage/atomic.go`)](#9-atomic-writes)
-10. [API Key Management — Database (`pkg/db/api_keys.go`)](#10-api-key-database)
-11. [API Key Management — Handler (`beam/server/handlers/api/keys.go`)](#11-keys-handler)
-12. [Cryptography & Signatures (`pkg/crypto/signature.go`)](#12-cryptography)
-13. [Error Handling (`pkg/errors/errors.go`)](#13-error-handling)
-14. [How It All Connects — Diagrams](#14-diagrams)
-15. [Example Walkthrough: Uploading a File](#15-example-upload)
-16. [Example Walkthrough: Downloading a File](#16-example-download)
-17. [Glossary](#17-glossary)
+10. [File-Level Locking (`pkg/storage/locks.go`)](#10-file-locking)
+11. [API Key Management — Database (`pkg/db/api_keys.go`)](#11-api-key-database)
+12. [API Key Management — Handler (`beam/server/handlers/api/keys.go`)](#12-keys-handler)
+13. [Cryptography & Signatures (`pkg/crypto/signature.go`)](#13-cryptography)
+14. [Error Handling (`pkg/errors/errors.go`)](#14-error-handling)
+15. [How It All Connects — Diagrams](#15-diagrams)
+16. [Example Walkthrough: Uploading a File](#16-example-upload)
+17. [Example Walkthrough: Downloading a File](#17-example-download)
+18. [Glossary](#18-glossary)
 
 ---
 
@@ -97,10 +98,14 @@ Step 5  →  ObjectHandler.Handle() dispatches by HTTP method
 Step 6  →  putObject() uses ObjectManager.PutObject()
               (pkg/storage/object.go)
 
-Step 7  →  ObjectManager validates names, creates dirs,
+Step 7  →  ObjectManager acquires a write lock
+              (pkg/storage/locks.go — per-object locking)
+
+Step 8  →  ObjectManager validates names, creates dirs,
               uses AtomicWriter to write the file safely
 
-Step 8  →  Response sent back with ETag, size, URL
+Step 9  →  Write lock released, response sent back
+              with ETag, size, URL
 ```
 
 ---
@@ -502,7 +507,16 @@ var (
 )
 ```
 
-Handlers use `switch err { case storage.ErrBucketNotFound: ... }` to translate these into appropriate HTTP error responses.
+There are also lock-related error sentinels (defined in `locks.go`):
+
+```go
+var (
+    ErrLockTimeout = errors.New("lock acquisition timed out")
+    ErrDeadlock    = errors.New("potential deadlock detected")
+)
+```
+
+Handlers use `errors.Is(err, storage.ErrLockTimeout)` to translate these into HTTP 423 (Locked) responses.
 
 ---
 
@@ -516,8 +530,11 @@ Handles file read/write operations. Uses `BucketManager` internally to resolve p
 ```go
 type ObjectManager struct {
     bucketManager *BucketManager
+    LockManager   *LockManager   // Per-object read/write locking
 }
 ```
+
+The `LockManager` is created automatically in `NewObjectManager()` and provides file-level locking for all object operations (see [Section 10](#10-file-locking) for details).
 
 ### `PutObject()` — Writing a File
 
@@ -532,48 +549,57 @@ func (om *ObjectManager) PutObject(bucket, key string, reader io.Reader) (*Objec
     // 2. Check the bucket exists on disk
     if !om.bucketManager.BucketExists(bucket) { return ErrBucketNotFound }
 
-    // 3. Build the full filesystem path
+    // 3. Acquire a WRITE lock for this object (with timeout)
+    unlock, err := om.LockManager.Lock(bucket, key)
+    // ...if timeout → return ErrLockTimeout
+    defer unlock()
+
+    // 4. Build the full filesystem path
     //    e.g., "/shared/buckets/photos/vacation/beach.jpg"
     objectPath := filepath.Join(bucketPath, filepath.FromSlash(key))
 
-    // 4. Create parent directories if needed
+    // 5. Create parent directories if needed
     //    e.g., creates "vacation/" directory
     os.MkdirAll(filepath.Dir(objectPath), 0755)
 
-    // 5. Create an AtomicWriter (crash-safe writing)
+    // 6. Create an AtomicWriter (crash-safe writing)
     writer := NewAtomicWriter(objectPath)
 
-    // 6. Write data while simultaneously computing MD5 hash (ETag)
+    // 7. Write data while simultaneously computing MD5 hash (ETag)
     hash := md5.New()
     multiWriter := io.MultiWriter(writer, hash)
     size := io.Copy(multiWriter, reader)
 
-    // 7. Commit the atomic write (fsync + rename)
+    // 8. Commit the atomic write (fsync + rename)
     writer.Commit()
 
-    // 8. Return metadata
+    // 9. Return metadata (lock released by defer)
     return &ObjectInfo{ Key, Size, LastModified, ETag }
 }
 ```
 
-**Key insight:** Step 6 uses `io.MultiWriter` to write to the file AND compute the MD5 hash **at the same time**, in a single pass through the data. No need to read the file twice.
+**Key insight:** Step 7 uses `io.MultiWriter` to write to the file AND compute the MD5 hash **at the same time**, in a single pass through the data. No need to read the file twice.
+
+**Concurrency note:** Step 3 ensures that if two clients upload to the same key simultaneously, uploads are **serialized** — one waits for the other to finish. Uploads to *different* keys proceed in parallel without blocking.
 
 ### `GetObject()` — Reading a File
 
 ```go
-func (om *ObjectManager) GetObject(bucket, key string) (*os.File, *ObjectInfo, error) {
+func (om *ObjectManager) GetObject(bucket, key string) (*os.File, *ObjectInfo, func(), error) {
     // 1. Validate names
     // 2. Check bucket exists
-    // 3. Build path and open the file
+    // 3. Acquire a READ lock for this object (with timeout)
+    unlock, err := om.LockManager.RLock(bucket, key)
+    // 4. Build path and open the file
     file := os.Open(objectPath)
-    // 4. Get file info (size, modification time)
+    // 5. Get file info (size, modification time)
     info := file.Stat()
-    // 5. Return both the open file handle AND the metadata
-    return file, &ObjectInfo{...}, nil
+    // 6. Return file handle, metadata, AND the unlock function
+    return file, &ObjectInfo{...}, unlock, nil
 }
 ```
 
-The caller (the handler) is responsible for **closing the file** after streaming it to the client.
+The caller (the handler) is responsible for **closing the file** and **calling the unlock function** after streaming it to the client. Multiple readers can read the same file concurrently — the read lock is shared.
 
 ### `ListObjects()` — Listing Files
 
@@ -664,8 +690,145 @@ func CleanupOrphanedTempFiles(rootDir string) error {
 
 ---
 
-<a name="10-api-key-database"></a>
-## 10. API Key Management — Database (`pkg/db/api_keys.go`)
+<a name="10-file-locking"></a>
+## 10. File-Level Locking — `pkg/storage/locks.go`
+
+This is the concurrency safety mechanism. **Why do we need per-file locking?**
+
+**Problem:** If two clients upload to the same key at the same time, the two writes race against each other. Even with atomic writes, the final rename from one upload could clobber the other, and the losing client would never know their upload was silently overwritten.
+
+**Solution:** A **LockManager** that tracks per-object read/write locks in memory. Writers get exclusive access; readers can proceed concurrently.
+
+### How It Works
+
+```
+Client A: PUT photos/pic.jpg          Client B: PUT photos/pic.jpg
+    │                                      │
+    ▼                                      ▼
+ Lock("photos", "pic.jpg")            Lock("photos", "pic.jpg")
+    │                                      │
+    ▼                                      ▼
+ ✅ Lock acquired                      ⏳ Waiting (blocked)...
+    │                                      │
+    ▼                                      │
+ Write file (atomic)                       │
+    │                                      │
+    ▼                                      │
+ unlock()  ────────────────────────▶   ✅ Lock acquired
+                                           │
+                                           ▼
+                                       Write file (atomic)
+                                           │
+                                           ▼
+                                       unlock()
+```
+
+Uploads to **different** keys are fully independent — `Lock("photos", "pic.jpg")` and `Lock("photos", "other.jpg")` never block each other.
+
+### The Lock Entry
+
+Each object key gets its own `lockEntry` when first accessed:
+
+```go
+type lockEntry struct {
+    mu        sync.RWMutex  // The actual Go read/write mutex
+    refCount  int           // Number of goroutines using this entry
+    writeLock bool          // Is a writer currently holding the lock?
+    readers   int           // Number of active readers
+    lockedAt  time.Time     // When the write lock was acquired (for deadlock detection)
+    key       string        // The object key (for diagnostic logs)
+}
+```
+
+Entries are **lazily created** and **automatically cleaned up** when no goroutines reference them, so the map never grows unboundedly.
+
+### Lock Types
+
+| Operation | Lock Type | Behavior |
+|-----------|-----------|----------|
+| `PutObject` | **Write** (exclusive) | Only one writer at a time per key |
+| `DeleteObject` | **Write** (exclusive) | Only one writer at a time per key |
+| `GetObject` | **Read** (shared) | Multiple concurrent readers allowed |
+| `HeadObject` | **Read** (shared) | Multiple concurrent readers allowed |
+| `ListObjects` | **None** | Directory scan, no per-object lock needed |
+
+### Timeout
+
+Lock acquisition has a configurable **timeout** (default: 30 seconds). If a lock can't be acquired within this period, the operation fails with `ErrLockTimeout` and the handler returns HTTP **423 Locked**:
+
+```go
+func (lm *LockManager) Lock(bucket, key string) (unlock func(), err error) {
+    // 1. Get or create the lock entry for this key
+    entry := lm.getOrCreateEntry(objectKey(bucket, key))
+
+    // 2. Try to acquire in a goroutine (RWMutex.Lock blocks until available)
+    done := make(chan struct{})
+    go func() {
+        entry.mu.Lock()
+        close(done)
+    }()
+
+    // 3. Wait for acquisition OR timeout
+    select {
+    case <-done:
+        return unlockFunc, nil   // Success!
+    case <-time.After(lm.timeout):
+        return nil, ErrLockTimeout  // Timed out
+    }
+}
+```
+
+The same pattern is used for `RLock()` (read locks).
+
+### Deadlock Detection
+
+A background goroutine runs every **10 seconds**, scanning for write locks held longer than **5 minutes**. When it finds one, it logs a warning:
+
+```
+WARN: Potential deadlock: write lock on "photos/pic.jpg" held for 5m30s (threshold 5m0s)
+```
+
+This helps operators identify stuck uploads or crashes that left a lock in a bad state. The thresholds:
+
+| Constant | Default | Meaning |
+|----------|---------|----------|
+| `DefaultLockTimeout` | 30s | Max wait time to acquire a lock |
+| `DeadlockDetectionInterval` | 10s | How often the detector scans |
+| `StaleLockerThreshold` | 5min | How long before a held lock is "suspicious" |
+
+### Lock Stats
+
+```go
+stats := objectManager.LockManager.Stats()
+// stats.ActiveLocks — number of keys with active locks
+// stats.WriteLocks  — number of write locks currently held
+// stats.ReadLocks   — number of read locks currently held
+```
+
+### Error Responses
+
+When a lock times out, the handler returns:
+
+```json
+{
+  "error": {
+    "code": "OBJECT_LOCKED",
+    "category": "STORAGE",
+    "message": "Object 'pic.jpg' is locked",
+    "status": 423,
+    "timestamp": "2026-02-13T10:30:00Z"
+  }
+}
+```
+
+### Lifecycle
+
+The `LockManager` is created inside `NewObjectManager()` and runs a deadlock detector goroutine. Call `LockManager.Close()` on server shutdown to stop it cleanly.
+
+---
+
+<a name="11-api-key-database"></a>
+## 11. API Key Management — Database (`pkg/db/api_keys.go`)
 
 API keys are stored in a SQLite database using GORM (a Go ORM).
 
@@ -716,8 +879,8 @@ The secret key is **private** — it's used to sign requests and is **only shown
 
 ---
 
-<a name="11-keys-handler"></a>
-## 11. API Key Management — Handler (`beam/server/handlers/api/keys.go`)
+<a name="12-keys-handler"></a>
+## 12. API Key Management — Handler (`beam/server/handlers/api/keys.go`)
 
 This handler provides the HTTP API for managing API keys from the web UI or curl.
 
@@ -791,8 +954,8 @@ Notice: **no `secretKey`** in the list response. It's intentionally excluded.
 
 ---
 
-<a name="12-cryptography"></a>
-## 12. Cryptography & Signatures — `pkg/crypto/signature.go`
+<a name="13-cryptography"></a>
+## 13. Cryptography & Signatures — `pkg/crypto/signature.go`
 
 This package handles all the signing and verification logic.
 
@@ -839,8 +1002,8 @@ Requests must have a timestamp within **15 minutes** of the server's clock. This
 
 ---
 
-<a name="13-error-handling"></a>
-## 13. Error Handling — `pkg/errors/errors.go`
+<a name="14-error-handling"></a>
+## 14. Error Handling — `pkg/errors/errors.go`
 
 Beamdrop has a structured error system with **codes**, **categories**, and **HTTP status mapping**.
 
@@ -888,8 +1051,8 @@ Each error factory function (like `errors.BucketNotFound()`) creates a structure
 
 ---
 
-<a name="14-diagrams"></a>
-## 14. How It All Connects — Diagrams
+<a name="15-diagrams"></a>
+## 15. How It All Connects — Diagrams
 
 ### File Dependency Graph
 
@@ -901,7 +1064,8 @@ beam/server/routes.go
     ├── beam/server/handlers/api/objects.go      (object HTTP logic)
     │       ├── pkg/storage/object.go            (object filesystem)
     │       │       ├── pkg/storage/bucket.go    (reused for path resolution)
-    │       │       └── pkg/storage/atomic.go    (crash-safe writes)
+    │       │       ├── pkg/storage/atomic.go    (crash-safe writes)
+    │       │       └── pkg/storage/locks.go     (per-object read/write locking)
     │       └── pkg/storage/bucket.go            (bucket existence check)
     └── beam/server/handlers/api/keys.go         (API key management)
             └── pkg/db/api_keys.go               (database CRUD)
@@ -968,8 +1132,8 @@ pkg/errors/errors.go                             (used by all handlers)
 
 ---
 
-<a name="15-example-upload"></a>
-## 15. Example Walkthrough: Uploading a File
+<a name="16-example-upload"></a>
+## 16. Example Walkthrough: Uploading a File
 
 ### Using curl (with auth disabled)
 
@@ -1033,8 +1197,8 @@ The `vacation/` directory was auto-created by `os.MkdirAll` in `PutObject()`.
 
 ---
 
-<a name="16-example-download"></a>
-## 16. Example Walkthrough: Downloading a File
+<a name="17-example-download"></a>
+## 17. Example Walkthrough: Downloading a File
 
 ```bash
 # Download the file
@@ -1053,8 +1217,8 @@ curl "http://localhost:7777/api/v1/buckets/photos?prefix=vacation/&delimiter=/"
 
 ---
 
-<a name="17-glossary"></a>
-## 17. Glossary
+<a name="18-glossary"></a>
+## 18. Glossary
 
 | Term | Meaning |
 |------|---------|
@@ -1069,6 +1233,11 @@ curl "http://localhost:7777/api/v1/buckets/photos?prefix=vacation/&delimiter=/"
 | **HMAC-SHA256** | A cryptographic algorithm that proves you know a secret without revealing it. |
 | **Presigned URL** | A temporary URL with auth baked in, so anyone with the link can access the file. |
 | **Atomic Write** | A write strategy that prevents corrupted files by using temp file + rename. |
+| **File-Level Lock** | A per-object read/write lock that prevents concurrent writes to the same key. |
+| **Write Lock** | An exclusive lock — only one goroutine can hold it at a time. Used for uploads and deletes. |
+| **Read Lock** | A shared lock — multiple goroutines can hold it simultaneously. Used for downloads and HEAD requests. |
+| **Lock Timeout** | Max time to wait for a lock (default 30s). Returns HTTP 423 if exceeded. |
+| **Deadlock Detection** | Background scan that warns when a write lock is held too long (>5 min). |
 | **Sentinel Error** | A named error variable (e.g., `ErrBucketNotFound`) used for error comparison. |
 | **Mux** | HTTP request multiplexer — matches URLs to handler functions. |
 

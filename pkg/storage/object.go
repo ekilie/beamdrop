@@ -3,6 +3,7 @@ package storage
 import (
 	"crypto/md5"
 	"encoding/hex"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -13,7 +14,9 @@ import (
 // ObjectManager handles object filesystem operations
 type ObjectManager struct {
 	bucketManager *BucketManager
+	LockManager   *LockManager
 }
+
 // ObjectInfo contains object metadata
 type ObjectInfo struct {
 	Key          string    `json:"key"`
@@ -27,79 +30,92 @@ type ObjectInfo struct {
 func NewObjectManager(sharedDir string) *ObjectManager {
 	return &ObjectManager{
 		bucketManager: NewBucketManager(sharedDir),
+		LockManager:   NewLockManager(DefaultLockTimeout),
 	}
 }
-
-
 
 // PutObject writes an object to storage
 func (om *ObjectManager) PutObject(bucket, key string, reader io.Reader) (*ObjectInfo, error) {
-    if err := ValidateBucketName(bucket); err != nil {
-        return nil, err
-    }
-    if err := ValidateObjectKey(key); err != nil {
-        return nil, err
-    }
-
-    if !om.bucketManager.BucketExists(bucket) {
-        return nil, ErrBucketNotFound
-    }
-
-    bucketPath, _ := om.bucketManager.GetBucketPath(bucket)
-    objectPath := filepath.Join(bucketPath, filepath.FromSlash(key))
-
-    // Create parent directories if needed
-    if err := os.MkdirAll(filepath.Dir(objectPath), 0755); err != nil {
-        return nil, err
-    }
-
-    // Using AtomicWriter for crash-safe writes
-    writer, err := NewAtomicWriter(objectPath)
-    if err != nil {
-        return nil, err
-    }
-
-    // Write content and calculate ETag (MD5) simultaneously
-    hash := md5.New()
-    multiWriter := io.MultiWriter(writer, hash)
-
-    size, err := io.Copy(multiWriter, reader)
-    if err != nil {
-        writer.Abort()
-        return nil, err
-    }
-
-    // Commit the atomic write (fsync + rename)
-    if err := writer.Commit(); err != nil {
-        return nil, err
-    }
-
-    etag := hex.EncodeToString(hash.Sum(nil))
-
-    info, err := os.Stat(objectPath)
-    if err != nil {
-        return nil, err
-    }
-
-    return &ObjectInfo{
-        Key:          key,
-        Size:         size,
-        LastModified: info.ModTime(),
-        ETag:         etag,
-    }, nil
-}
-
-// GetObject retrieves an object from storage
-func (om *ObjectManager) GetObject(bucket, key string) (*os.File, *ObjectInfo, error) {
 	if err := ValidateBucketName(bucket); err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 	if err := ValidateObjectKey(key); err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	if !om.bucketManager.BucketExists(bucket) {
-		return nil, nil, ErrBucketNotFound
+		return nil, ErrBucketNotFound
+	}
+
+	// Acquire write lock for this object
+	unlock, err := om.LockManager.Lock(bucket, key)
+	if err != nil {
+		return nil, fmt.Errorf("failed to acquire write lock: %w", err)
+	}
+	defer unlock()
+
+	bucketPath, _ := om.bucketManager.GetBucketPath(bucket)
+	objectPath := filepath.Join(bucketPath, filepath.FromSlash(key))
+
+	// Create parent directories if needed
+	if err := os.MkdirAll(filepath.Dir(objectPath), 0755); err != nil {
+		return nil, err
+	}
+
+	// Using AtomicWriter for crash-safe writes
+	writer, err := NewAtomicWriter(objectPath)
+	if err != nil {
+		return nil, err
+	}
+
+	// Write content and calculate ETag (MD5) simultaneously
+	hash := md5.New()
+	multiWriter := io.MultiWriter(writer, hash)
+
+	size, err := io.Copy(multiWriter, reader)
+	if err != nil {
+		writer.Abort()
+		return nil, err
+	}
+
+	// Commit the atomic write (fsync + rename)
+	if err := writer.Commit(); err != nil {
+		return nil, err
+	}
+
+	etag := hex.EncodeToString(hash.Sum(nil))
+
+	info, err := os.Stat(objectPath)
+	if err != nil {
+		return nil, err
+	}
+
+	return &ObjectInfo{
+		Key:          key,
+		Size:         size,
+		LastModified: info.ModTime(),
+		ETag:         etag,
+	}, nil
+}
+
+// GetObject retrieves an object from storage.
+// The caller receives an unlock function that MUST be called after the file is fully consumed.
+func (om *ObjectManager) GetObject(bucket, key string) (*os.File, *ObjectInfo, func(), error) {
+	if err := ValidateBucketName(bucket); err != nil {
+		return nil, nil, nil, err
+	}
+	if err := ValidateObjectKey(key); err != nil {
+		return nil, nil, nil, err
+	}
+
+	if !om.bucketManager.BucketExists(bucket) {
+		return nil, nil, nil, ErrBucketNotFound
+	}
+
+	// Acquire read lock for this object
+	unlock, err := om.LockManager.RLock(bucket, key)
+	if err != nil {
+		return nil, nil, nil, fmt.Errorf("failed to acquire read lock: %w", err)
 	}
 
 	bucketPath, _ := om.bucketManager.GetBucketPath(bucket)
@@ -107,28 +123,33 @@ func (om *ObjectManager) GetObject(bucket, key string) (*os.File, *ObjectInfo, e
 
 	file, err := os.Open(objectPath)
 	if os.IsNotExist(err) {
-		return nil, nil, ErrObjectNotFound
+		unlock()
+		return nil, nil, nil, ErrObjectNotFound
 	}
 	if err != nil {
-		return nil, nil, err
+		unlock()
+		return nil, nil, nil, err
 	}
 
 	info, err := file.Stat()
 	if err != nil {
 		file.Close()
-		return nil, nil, err
+		unlock()
+		return nil, nil, nil, err
 	}
 
 	if info.IsDir() {
 		file.Close()
-		return nil, nil, ErrObjectNotFound
+		unlock()
+		return nil, nil, nil, ErrObjectNotFound
 	}
 
+	// Caller MUST call the returned unlock function after consuming the file.
 	return file, &ObjectInfo{
 		Key:          key,
 		Size:         info.Size(),
 		LastModified: info.ModTime(),
-	}, nil
+	}, unlock, nil
 }
 
 // DeleteObject removes an object from storage
@@ -144,10 +165,17 @@ func (om *ObjectManager) DeleteObject(bucket, key string) error {
 		return ErrBucketNotFound
 	}
 
+	// Acquire write lock for this object
+	unlock, err := om.LockManager.Lock(bucket, key)
+	if err != nil {
+		return fmt.Errorf("failed to acquire write lock: %w", err)
+	}
+	defer unlock()
+
 	bucketPath, _ := om.bucketManager.GetBucketPath(bucket)
 	objectPath := filepath.Join(bucketPath, filepath.FromSlash(key))
 
-	err := os.Remove(objectPath)
+	err = os.Remove(objectPath)
 	if os.IsNotExist(err) {
 		return ErrObjectNotFound
 	}
@@ -166,6 +194,13 @@ func (om *ObjectManager) HeadObject(bucket, key string) (*ObjectInfo, error) {
 	if !om.bucketManager.BucketExists(bucket) {
 		return nil, ErrBucketNotFound
 	}
+
+	// Acquire read lock for this object
+	unlock, err := om.LockManager.RLock(bucket, key)
+	if err != nil {
+		return nil, fmt.Errorf("failed to acquire read lock: %w", err)
+	}
+	defer unlock()
 
 	bucketPath, _ := om.bucketManager.GetBucketPath(bucket)
 	objectPath := filepath.Join(bucketPath, filepath.FromSlash(key))

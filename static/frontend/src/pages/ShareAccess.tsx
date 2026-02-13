@@ -5,11 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
-import { 
-  Download, 
-  Lock, 
-  FileIcon, 
-  FolderIcon, 
+import {
+  Download,
+  Lock,
+  FileIcon,
+  FolderIcon,
   Loader2,
   AlertCircle,
   Eye,
@@ -66,7 +66,7 @@ export default function ShareAccess() {
       }
 
       const contentType = response.headers.get("content-type");
-      
+
       if (contentType?.includes("application/json")) {
         // It's a directory
         const data = await response.json();
@@ -78,7 +78,7 @@ export default function ShareAccess() {
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
-        
+
         // Try to get filename from response headers
         const contentDisposition = response.headers.get("content-disposition");
         let filename = "download";
@@ -86,13 +86,13 @@ export default function ShareAccess() {
           const match = contentDisposition.match(/filename="?(.+)"?/);
           if (match) filename = match[1];
         }
-        
+
         a.download = filename;
         document.body.appendChild(a);
         a.click();
         window.URL.revokeObjectURL(url);
         document.body.removeChild(a);
-        
+
         toast({
           title: "Download started",
           description: "Your file is being downloaded",
@@ -132,7 +132,7 @@ export default function ShareAccess() {
     try {
       const response = await fetch(`/api/shares/access/${token}?password=${encodeURIComponent(password)}`);
       if (!response.ok) throw new Error("Failed to download file");
-      
+
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -142,7 +142,7 @@ export default function ShareAccess() {
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
-      
+
       toast({
         title: "Download started",
         description: "Your file is being downloaded",
@@ -277,7 +277,7 @@ export default function ShareAccess() {
               </div>
             </CardContent>
           </Card>
-          
+
           <div className="mt-4 text-center">
             <Button onClick={() => navigate("/")} variant="outline">
               Go to Beamdrop

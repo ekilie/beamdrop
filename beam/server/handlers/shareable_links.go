@@ -23,9 +23,9 @@ func NewShareableLinkHandler(sharedDir string) *ShareableLinkHandler {
 
 // CreateShareableLinkRequest represents the request to create a shareable link
 type CreateShareableLinkRequest struct {
-	Path      string  `json:"path"`
-	Password  string  `json:"password,omitempty"`
-	ExpiresIn *int64  `json:"expiresIn,omitempty"` // Duration in seconds
+	Path      string `json:"path"`
+	Password  string `json:"password,omitempty"`
+	ExpiresIn *int64 `json:"expiresIn,omitempty"` // Duration in seconds
 }
 
 // CreateShareableLinkResponse represents the response after creating a shareable link
@@ -39,13 +39,13 @@ type CreateShareableLinkResponse struct {
 
 // ShareableLinkInfo represents link information without sensitive data
 type ShareableLinkInfo struct {
-	ID              uint       `json:"id"`
-	Path            string     `json:"path"`
-	Token           string     `json:"token"`
-	HasPassword     bool       `json:"hasPassword"`
-	ExpiresAt       *time.Time `json:"expiresAt,omitempty"`
-	AccessCount     int        `json:"accessCount"`
-	CreatedAt       time.Time  `json:"createdAt"`
+	ID          uint       `json:"id"`
+	Path        string     `json:"path"`
+	Token       string     `json:"token"`
+	HasPassword bool       `json:"hasPassword"`
+	ExpiresAt   *time.Time `json:"expiresAt,omitempty"`
+	AccessCount int        `json:"accessCount"`
+	CreatedAt   time.Time  `json:"createdAt"`
 }
 
 // ValidateLinkRequest represents the request to validate a link with password
@@ -194,7 +194,7 @@ func (h *ShareableLinkHandler) Access(w http.ResponseWriter, r *http.Request) {
 	if link.PasswordHash != "" {
 		// Check if password is provided in query or via POST
 		password := r.URL.Query().Get("password")
-		
+
 		// If no password in query, check request body for POST
 		if password == "" && r.Method == http.MethodPost {
 			var req ValidateLinkRequest
@@ -227,7 +227,7 @@ func (h *ShareableLinkHandler) Access(w http.ResponseWriter, r *http.Request) {
 
 	// Serve the file or directory
 	fullPath := filepath.Join(h.sharedDir, link.Path)
-	
+
 	fileInfo, err := os.Stat(fullPath)
 	if err != nil {
 		logger.Error("Failed to stat path: %v", err)

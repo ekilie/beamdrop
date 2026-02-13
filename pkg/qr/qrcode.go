@@ -44,6 +44,7 @@ func Generate(data string, filename string) error {
 	return nil
 }
 
+// ShowQrCode generates a QR code for the given URL and prints it to the terminal
 func ShowQrCode(url string) {
 	logger.Debug("Generating terminal QR code for URL: %s", url)
 	qrCode, err := qrcode.New(url, qrcode.Medium)

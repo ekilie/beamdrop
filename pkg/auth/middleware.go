@@ -18,6 +18,8 @@ var PublicRoutes = []string{
 var StaticPrefixes = []string{
 	"/assets/",
 	"/static/",
+	"/share/",             // Shareable link frontend pages (public SPA routes)
+	"/api/shares/access/", // Shareable link access API (has its own password protection)
 }
 
 // AuthMiddleware handles authentication for protected routes

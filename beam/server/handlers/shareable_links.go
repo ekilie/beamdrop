@@ -169,15 +169,14 @@ func (h *ShareableLinkHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	logger.Info("Shareable link deleted: %s", token)
 }
 
-// Access handles GET requests to access a file/folder via shareable link (public endpoint)
+// Access handles GET requests to access a file/folder via shareable link (public API endpoint)
 func (h *ShareableLinkHandler) Access(w http.ResponseWriter, r *http.Request) {
-	// Extract token from URL path
-	parts := strings.Split(r.URL.Path, "/")
-	if len(parts) < 3 {
+	// Extract token from URL path: /api/shares/access/<token>
+	token := strings.TrimPrefix(r.URL.Path, "/api/shares/access/")
+	if token == "" {
 		sendJSONError(w, "Invalid share URL", http.StatusBadRequest)
 		return
 	}
-	token := parts[len(parts)-1]
 
 	// Get the shareable link
 	link, err := db.GetShareableLinkByToken(token)

@@ -46,7 +46,7 @@ export default function ShareAccess() {
     setError(null);
 
     try {
-      const url = `/share/${token}${pwd ? `?password=${encodeURIComponent(pwd)}` : ""}`;
+      const url = `/api/shares/access/${token}${pwd ? `?password=${encodeURIComponent(pwd)}` : ""}`;
       const response = await fetch(url);
 
       if (response.status === 401) {
@@ -130,7 +130,7 @@ export default function ShareAccess() {
 
   const downloadFile = async (filePath: string) => {
     try {
-      const response = await fetch(`/share/${token}?password=${encodeURIComponent(password)}`);
+      const response = await fetch(`/api/shares/access/${token}?password=${encodeURIComponent(password)}`);
       if (!response.ok) throw new Error("Failed to download file");
       
       const blob = await response.blob();

@@ -21,7 +21,7 @@ build-ui:
 	cd ./static/frontend && bun install && bun run build
 
 build: deps build-ui
-	CGO_ENABLED=1 go build -ldflags "$(LDFLAGS)" -o ./cmd/beam/beamdrop ./cmd/beam
+	CGO_ENABLED=0 go build -ldflags "$(LDFLAGS)" -o ./cmd/beam/beamdrop ./cmd/beam
 
 dev:
 	go run ./cmd/beam --dir="."

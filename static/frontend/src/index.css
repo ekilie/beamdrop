@@ -111,6 +111,7 @@ All colors MUST be HSL.
 }
 
 @layer utilities {
+
   /* Custom scrollbar styles for better UI */
   .scrollbar-thin {
     scrollbar-width: thin;
@@ -224,5 +225,12 @@ All colors MUST be HSL.
   .editor-pre .token.important,
   .editor-pre .token.variable {
     color: hsl(var(--accent-foreground));
+  }
+
+  /* Touch device support: make hover-only elements visible on touch devices */
+  @media (hover: none) and (pointer: coarse) {
+    .touch-visible {
+      opacity: 1 !important;
+    }
   }
 }

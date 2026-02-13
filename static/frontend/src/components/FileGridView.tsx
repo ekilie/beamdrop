@@ -77,7 +77,7 @@ export const FileGridView: React.FC<FileGridViewProps> = ({
   const getFilePreviewBg = (fileName: string) => {
     const ext = fileName.split(".").pop()?.toLowerCase();
     const imageExts = ["jpg", "jpeg", "png", "gif", "webp", "svg"];
-    
+
     if (imageExts.includes(ext || "")) {
       const filePath = currentPath === "." ? fileName : `${currentPath}/${fileName}`;
       return `/preview?file=${encodeURIComponent(filePath)}`;
@@ -125,7 +125,7 @@ export const FileGridView: React.FC<FileGridViewProps> = ({
                   </div>
                 </div>
               )}
-              
+
               {/* Star Badge */}
               {isStarred && (
                 <div className="absolute top-2 left-2">
@@ -133,9 +133,9 @@ export const FileGridView: React.FC<FileGridViewProps> = ({
                 </div>
               )}
 
-              {/* Quick Actions Overlay */}
+              {/* Quick Actions Overlay - desktop hover only */}
               {!file.isDir && (
-                <div className="absolute inset-0 bg-background/80 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                <div className="absolute inset-0 bg-background/80 opacity-0 group-hover:opacity-100 transition-opacity hidden md:flex items-center justify-center gap-2">
                   <Button
                     size="icon"
                     variant="secondary"
@@ -170,7 +170,7 @@ export const FileGridView: React.FC<FileGridViewProps> = ({
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                      className="h-6 w-6 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
                     >
                       <MoreVertical className="w-4 h-4" />
                     </Button>

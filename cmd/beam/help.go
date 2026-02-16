@@ -1,6 +1,8 @@
 package main
 
-import "github.com/tachRoutine/beamdrop-go/pkg/logger"
+import (
+	"log/slog"
+)
 
 func Help() string {
 	return `beamdrop - A simple file sharing tool with S3-like API
@@ -25,6 +27,10 @@ Options:
 		Comma-separated list of allowed CORS origins (empty = CORS disabled for security)
   -api-auth
 		Enable API key authentication for S3-like API endpoints
+  -log-format string
+		Log output format: json or text (default "text")
+  -log-level string
+		Log level: debug, info, warn, error (default "info")
   -no-qr
 		Disable QR code generation
   -h
@@ -46,5 +52,5 @@ S3-like API:
 }
 
 func PrintHelp() {
-	logger.Info("%s", Help())
+	slog.Info(Help())
 }

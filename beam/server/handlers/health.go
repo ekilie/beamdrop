@@ -2,11 +2,11 @@ package handlers
 
 import (
 	"encoding/json"
+	"log/slog"
 	"net/http"
 	"os"
 
 	"github.com/tachRoutine/beamdrop-go/pkg/db"
-	"github.com/tachRoutine/beamdrop-go/pkg/logger"
 )
 
 // HealthHandler handles the /health endpoint for liveness checks
@@ -96,7 +96,7 @@ func ReadinessHandler(sharedDir string) http.HandlerFunc {
 			})
 		} else {
 			w.WriteHeader(http.StatusServiceUnavailable)
-			logger.Warn("Readiness check failed: %v", checks)
+			slog.Warn("Readiness check failed", "checks", checks)
 			json.NewEncoder(w).Encode(map[string]any{
 				"status":  "not ready",
 				"service": "beamdrop",

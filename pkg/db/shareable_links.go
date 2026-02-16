@@ -4,23 +4,23 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"errors"
+	"log/slog"
 	"time"
 
 	"github.com/tachRoutine/beamdrop-go/pkg/crypto"
-	"github.com/tachRoutine/beamdrop-go/pkg/logger"
 	"gorm.io/gorm"
 )
 
 // ShareableLink represents a shareable link for a file or folder
 type ShareableLink struct {
 	ID           uint       `gorm:"primaryKey" json:"id"`
-	Path         string     `gorm:"column:path;size:1024;not null" json:"path"`                  // File or folder path
-	Token        string     `gorm:"column:token;uniqueIndex;size:32;not null" json:"token"`      // Unique token for the link
-	PasswordHash string     `gorm:"column:password_hash;size:64" json:"-"`                       // Optional password hash
-	ExpiresAt    *time.Time `gorm:"column:expires_at" json:"expiresAt,omitempty"`                // Optional expiry time
-	AccessCount  int        `gorm:"column:access_count;default:0" json:"accessCount"`            // Number of times accessed
+	Path         string     `gorm:"column:path;size:1024;not null" json:"path"`             // File or folder path
+	Token        string     `gorm:"column:token;uniqueIndex;size:32;not null" json:"token"` // Unique token for the link
+	PasswordHash string     `gorm:"column:password_hash;size:64" json:"-"`                  // Optional password hash
+	ExpiresAt    *time.Time `gorm:"column:expires_at" json:"expiresAt,omitempty"`           // Optional expiry time
+	AccessCount  int        `gorm:"column:access_count;default:0" json:"accessCount"`       // Number of times accessed
 	CreatedAt    time.Time  `gorm:"column:created_at;default:CURRENT_TIMESTAMP" json:"createdAt"`
-	CreatedBy    string     `gorm:"column:created_by;size:255" json:"createdBy,omitempty"`       // Optional user identifier
+	CreatedBy    string     `gorm:"column:created_by;size:255" json:"createdBy,omitempty"` // Optional user identifier
 }
 
 func (ShareableLink) TableName() string {
@@ -40,7 +40,7 @@ func GenerateToken() (string, error) {
 func CreateShareableLink(path string, password string, expiresIn *time.Duration) (*ShareableLink, error) {
 	token, err := GenerateToken()
 	if err != nil {
-		logger.Error("Failed to generate token: %v", err)
+		slog.Error("Failed to generate token", "error", err)
 		return nil, err
 	}
 
@@ -66,11 +66,11 @@ func CreateShareableLink(path string, password string, expiresIn *time.Duration)
 
 	db := GetDB()
 	if err := db.Create(link).Error; err != nil {
-		logger.Error("Failed to create shareable link: %v", err)
+		slog.Error("Failed to create shareable link", "error", err)
 		return nil, err
 	}
 
-	logger.Info("Shareable link created for path: %s with token: %s", path, token)
+	slog.Info("Shareable link created", "path", path, "token", token)
 	return link, nil
 }
 
@@ -115,7 +115,7 @@ func ListShareableLinks() ([]ShareableLink, error) {
 	var links []ShareableLink
 	err := db.Order("created_at DESC").Find(&links).Error
 	if err != nil {
-		logger.Error("Failed to list shareable links: %v", err)
+		slog.Error("Failed to list shareable links", "error", err)
 		return nil, err
 	}
 	return links, nil
@@ -126,13 +126,13 @@ func DeleteShareableLink(token string) error {
 	db := GetDB()
 	result := db.Where("token = ?", token).Delete(&ShareableLink{})
 	if result.Error != nil {
-		logger.Error("Failed to delete shareable link: %v", result.Error)
+		slog.Error("Failed to delete shareable link", "error", result.Error)
 		return result.Error
 	}
 	if result.RowsAffected == 0 {
 		return errors.New("shareable link not found")
 	}
-	logger.Info("Shareable link deleted: %s", token)
+	slog.Info("Shareable link deleted", "token", token)
 	return nil
 }
 
@@ -142,11 +142,11 @@ func CleanupExpiredLinks() error {
 	now := time.Now()
 	result := db.Where("expires_at IS NOT NULL AND expires_at < ?", now).Delete(&ShareableLink{})
 	if result.Error != nil {
-		logger.Error("Failed to cleanup expired links: %v", result.Error)
+		slog.Error("Failed to cleanup expired links", "error", result.Error)
 		return result.Error
 	}
 	if result.RowsAffected > 0 {
-		logger.Info("Cleaned up %d expired shareable links", result.RowsAffected)
+		slog.Info("Cleaned up expired shareable links", "count", result.RowsAffected)
 	}
 	return nil
 }

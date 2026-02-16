@@ -1,11 +1,11 @@
 package db
 
 import (
+	"log/slog"
 	"sync"
 
 	"github.com/glebarez/sqlite"
 	"github.com/tachRoutine/beamdrop-go/config"
-	"github.com/tachRoutine/beamdrop-go/pkg/logger"
 	"gorm.io/gorm"
 	gormlogger "gorm.io/gorm/logger"
 )
@@ -28,7 +28,7 @@ func openDB() {
 		Logger: gormlogger.Default.LogMode(gormlogger.Silent),
 	})
 	if err != nil {
-		logger.Error("failed to connect database: %v", err)
+		slog.Error("Failed to connect database", "error", err)
 	}
 }
 

@@ -2,9 +2,8 @@ package db
 
 import (
 	"fmt"
+	"log/slog"
 	"sync"
-
-	"github.com/tachRoutine/beamdrop-go/pkg/logger"
 )
 
 // SagaStep represents a single forward action with a compensating rollback.
@@ -49,11 +48,11 @@ func (s *Saga) Execute() error {
 	var completed []SagaStep
 
 	for i, step := range s.steps {
-		logger.Debug("Saga %q: executing step %d/%d (%s)", s.name, i+1, len(s.steps), step.Name)
+		slog.Debug("Saga executing step", "saga", s.name, "step", i+1, "total", len(s.steps), "name", step.Name)
 
 		if err := step.Action(); err != nil {
-			logger.Error("Saga %q: step %q failed: %v — compensating %d completed steps",
-				s.name, step.Name, err, len(completed))
+			slog.Error("Saga step failed",
+				"saga", s.name, "step", step.Name, "error", err, "completed", len(completed))
 
 			// Compensate in reverse order
 			for j := len(completed) - 1; j >= 0; j-- {
@@ -61,9 +60,9 @@ func (s *Saga) Execute() error {
 				if cStep.Compensate == nil {
 					continue
 				}
-				logger.Debug("Saga %q: compensating step %q", s.name, cStep.Name)
+				slog.Debug("Saga compensating step", "saga", s.name, "step", cStep.Name)
 				if cErr := cStep.Compensate(); cErr != nil {
-					logger.Error("Saga %q: compensation for step %q failed: %v", s.name, cStep.Name, cErr)
+					slog.Error("Saga compensation failed", "saga", s.name, "step", cStep.Name, "error", cErr)
 				}
 			}
 
@@ -73,6 +72,6 @@ func (s *Saga) Execute() error {
 		completed = append(completed, step)
 	}
 
-	logger.Debug("Saga %q: all %d steps completed successfully", s.name, len(s.steps))
+	slog.Debug("Saga completed", "saga", s.name, "steps", len(s.steps))
 	return nil
 }

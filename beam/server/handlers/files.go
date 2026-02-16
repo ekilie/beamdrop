@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"io"
+	"log/slog"
 	"net/http"
 	"os"
 	"path"
@@ -13,7 +14,6 @@ import (
 	"github.com/tachRoutine/beamdrop-go/config"
 	"github.com/tachRoutine/beamdrop-go/pkg/db"
 	"github.com/tachRoutine/beamdrop-go/pkg/errors"
-	"github.com/tachRoutine/beamdrop-go/pkg/logger"
 	"github.com/tachRoutine/beamdrop-go/pkg/storage"
 )
 
@@ -31,7 +31,7 @@ func (h *FileHandler) ListFiles(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	logger.Debug("Listing files from directory: %s", h.sharedDir)
+	slog.Debug("Listing files from directory", "dir", h.sharedDir)
 	w.Header().Set("Content-Type", "application/json")
 
 	reqPath := r.URL.Query().Get("path")
@@ -81,19 +81,19 @@ func (h *FileHandler) Download(w http.ResponseWriter, r *http.Request) {
 	filename := r.URL.Query().Get("file")
 	filePath := h.sharedDir + "/" + filename
 
-	logger.Info("Download request for file: %s", filename)
+	slog.Info("Download request", "file", filename)
 	f, err := os.Open(filePath)
 	if err != nil {
-		logger.Error("Failed to open file %s: %v", filePath, err)
+		slog.Error("Failed to open file", "path", filePath, "error", err)
 		http.Error(w, "File not found", 404)
 		return
 	}
 	defer f.Close()
 
-	logger.Info("Serving download for file: %s", filename)
+	slog.Info("Serving download", "file", filename)
 	io.Copy(w, f)
 	db.IncrementDownloads()
-	logger.Info("Download completed for file: %s", filename)
+	slog.Info("Download completed", "file", filename)
 }
 
 func (h *FileHandler) Upload(w http.ResponseWriter, r *http.Request) {
@@ -102,14 +102,14 @@ func (h *FileHandler) Upload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	logger.Info("Upload request received")
+	slog.Info("Upload request received")
 
 	// Set max upload size limit on the request body
 	r.Body = http.MaxBytesReader(w, r.Body, config.MaxUploadSize)
 
 	file, header, err := r.FormFile("file")
 	if err != nil {
-		logger.Error("Invalid upload request: %v", err)
+		slog.Error("Invalid upload request", "error", err)
 		if err.Error() == "http: request body too large" {
 			errors.FileTooLarge(FormatFileSize(config.MaxUploadSize)).WriteHTTPResponse(w)
 			return
@@ -121,7 +121,7 @@ func (h *FileHandler) Upload(w http.ResponseWriter, r *http.Request) {
 
 	// Check file size against limit
 	if header.Size > config.MaxUploadSize {
-		logger.Error("File size %d exceeds limit %d", header.Size, config.MaxUploadSize)
+		slog.Error("File size exceeds limit", "size", header.Size, "limit", config.MaxUploadSize)
 		errors.FileTooLarge(FormatFileSize(config.MaxUploadSize)).WriteHTTPResponse(w)
 		return
 	}
@@ -132,14 +132,14 @@ func (h *FileHandler) Upload(w http.ResponseWriter, r *http.Request) {
 		buffer := make([]byte, 512)
 		n, err := file.Read(buffer)
 		if err != nil && err != io.EOF {
-			logger.Error("Failed to read file for MIME detection: %v", err)
+			slog.Error("Failed to read file for MIME detection", "error", err)
 			errors.IOError("Failed to process file").WithCause(err).WriteHTTPResponse(w)
 			return
 		}
 
 		// Detect MIME type
 		detectedMIME := http.DetectContentType(buffer[:n])
-		logger.Debug("Detected MIME type: %s for file: %s", detectedMIME, header.Filename)
+		slog.Debug("Detected MIME type", "mime", detectedMIME, "file", header.Filename)
 
 		// Extract base MIME type (remove parameters like charset)
 		baseMIME := detectedMIME
@@ -151,31 +151,31 @@ func (h *FileHandler) Upload(w http.ResponseWriter, r *http.Request) {
 		allowed := slices.Contains(config.AllowedMIMETypes, baseMIME)
 
 		if !allowed {
-			logger.Error("File type %s not allowed for file: %s", baseMIME, header.Filename)
+			slog.Error("File type not allowed", "mime", baseMIME, "file", header.Filename)
 			errors.InvalidMIMEType(baseMIME).WriteHTTPResponse(w)
 			return
 		}
 
 		// Reset file pointer to beginning after reading for MIME detection
 		if _, err := file.Seek(0, 0); err != nil {
-			logger.Error("Failed to reset file pointer: %v", err)
+			slog.Error("Failed to reset file pointer", "error", err)
 			errors.IOError("Failed to process file").WithCause(err).WriteHTTPResponse(w)
 			return
 		}
 	}
 
 	filePath := h.sharedDir + "/" + header.Filename
-	logger.Info("Uploading file: %s (size: %s)", header.Filename, FormatFileSize(header.Size))
+	slog.Info("Uploading file", "file", header.Filename, "size", FormatFileSize(header.Size))
 
 	// Use atomic write for crash safety
 	n, err := storage.AtomicWriteFile(filePath, file)
 	if err != nil {
-		logger.Error("Failed to write file %s: %v", filePath, err)
+		slog.Error("Failed to write file", "path", filePath, "error", err)
 		errors.WriteFailed("Failed to save file").WithCause(err).WriteHTTPResponse(w)
 		return
 	}
 
-	logger.Info("File uploaded successfully: %s (%d bytes)", header.Filename, n)
+	slog.Info("File uploaded successfully", "file", header.Filename, "bytes", n)
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	db.IncrementUploads()

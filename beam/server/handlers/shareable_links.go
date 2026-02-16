@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -10,7 +11,6 @@ import (
 	"time"
 
 	"github.com/tachRoutine/beamdrop-go/pkg/db"
-	"github.com/tachRoutine/beamdrop-go/pkg/logger"
 )
 
 type ShareableLinkHandler struct {
@@ -86,7 +86,7 @@ func (h *ShareableLinkHandler) Create(w http.ResponseWriter, r *http.Request) {
 
 	link, err := db.CreateShareableLink(req.Path, req.Password, expiresIn)
 	if err != nil {
-		logger.Error("Failed to create shareable link: %v", err)
+		slog.Error("Failed to create shareable link", "error", err)
 		sendJSONError(w, "Failed to create shareable link", http.StatusInternalServerError)
 		return
 	}
@@ -109,7 +109,7 @@ func (h *ShareableLinkHandler) Create(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(response)
-	logger.Info("Shareable link created for path: %s", req.Path)
+	slog.Info("Shareable link created", "path", req.Path)
 }
 
 // List handles GET requests to list all shareable links
@@ -121,7 +121,7 @@ func (h *ShareableLinkHandler) List(w http.ResponseWriter, r *http.Request) {
 
 	links, err := db.ListShareableLinks()
 	if err != nil {
-		logger.Error("Failed to list shareable links: %v", err)
+		slog.Error("Failed to list shareable links", "error", err)
 		sendJSONError(w, "Failed to retrieve shareable links", http.StatusInternalServerError)
 		return
 	}
@@ -158,7 +158,7 @@ func (h *ShareableLinkHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := db.DeleteShareableLink(token); err != nil {
-		logger.Error("Failed to delete shareable link: %v", err)
+		slog.Error("Failed to delete shareable link", "error", err)
 		sendJSONError(w, err.Error(), http.StatusNotFound)
 		return
 	}
@@ -166,7 +166,7 @@ func (h *ShareableLinkHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(map[string]string{"message": "Shareable link deleted successfully"})
-	logger.Info("Shareable link deleted: %s", token)
+	slog.Info("Shareable link deleted", "token", token)
 }
 
 // Access handles GET requests to access a file/folder via shareable link (public API endpoint)
@@ -181,7 +181,7 @@ func (h *ShareableLinkHandler) Access(w http.ResponseWriter, r *http.Request) {
 	// Get the shareable link
 	link, err := db.GetShareableLinkByToken(token)
 	if err != nil {
-		logger.Error("Error accessing shareable link: %v", err)
+		slog.Error("Error accessing shareable link", "error", err)
 		sendJSONError(w, "Invalid or expired link", http.StatusNotFound)
 		return
 	}
@@ -222,7 +222,7 @@ func (h *ShareableLinkHandler) Access(w http.ResponseWriter, r *http.Request) {
 
 	// Increment access count
 	if err := db.IncrementAccessCount(token); err != nil {
-		logger.Error("Failed to increment access count: %v", err)
+		slog.Error("Failed to increment access count", "error", err)
 	}
 
 	// Serve the file or directory
@@ -230,7 +230,7 @@ func (h *ShareableLinkHandler) Access(w http.ResponseWriter, r *http.Request) {
 
 	fileInfo, err := os.Stat(fullPath)
 	if err != nil {
-		logger.Error("Failed to stat path: %v", err)
+		slog.Error("Failed to stat path", "error", err)
 		sendJSONError(w, "File or folder not found", http.StatusNotFound)
 		return
 	}
@@ -239,7 +239,7 @@ func (h *ShareableLinkHandler) Access(w http.ResponseWriter, r *http.Request) {
 		// For directories, return file listing
 		files, err := os.ReadDir(fullPath)
 		if err != nil {
-			logger.Error("Failed to read directory: %v", err)
+			slog.Error("Failed to read directory", "error", err)
 			sendJSONError(w, "Failed to read directory", http.StatusInternalServerError)
 			return
 		}
@@ -292,7 +292,7 @@ func (h *ShareableLinkHandler) Access(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	logger.Info("Shareable link accessed: %s for path: %s", token, link.Path)
+	slog.Info("Shareable link accessed", "token", token, "path", link.Path)
 }
 
 // detectContentType determines the MIME type of a file based on extension

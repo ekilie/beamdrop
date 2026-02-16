@@ -4,9 +4,8 @@ package reqctx
 
 import (
 	"context"
+	"log/slog"
 	"net/http"
-
-	"github.com/tachRoutine/beamdrop-go/pkg/logger"
 )
 
 // Middleware returns an HTTP middleware that enriches the request context
@@ -22,7 +21,7 @@ func Middleware() func(http.Handler) http.Handler {
 
 			// Log request start
 			requestID := GetRequestID(ctx)
-			logger.Debug("[%s] %s %s started", requestID, r.Method, r.URL.Path)
+			slog.Debug("Request started", "requestID", requestID, "method", r.Method, "path", r.URL.Path)
 
 			// Wrap response writer to detect when client disconnects
 			wrapped := &responseWriterWrapper{
@@ -35,7 +34,7 @@ func Middleware() func(http.Handler) http.Handler {
 
 			// Log request completion
 			elapsed := GetElapsedTime(ctx)
-			logger.Debug("[%s] %s %s completed in %v", requestID, r.Method, r.URL.Path, elapsed)
+			slog.Debug("Request completed", "requestID", requestID, "method", r.Method, "path", r.URL.Path, "elapsed", elapsed)
 		})
 	}
 }

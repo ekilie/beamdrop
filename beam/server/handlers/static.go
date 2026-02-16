@@ -3,12 +3,12 @@ package handlers
 import (
 	"encoding/json"
 	"io"
+	"log/slog"
 	"mime"
 	"net/http"
 	"path"
 	"strings"
 
-	"github.com/tachRoutine/beamdrop-go/pkg/logger"
 	"github.com/tachRoutine/beamdrop-go/static"
 )
 
@@ -18,17 +18,17 @@ func StaticHandler(w http.ResponseWriter, r *http.Request) {
 		urlPath = "/index.html"
 	}
 
-	logger.Debug("Serving static file: %s", urlPath)
+	slog.Debug("Serving static file", "path", urlPath)
 	file, err := static.FrontendFiles.Open("frontend/dist" + urlPath)
 	if err != nil {
 		// SPA fallback: if the path has no file extension, serve index.html
 		// so that frontend routing (React Router) can handle it.
 		ext := strings.ToLower(path.Ext(urlPath))
 		if ext == "" {
-			logger.Debug("SPA fallback: serving index.html for route %s", r.URL.Path)
+			slog.Debug("SPA fallback: serving index.html", "route", r.URL.Path)
 			file, err = static.FrontendFiles.Open("frontend/dist/index.html")
 			if err != nil {
-				logger.Warn("index.html not found in embedded files")
+				slog.Warn("index.html not found in embedded files")
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(http.StatusNotFound)
 				json.NewEncoder(w).Encode(map[string]string{"error": "Not found"})
@@ -40,7 +40,7 @@ func StaticHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		logger.Warn("Static file not found: %s", urlPath)
+		slog.Warn("Static file not found", "path", urlPath)
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusNotFound)
 		json.NewEncoder(w).Encode(map[string]string{"error": "Not found"})

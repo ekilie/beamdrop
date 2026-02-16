@@ -1,12 +1,12 @@
 package db
 
-import "github.com/tachRoutine/beamdrop-go/pkg/logger"
+import "log/slog"
 
 func AutoMigrate() {
-	logger.Info("Running database migrations")
+	slog.Info("Running database migrations")
 	err := db.AutoMigrate(&ServerStats{}, &Config{}, &StarredFile{}, &APIKey{}, &ShareableLink{})
 	if err != nil {
-		logger.Error("failed to migrate database: %v", err)
+		slog.Error("Failed to migrate database", "error", err)
 	}
 
 	// We initialize stats record if it doesn't exist //FIXME: Figure out if this is the best place for this

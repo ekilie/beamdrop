@@ -2,12 +2,12 @@ package api
 
 import (
 	"encoding/json"
+	"log/slog"
 	"net/http"
 	"strings"
 	"time"
 
 	"github.com/tachRoutine/beamdrop-go/pkg/errors"
-	"github.com/tachRoutine/beamdrop-go/pkg/logger"
 	"github.com/tachRoutine/beamdrop-go/pkg/storage"
 )
 
@@ -21,7 +21,7 @@ func NewBucketHandler(sharedDir string) *BucketHandler {
 	bm := storage.NewBucketManager(sharedDir)
 	// Ensure buckets directory exists
 	if err := bm.EnsureBucketsDir(); err != nil {
-		logger.Error("Failed to create buckets directory: %v", err)
+		slog.Error("Failed to create buckets directory", "error", err)
 	}
 	return &BucketHandler{bucketManager: bm}
 }
@@ -67,7 +67,7 @@ func (h *BucketHandler) Handle(w http.ResponseWriter, r *http.Request) {
 func (h *BucketHandler) listBuckets(w http.ResponseWriter, r *http.Request) {
 	buckets, err := h.bucketManager.ListBuckets()
 	if err != nil {
-		logger.Error("Failed to list buckets: %v", err)
+		slog.Error("Failed to list buckets", "error", err)
 		errors.InternalError("Failed to list buckets").WithCause(err).WriteHTTPResponse(w)
 		return
 	}
@@ -89,13 +89,13 @@ func (h *BucketHandler) createBucket(w http.ResponseWriter, r *http.Request, nam
 		case storage.ErrBucketExists:
 			errors.BucketExists(name).WriteHTTPResponse(w)
 		default:
-			logger.Error("Failed to create bucket %s: %v", name, err)
+			slog.Error("Failed to create bucket", "bucket", name, "error", err)
 			errors.InternalError("Failed to create bucket").WithCause(err).WriteHTTPResponse(w)
 		}
 		return
 	}
 
-	logger.Info("Bucket created: %s", name)
+	slog.Info("Bucket created", "bucket", name)
 	sendJSON(w, map[string]any{
 		"bucket":   name,
 		"created":  time.Now().UTC().Format(time.RFC3339),
@@ -114,13 +114,13 @@ func (h *BucketHandler) deleteBucket(w http.ResponseWriter, r *http.Request, nam
 		case storage.ErrBucketNotEmpty:
 			errors.BucketNotEmpty(name).WriteHTTPResponse(w)
 		default:
-			logger.Error("Failed to delete bucket %s: %v", name, err)
+			slog.Error("Failed to delete bucket", "bucket", name, "error", err)
 			errors.InternalError("Failed to delete bucket").WithCause(err).WriteHTTPResponse(w)
 		}
 		return
 	}
 
-	logger.Info("Bucket deleted: %s", name)
+	slog.Info("Bucket deleted", "bucket", name)
 	w.WriteHeader(http.StatusNoContent)
 }
 

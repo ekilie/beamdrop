@@ -3,11 +3,10 @@ package storage
 import (
     "fmt"
     "io"
+    "log/slog"
     "os"
     "path/filepath"
     "strings"
-
-    "github.com/tachRoutine/beamdrop-go/pkg/logger"
 )
 
 const (
@@ -93,7 +92,7 @@ func (aw *AtomicWriter) Commit() error {
     // Step 4: Sync the directory to ensure the rename is persisted
     if err := syncDir(filepath.Dir(aw.targetPath)); err != nil {
         // We Log but don't fail - the file is already in place
-        logger.Warn("Failed to sync directory: %v", err)
+        slog.Warn("Failed to sync directory", "error", err)
     }
 
     return nil
@@ -148,7 +147,7 @@ func CleanupOrphanedTempFiles(rootDir string) error {
                 errors = append(errors, fmt.Errorf("failed to remove %s: %w", path, err))
             } else {
                 cleaned++
-                logger.Info("Cleaned up orphaned temp file: %s", path)
+                slog.Info("Cleaned up orphaned temp file", "path", path)
             }
         }
 
@@ -160,7 +159,7 @@ func CleanupOrphanedTempFiles(rootDir string) error {
     }
 
     if cleaned > 0 {
-        logger.Info("Cleaned up %d orphaned temporary files", cleaned)
+        slog.Info("Cleaned up orphaned temporary files", "count", cleaned)
     }
 
     if len(errors) > 0 {

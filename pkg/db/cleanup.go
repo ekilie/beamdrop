@@ -1,12 +1,11 @@
 package db
 
 import (
+	"log/slog"
 	"os"
 	"path/filepath"
 	"sync"
 	"time"
-
-	"github.com/tachRoutine/beamdrop-go/pkg/logger"
 )
 
 // CleanupInterval is how often the orphan cleanup job runs.
@@ -32,7 +31,7 @@ func NewOrphanCleaner(sharedDir string) *OrphanCleaner {
 // Start launches the background cleanup goroutine.
 func (oc *OrphanCleaner) Start() {
 	go oc.loop()
-	logger.Info("Orphan record cleaner started (interval: %v)", CleanupInterval)
+	slog.Info("Orphan record cleaner started", "interval", CleanupInterval)
 }
 
 // Stop signals the background goroutine to exit.
@@ -42,7 +41,7 @@ func (oc *OrphanCleaner) Stop() {
 	if !oc.stopped {
 		close(oc.stopCh)
 		oc.stopped = true
-		logger.Info("Orphan record cleaner stopped")
+		slog.Info("Orphan record cleaner stopped")
 	}
 }
 
@@ -71,8 +70,10 @@ func (oc *OrphanCleaner) RunOnce() {
 
 	total := orphanedStars + orphanedLinks + expiredLinks
 	if total > 0 {
-		logger.Info("Orphan cleanup: removed %d starred files, %d shareable links, %d expired links",
-			orphanedStars, orphanedLinks, expiredLinks)
+		slog.Info("Orphan cleanup completed",
+			"starred_removed", orphanedStars,
+			"links_removed", orphanedLinks,
+			"expired_removed", expiredLinks)
 	}
 }
 
@@ -81,7 +82,7 @@ func (oc *OrphanCleaner) cleanupStarredFiles() int {
 	db := GetDB()
 	var starredFiles []StarredFile
 	if err := db.Find(&starredFiles).Error; err != nil {
-		logger.Error("Orphan cleanup: failed to list starred files: %v", err)
+		slog.Error("Orphan cleanup: failed to list starred files", "error", err)
 		return 0
 	}
 
@@ -90,9 +91,9 @@ func (oc *OrphanCleaner) cleanupStarredFiles() int {
 		fullPath := filepath.Join(oc.sharedDir, sf.FilePath)
 		if _, err := os.Stat(fullPath); os.IsNotExist(err) {
 			if err := db.Delete(&sf).Error; err != nil {
-				logger.Error("Orphan cleanup: failed to delete orphaned starred file %q: %v", sf.FilePath, err)
+				slog.Error("Orphan cleanup: failed to delete orphaned starred file", "path", sf.FilePath, "error", err)
 			} else {
-				logger.Debug("Orphan cleanup: removed starred file record for missing path %q", sf.FilePath)
+				slog.Debug("Orphan cleanup: removed starred file record", "path", sf.FilePath)
 				removed++
 			}
 		}
@@ -105,7 +106,7 @@ func (oc *OrphanCleaner) cleanupShareableLinks() int {
 	db := GetDB()
 	var links []ShareableLink
 	if err := db.Find(&links).Error; err != nil {
-		logger.Error("Orphan cleanup: failed to list shareable links: %v", err)
+		slog.Error("Orphan cleanup: failed to list shareable links", "error", err)
 		return 0
 	}
 
@@ -114,10 +115,10 @@ func (oc *OrphanCleaner) cleanupShareableLinks() int {
 		fullPath := filepath.Join(oc.sharedDir, link.Path)
 		if _, err := os.Stat(fullPath); os.IsNotExist(err) {
 			if err := db.Delete(&link).Error; err != nil {
-				logger.Error("Orphan cleanup: failed to delete orphaned shareable link %q (path %q): %v",
-					link.Token, link.Path, err)
+				slog.Error("Orphan cleanup: failed to delete orphaned shareable link",
+					"token", link.Token, "path", link.Path, "error", err)
 			} else {
-				logger.Debug("Orphan cleanup: removed shareable link %q for missing path %q", link.Token, link.Path)
+				slog.Debug("Orphan cleanup: removed shareable link", "token", link.Token, "path", link.Path)
 				removed++
 			}
 		}
@@ -131,7 +132,7 @@ func (oc *OrphanCleaner) cleanupExpiredLinks() int {
 	now := time.Now()
 	result := db.Where("expires_at IS NOT NULL AND expires_at < ?", now).Delete(&ShareableLink{})
 	if result.Error != nil {
-		logger.Error("Orphan cleanup: failed to delete expired links: %v", result.Error)
+		slog.Error("Orphan cleanup: failed to delete expired links", "error", result.Error)
 		return 0
 	}
 	return int(result.RowsAffected)

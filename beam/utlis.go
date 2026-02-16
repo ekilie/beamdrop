@@ -2,34 +2,33 @@ package beam
 
 import (
 	"fmt"
+	"log/slog"
 	"net"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
-
-	"github.com/tachRoutine/beamdrop-go/pkg/logger"
 )
 
 func GetLocalIP() string {
-	logger.Debug("Detecting local IP address")
+	slog.Debug("Detecting local IP address")
 	addrs, err := net.InterfaceAddrs()
 	if err != nil {
-		logger.Warn("Failed to get network interfaces: %v", err)
+		slog.Warn("Failed to get network interfaces", "error", err)
 		return "localhost"
 	}
 
 	for _, addr := range addrs {
 		if ipnet, ok := addr.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
 			if ipnet.IP.To4() != nil {
-				logger.Debug("Found local IP: %s", ipnet.IP.String())
+				slog.Debug("Found local IP", "ip", ipnet.IP.String())
 				return ipnet.IP.String()
 			}
 		}
 	}
 
-	logger.Warn("No local IP found, using localhost")
-	logger.Info("This might be due to no active network connection.")
+	slog.Warn("No local IP found, using localhost")
+	slog.Info("This might be due to no active network connection")
 	return "localhost"
 }
 
@@ -125,7 +124,7 @@ func IsFile(path string) bool {
 func searchFiles(rootPath, query, relativePath string, results *[]File) error {
 	return filepath.Walk(rootPath, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
-			logger.Warn("Error accessing path %s: %v", path, err)
+			slog.Warn("Error accessing path", "path", path, "error", err)
 			return nil // Continue searching other files
 		}
 

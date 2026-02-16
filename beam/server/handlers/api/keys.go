@@ -2,12 +2,12 @@ package api
 
 import (
 	"encoding/json"
+	"log/slog"
 	"net/http"
 	"time"
 
 	"github.com/tachRoutine/beamdrop-go/pkg/db"
 	"github.com/tachRoutine/beamdrop-go/pkg/errors"
-	"github.com/tachRoutine/beamdrop-go/pkg/logger"
 )
 
 // KeysHandler handles API key management
@@ -35,7 +35,7 @@ func (h *KeysHandler) Handle(w http.ResponseWriter, r *http.Request) {
 func (h *KeysHandler) listKeys(w http.ResponseWriter, r *http.Request) {
 	keys, err := db.ListAPIKeys()
 	if err != nil {
-		logger.Error("Failed to list API keys: %v", err)
+		slog.Error("Failed to list API keys", "error", err)
 		errors.DatabaseError("Failed to list API keys").WithCause(err).WriteHTTPResponse(w)
 		return
 	}
@@ -100,12 +100,12 @@ func (h *KeysHandler) createKey(w http.ResponseWriter, r *http.Request) {
 
 	apiKey, secretKey, err := db.CreateAPIKey(req.Name, req.Permissions, req.BucketScope, expiresIn)
 	if err != nil {
-		logger.Error("Failed to create API key: %v", err)
+		slog.Error("Failed to create API key", "error", err)
 		errors.DatabaseError("Failed to create API key").WithCause(err).WriteHTTPResponse(w)
 		return
 	}
 
-	logger.Info("API key created: %s (%s)", apiKey.Name, apiKey.AccessKeyID)
+	slog.Info("API key created", "name", apiKey.Name, "access_key_id", apiKey.AccessKeyID)
 
 	// Return the key with the secret (only shown once!)
 	sendJSON(w, map[string]any{
@@ -134,11 +134,11 @@ func (h *KeysHandler) deleteKey(w http.ResponseWriter, r *http.Request) {
 			errors.New(errors.CodeObjectNotFound, errors.CategoryNotFound, "API key not found", http.StatusNotFound).WriteHTTPResponse(w)
 			return
 		}
-		logger.Error("Failed to delete API key: %v", err)
+		slog.Error("Failed to delete API key", "error", err)
 		errors.DatabaseError("Failed to delete API key").WithCause(err).WriteHTTPResponse(w)
 		return
 	}
 
-	logger.Info("API key deleted: %s", accessKeyID)
+	slog.Info("API key deleted", "access_key_id", accessKeyID)
 	w.WriteHeader(http.StatusNoContent)
 }

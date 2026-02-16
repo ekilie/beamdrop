@@ -9,6 +9,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/tachRoutine/beamdrop-go/beam/server/handlers"
 	"github.com/tachRoutine/beamdrop-go/config"
 	"github.com/tachRoutine/beamdrop-go/pkg/auth"
 	"github.com/tachRoutine/beamdrop-go/pkg/db"
@@ -126,6 +127,9 @@ func (s *Server) Start() error {
 	}
 
 	slog.Info("Server started", "url", url, "shared_dir", s.sharedDir)
+
+	// Mark startup complete so /health/startup returns 200
+	handlers.MarkStartupReady()
 
 	addr := fmt.Sprintf(":%d", port)
 	s.httpServer = &http.Server{

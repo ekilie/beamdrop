@@ -23,7 +23,21 @@ info:
 
     ## Rate Limiting
 
-    No rate limiting by default. Can be configured per deployment.
+    Per-IP rate limiting is enabled by default (configurable via `-rate-limit` flag).
+    Three tiers are enforced independently:
+
+    | Tier | Endpoints | Default Rate |
+    |------|-----------|-------------|
+    | General | All endpoints | 100 req/min |
+    | Auth | `/auth/login` | 5 req/min |
+    | Upload | PUT objects, `/upload` | 10 req/min |
+
+    When rate limited, the server responds with:
+    - `429 Too Many Requests`
+    - `Retry-After` header (seconds)
+    - `X-Retryable: true` header
+
+    Set `-rate-limit 0` to disable.
 
   version: 1.0.0
   contact:
@@ -285,6 +299,28 @@ components:
           example:
             error: "invalid bucket name"
             code: "BAD_REQUEST"
+    TooManyRequests:
+      description: Rate limit exceeded
+      headers:
+        Retry-After:
+          description: Seconds until the client can retry
+          schema:
+            type: integer
+            example: 20
+        X-Retryable:
+          description: Whether the request can be retried
+          schema:
+            type: string
+            example: "true"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          example:
+            error:
+              code: "RATE_LIMIT_EXCEEDED"
+              message: "Rate limit exceeded"
+              category: "RATE_LIMIT"
 
 paths:
   /keys:
@@ -331,6 +367,8 @@ paths:
                 $ref: "#/components/schemas/APIKeyCreated"
         "400":
           $ref: "#/components/responses/BadRequest"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
 
   /keys/{id}:
     delete:
@@ -584,6 +622,8 @@ paths:
                 $ref: "#/components/schemas/ObjectCreated"
         "400":
           $ref: "#/components/responses/BadRequest"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
         "404":
           description: Bucket not found
           content:

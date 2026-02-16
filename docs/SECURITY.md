@@ -92,6 +92,94 @@ All endpoints now enforce strict HTTP method requirements:
 
 Requests with incorrect methods receive a `405 Method Not Allowed` response.
 
+## Rate Limiting
+
+Beamdrop includes built-in per-IP rate limiting to protect against brute-force attacks, upload flooding, and general abuse.
+
+### How It Works
+
+Rate limiting uses a **token-bucket algorithm** with three endpoint tiers, each enforced independently per client IP:
+
+| Tier | Endpoints | Default Rate | Purpose |
+|------|-----------|-------------|---------|
+| **General** | All other endpoints | 100 req/min | Prevents general abuse |
+| **Auth** | `/auth/login` | 5 req/min | Prevents brute-force password attacks |
+| **Upload** | `/upload`, S3 PUT object | 10 req/min | Prevents upload flooding |
+
+Auth and upload tier rates are derived from the general rate (5% and 10% respectively, minimum 1).
+
+### Configuration
+
+```bash
+# Default: 100 requests/min per IP
+beamdrop -dir /path/to/share
+
+# Custom rate limit
+beamdrop -dir /path/to/share -rate-limit 200
+
+# Disable rate limiting
+beamdrop -dir /path/to/share -rate-limit 0
+```
+
+### Rate Limit Response
+
+When a client exceeds the rate limit, the server responds with:
+
+- **HTTP 429 Too Many Requests**
+- `Retry-After` header (seconds until the client can retry)
+- `X-Retryable: true` header
+- JSON body with error code `RATE_LIMIT_EXCEEDED`
+
+Example response:
+```json
+{
+  "error": {
+    "code": "RATE_LIMIT_EXCEEDED",
+    "message": "Rate limit exceeded",
+    "category": "RATE_LIMIT"
+  }
+}
+```
+
+### IP Detection
+
+The rate limiter identifies clients by IP address, checking in order:
+1. `X-Forwarded-For` header (first IP in the chain)
+2. `X-Real-IP` header
+3. Connection remote address
+
+### Internals
+
+- Stale client entries (unseen for 10+ minutes) are automatically evicted every 5 minutes
+- Each IP gets independent buckets for each tier — hitting the auth limit does not affect general requests
+- Tokens refill continuously (not in fixed windows), providing smooth rate enforcement
+
+## Structured Logging
+
+Beamdrop uses Go's `log/slog` for structured logging with dual output:
+
+### Terminal Output
+Human-readable, colored output showing timestamp, level, and message with key-value pairs:
+```
+11:03:13.973 INFO  Starting beamdrop application
+11:03:13.973 INFO  Starting server shared_dir=/tmp/share
+11:03:13.974 INFO  Rate limiting enabled general=100 unit=req/min
+11:03:13.985 INFO  Server started url=http://192.168.1.13:7777
+```
+
+### File Output
+Structured JSON logs are written to `<dir>/.beamdrop/beamdrop.log` with full source locations:
+```json
+{"time":"2026-02-16T11:03:13.973+03:00","level":"INFO","source":{"function":"main.main","file":"cmd/beam/main.go","line":65},"msg":"Starting beamdrop application"}
+```
+
+### Configuration
+
+```bash
+# Set log level (debug, info, warn, error)
+beamdrop -dir /path/to/share -log-level debug
+```
+
 ## Command-Line Options
 
 ```
@@ -107,6 +195,12 @@ Requests with incorrect methods receive a `405 Method Not Allowed` response.
       Path to TLS private key file for HTTPS
 -allowed-origins string
       Comma-separated list of allowed CORS origins (empty = CORS disabled for security)
+-api-auth
+      Enable API key authentication for S3-like API endpoints
+-rate-limit int
+      General rate limit in requests/min per IP (default 100, 0 = disabled)
+-log-level string
+      Log level: debug, info, warn, error (default "info")
 -no-qr
       Disable QR code generation
 -h
@@ -122,7 +216,9 @@ Requests with incorrect methods receive a `405 Method Not Allowed` response.
 3. **Use strong passwords** with the `-p` flag for authentication
 4. **Restrict allowed origins** to only trusted domains when enabling CORS
 5. **Use valid TLS certificates** in production (e.g., from Let's Encrypt)
-6. **Keep the software updated** to get the latest security patches
+6. **Keep rate limiting enabled** — the default of 100 req/min is suitable for most use cases
+7. **Monitor logs** — check `<dir>/.beamdrop/beamdrop.log` for rate limit warnings and suspicious activity
+8. **Keep the software updated** to get the latest security patches
 
 ## Examples
 

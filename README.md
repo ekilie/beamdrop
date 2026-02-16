@@ -22,6 +22,11 @@ Beamdrop provides both a web interface for interactive file management and a pro
   - Configurable CORS with strict defaults (disabled by default)
   - Security headers (HSTS, CSP, X-Frame-Options, etc.)
   - HTTP method restrictions on all endpoints
+  - **Per-IP rate limiting** with tiered enforcement (general, auth, upload)
+- **Structured logging**:
+  - Colored, human-readable terminal output
+  - Structured JSON log file at `<dir>/.beamdrop/beamdrop.log`
+  - Configurable log level
 
 ## Installation
 
@@ -109,8 +114,8 @@ beamdrop -dir /path/to/share -api-auth -tls-cert cert.pem -tls-key key.pem
 | `-api-auth` | Enable API key authentication | false |
 | `-tls-cert` | Path to TLS certificate | None |
 | `-tls-key` | Path to TLS private key | None |
-| `-allowed-origins` | CORS allowed origins (comma-separated) | None |
-| `-no-qr` | Disable QR code display | false |
+| `-allowed-origins` | CORS allowed origins (comma-separated) | None || `-rate-limit` | Rate limit in requests/min per IP (0 = disabled) | 100 |
+| `-log-level` | Log level: debug, info, warn, error | info || `-no-qr` | Disable QR code display | false |
 | `-v` | Show version | - |
 | `-h` | Show help | - |
 
@@ -192,6 +197,8 @@ shared-directory/
 │   │   └── data.json
 │   └── backups/
 │       └── db.sql
+├── .beamdrop/            # Logs
+│   └── beamdrop.log      # Structured JSON log file
 ├── .beamdrop_data/       # Internal database
 └── .beamdrop_trash/      # Deleted files (recoverable)
 ```
@@ -273,8 +280,11 @@ beamdrop/
 ├── pkg/
 │   ├── auth/           # Authentication
 │   ├── db/             # Database and models
+│   ├── errors/         # Structured error types
+│   ├── middleware/      # CORS, security headers, rate limiting
 │   ├── storage/        # Bucket/object storage
 │   ├── crypto/         # Signature utilities
+│   ├── logger/         # Dual-output structured logging
 │   └── ...
 ├── static/frontend/    # React frontend
 └── docs/               # Documentation

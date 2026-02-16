@@ -30,6 +30,9 @@ Options:
   -log-level string
 		Log level: debug, info, warn, error (default "info")
 		Colored output in terminal; JSON logs saved to <dir>/.beamdrop/beamdrop.log
+  -rate-limit int
+		General rate limit in requests/min per IP (default 100, 0 = disabled)
+		Auth endpoints: 5% of general rate; Upload endpoints: 10% of general rate
   -no-qr
 		Disable QR code generation
   -h

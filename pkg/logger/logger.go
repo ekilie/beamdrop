@@ -34,6 +34,14 @@ var (
 // logFile holds the open log file handle so we can close it later.
 var logFile *os.File
 
+// logFilePath holds the path to the JSON log file.
+var logFilePath string
+
+// LogPath returns the path to the JSON log file, or "" if file logging is not active.
+func LogPath() string {
+	return logFilePath
+}
+
 // Init configures the default slog logger with dual output.
 //
 //	level:    "debug" | "info" | "warn" | "error" (default "info")
@@ -56,6 +64,7 @@ func Init(level, sharedDir string) {
 			f, err := os.OpenFile(logPath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
 			if err == nil {
 				logFile = f
+				logFilePath = logPath
 				fileHandler = slog.NewJSONHandler(f, &slog.HandlerOptions{
 					Level:     lvl,
 					AddSource: true,

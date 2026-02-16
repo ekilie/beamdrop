@@ -25,11 +25,11 @@ type LogEntry struct {
 
 // LogsResponse is the JSON envelope returned by the /logs endpoint.
 type LogsResponse struct {
-	Logs       []map[string]any `json:"logs"`
-	Total      int              `json:"total"`
-	Returned   int              `json:"returned"`
-	HasMore    bool             `json:"hasMore"`
-	LogPath    string           `json:"logPath"`
+	Logs     []map[string]any `json:"logs"`
+	Total    int              `json:"total"`
+	Returned int              `json:"returned"`
+	HasMore  bool             `json:"hasMore"`
+	LogPath  string           `json:"logPath"`
 }
 
 // LogsHandler returns an HTTP handler that reads and serves structured JSON

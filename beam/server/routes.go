@@ -27,7 +27,7 @@ func (s *Server) setupRoutes() {
 	s.mux.HandleFunc("/ws/stats", StatsSocketHandler(s.sharedDir)) //TODO: will come up with  better structure for the websockts
 
 	// Logs
-	s.mux.HandleFunc("/logs", handlers.LogsHandler())
+	s.mux.HandleFunc("/api/logs", handlers.LogsHandler())
 
 	// File handlers
 	fileHandler := handlers.NewFileHandler(s.sharedDir)

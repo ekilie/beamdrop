@@ -111,7 +111,7 @@ const App = () => {
               <Routes>
                 {/* Public route for share access - no auth required */}
                 <Route path="/share/:token" element={<ShareAccess />} />
-                
+
                 {/* Protected routes */}
                 <Route path="*" element={
                   <ProtectedRoute>

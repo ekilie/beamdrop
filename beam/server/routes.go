@@ -9,9 +9,13 @@ import (
 )
 
 func (s *Server) setupRoutes() {
-	// Health and readiness endpoints (for deployment contexts)
-	s.mux.HandleFunc("/health", handlers.HealthHandler)
-	s.mux.HandleFunc("/ready", handlers.ReadinessHandler(s.sharedDir))
+	// Health probe endpoints (K8s-compatible)
+	s.mux.HandleFunc("/health", handlers.HealthIndexHandler(s.sharedDir))
+	s.mux.HandleFunc("/health/live", handlers.LivenessHandler)
+	s.mux.HandleFunc("/health/ready", handlers.EnhancedReadinessHandler(s.sharedDir))
+	s.mux.HandleFunc("/health/startup", handlers.StartupHandler)
+	// Legacy alias
+	s.mux.HandleFunc("/ready", handlers.EnhancedReadinessHandler(s.sharedDir))
 
 	// Static files
 	s.mux.HandleFunc("/", handlers.StaticHandler)

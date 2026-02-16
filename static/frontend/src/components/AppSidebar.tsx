@@ -12,6 +12,7 @@ import {
   Key,
   Home,
   Share2,
+  FileText,
 } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
@@ -460,6 +461,15 @@ export function AppSidebar({ password = "" }: AppSidebarProps) {
                     >
                       <Key className="w-4 h-4" />
                       <span className="font-mono text-sm">API KEYS</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      onClick={() => navigate("/logs")}
+                      className={`hover:bg-sidebar-accent ${location.pathname === "/logs" ? "bg-sidebar-accent" : ""}`}
+                    >
+                      <FileText className="w-4 h-4" />
+                      <span className="font-mono text-sm">LOGS</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 </SidebarMenu>

@@ -16,6 +16,7 @@ import NotFound from "./pages/NotFound";
 import ShareAccess from "./pages/ShareAccess";
 import { ApiKeysPage } from "./components/ApiKeysPage";
 import { SharesManagementPage } from "./components/SharesManagementPage";
+import LogsPage from "./pages/LogsPage";
 import { Menu, LogOut, Loader2 } from "lucide-react";
 
 const queryClient = new QueryClient();
@@ -88,6 +89,7 @@ function MainLayout() {
               <Route path="/" element={<Index />} />
               <Route path="/shares" element={<SharesManagementPage />} />
               <Route path="/api-keys" element={<ApiKeysPage />} />
+              <Route path="/logs" element={<LogsPage />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </main>

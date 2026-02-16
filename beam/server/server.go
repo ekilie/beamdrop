@@ -23,11 +23,23 @@ type Server struct {
 	mux             *http.ServeMux
 	passwordService *auth.PasswordService
 	authMiddleware  *auth.AuthMiddleware
+	rateLimiter     *middleware.RateLimiter
 }
 
 func New(sharedDir string, flags config.Flags) *Server {
 	// Initialize password service
 	passwordService := auth.NewPasswordService(flags.Password)
+
+	// Initialize rate limiter
+	rlConfig := middleware.DefaultRateLimiterConfig()
+	if flags.RateLimit <= 0 {
+		rlConfig.Enabled = false
+	} else {
+		rlConfig.GeneralRate = flags.RateLimit
+		// Auth and upload tiers are stricter: 5% and 10% of general rate, with minimums
+		rlConfig.AuthRate = max(1, flags.RateLimit/20)
+		rlConfig.UploadRate = max(1, flags.RateLimit/10)
+	}
 
 	s := &Server{
 		sharedDir:       sharedDir,
@@ -35,6 +47,7 @@ func New(sharedDir string, flags config.Flags) *Server {
 		mux:             http.NewServeMux(),
 		passwordService: passwordService,
 		authMiddleware:  auth.NewAuthMiddleware(passwordService),
+		rateLimiter:     middleware.NewRateLimiter(rlConfig),
 	}
 	s.setupRoutes()
 	return s
@@ -49,6 +62,9 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	// Apply auth middleware
 	handler = s.authMiddleware.Middleware(handler)
+
+	// Apply rate limiting middleware
+	handler = s.rateLimiter.Middleware(handler)
 
 	// Apply CORS middleware
 	corsConfig := s.getCORSConfig()
@@ -71,6 +87,13 @@ func (s *Server) Start() error {
 
 	if s.flags.Password != "" {
 		slog.Info("Password is enabled")
+	}
+
+	// Log rate limiting status
+	if s.flags.RateLimit > 0 {
+		slog.Info("Rate limiting enabled", "general", s.flags.RateLimit, "unit", "req/min")
+	} else {
+		slog.Warn("Rate limiting is disabled")
 	}
 
 	port := s.getPort()

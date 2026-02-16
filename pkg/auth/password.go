@@ -4,11 +4,11 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"errors"
+	"log/slog"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/tachRoutine/beamdrop-go/pkg/db"
-	"github.com/tachRoutine/beamdrop-go/pkg/logger"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -23,7 +23,7 @@ func init() {
 	// Generate a random JWT secret on startup
 	jwtSecret = make([]byte, 32)
 	if _, err := rand.Read(jwtSecret); err != nil {
-		logger.Error("Failed to generate JWT secret: %v", err)
+		slog.Error("Failed to generate JWT secret", "error", err)
 		// Fallback to a default (not recommended for production)
 		jwtSecret = []byte("beamdrop-default-secret-change-me")
 	}
@@ -49,14 +49,14 @@ func NewPasswordService(password string) *PasswordService {
 	if password != "" {
 		hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 		if err != nil {
-			logger.Error("Failed to hash password: %v", err)
+			slog.Error("Failed to hash password", "error", err)
 			return ps
 		}
 		ps.passwordHash = string(hash)
 
 		// Store hash in database
 		if err := ps.storePasswordHash(); err != nil {
-			logger.Error("Failed to store password hash: %v", err)
+			slog.Error("Failed to store password hash", "error", err)
 		}
 	}
 

@@ -2,11 +2,11 @@ package handlers
 
 import (
 	"encoding/json"
+	"log/slog"
 	"net/http"
 	"time"
 
 	"github.com/tachRoutine/beamdrop-go/pkg/auth"
-	"github.com/tachRoutine/beamdrop-go/pkg/logger"
 )
 
 // AuthHandler handles authentication endpoints
@@ -58,7 +58,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if !h.passwordService.ValidatePassword(req.Password) {
-		logger.Warn("Failed login attempt")
+		slog.Warn("Failed login attempt")
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusUnauthorized)
 		json.NewEncoder(w).Encode(LoginResponse{
@@ -70,7 +70,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 
 	token, err := h.passwordService.GenerateToken()
 	if err != nil {
-		logger.Error("Failed to generate token: %v", err)
+		slog.Error("Failed to generate token", "error", err)
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusInternalServerError)
 		json.NewEncoder(w).Encode(LoginResponse{
@@ -90,7 +90,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		SameSite: http.SameSiteStrictMode,
 	})
 
-	logger.Info("Successful login")
+	slog.Info("Successful login")
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(LoginResponse{
 		Success: true,

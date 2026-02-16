@@ -3,10 +3,9 @@ package storage
 import (
 	"errors"
 	"fmt"
+	"log/slog"
 	"sync"
 	"time"
-
-	"github.com/tachRoutine/beamdrop-go/pkg/logger"
 )
 
 var (
@@ -196,8 +195,7 @@ func (lm *LockManager) detectStale() {
 		if entry.writeLock && !entry.lockedAt.IsZero() {
 			held := now.Sub(entry.lockedAt)
 			if held > StaleLockerThreshold {
-				logger.Warn("Potential deadlock: write lock on %q held for %v (threshold %v)",
-					key, held.Round(time.Second), StaleLockerThreshold)
+				slog.Warn("Potential deadlock detected", "key", key, "held", held.Round(time.Second), "threshold", StaleLockerThreshold)
 			}
 		}
 	}

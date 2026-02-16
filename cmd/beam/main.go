@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"log/slog"
 
 	"github.com/tachRoutine/beamdrop-go/beam/server"
 	"github.com/tachRoutine/beamdrop-go/config"
@@ -19,6 +20,7 @@ func main() {
 	tlsKey := flag.String("tls-key", "", "Path to TLS private key file for HTTPS")
 	allowedOrigins := flag.String("allowed-origins", "", "Comma-separated list of allowed CORS origins (empty = CORS disabled)")
 	apiAuth := flag.Bool("api-auth", false, "Enable API key authentication for S3-like API endpoints")
+	logLevel := flag.String("log-level", "info", "Log level: debug, info, warn, error")
 
 	// NOTE:Here i default it to 0 so when it zero we know that the flag wasnt passed
 	// Since the flag is a non-boolean value
@@ -28,6 +30,10 @@ func main() {
 		return
 	}
 	flag.Parse()
+
+	// Initialize structured logger before anything else.
+	// Terminal gets colored human-readable output; JSON logs go to <sharedDir>/.beamdrop/beamdrop.log
+	logger.Init(*logLevel, *sharedDir)
 
 	flags := config.Flags{
 		SharedDir:      *sharedDir,
@@ -39,15 +45,16 @@ func main() {
 		TLSKey:         *tlsKey,
 		AllowedOrigins: *allowedOrigins,
 		APIAuth:        *apiAuth,
+		LogLevel:       *logLevel,
 	}
 
 	if flag.NArg() > 0 {
-		logger.Debug("Extra arguments provided, showing help")
+		slog.Debug("Extra arguments provided, showing help")
 		PrintHelp()
 		return
 	}
 	if *sharedDir == "" {
-		logger.Error("Shared directory is required")
+		slog.Error("Shared directory is required")
 		return
 	}
 	if *help {
@@ -55,18 +62,18 @@ func main() {
 		return
 	}
 
-	logger.Info("Starting beamdrop application")
-	logger.Info("Starting server with shared directory: %s", *sharedDir)
+	slog.Info("Starting beamdrop application")
+	slog.Info("Starting server", "shared_dir", *sharedDir)
 
 	srv := server.New(*sharedDir, flags)
 
 	err := config.CreateTrashBin(*sharedDir)
 
 	if err != nil {
-		logger.Fatal("Failed to create trash bin: %v", err)
+		logger.Fatal("Failed to create trash bin", "error", err)
 	}
 
 	if err := srv.Start(); err != nil {
-		logger.Fatal("Server error: %v", err)
+		logger.Fatal("Server error", "error", err)
 	}
 }

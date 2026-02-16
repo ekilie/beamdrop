@@ -3,10 +3,9 @@
 package system
 
 import (
+	"log/slog"
 	"syscall"
 	"unsafe"
-
-	"github.com/tachRoutine/beamdrop-go/pkg/logger"
 )
 
 // getDiskUsage gets disk usage for the given path on Windows
@@ -18,7 +17,7 @@ func getDiskUsage(path string) (*DiskUsage, error) {
 
 	pathPtr, err := syscall.UTF16PtrFromString(path)
 	if err != nil {
-		logger.Error("Failed to convert path %s: %v", path, err)
+		slog.Error("Failed to convert path", "path", path, "error", err)
 		return nil, err
 	}
 
@@ -29,7 +28,7 @@ func getDiskUsage(path string) (*DiskUsage, error) {
 		uintptr(unsafe.Pointer(&totalFreeBytes)),
 	)
 	if ret == 0 {
-		logger.Error("Failed to get disk stats for path %s: %v", path, err)
+		slog.Error("Failed to get disk stats", "path", path, "error", err)
 		return nil, err
 	}
 

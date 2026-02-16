@@ -3,9 +3,8 @@
 package system
 
 import (
+	"log/slog"
 	"syscall"
-
-	"github.com/tachRoutine/beamdrop-go/pkg/logger"
 )
 
 // getDiskUsage gets disk usage for the given path
@@ -13,7 +12,7 @@ func getDiskUsage(path string) (*DiskUsage, error) {
 	var stat syscall.Statfs_t
 	err := syscall.Statfs(path, &stat)
 	if err != nil {
-		logger.Error("Failed to get disk stats for path %s: %v", path, err)
+		slog.Error("Failed to get disk stats", "path", path, "error", err)
 		return nil, err
 	}
 

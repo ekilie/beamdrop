@@ -2,9 +2,8 @@ package system
 
 import (
 	"fmt"
+	"log/slog"
 	"runtime"
-
-	"github.com/tachRoutine/beamdrop-go/pkg/logger"
 )
 
 // SystemStats contains system resource statistics
@@ -82,13 +81,13 @@ func getMemoryStats() MemoryStats {
 // getDiskStats collects disk usage statistics for the shared directory
 func getDiskStats(sharedDir string) DiskStats {
 	if sharedDir == "" {
-		logger.Warn("Shared directory not set, cannot get disk stats")
+		slog.Warn("Shared directory not set, cannot get disk stats")
 		return DiskStats{}
 	}
 
 	stat, err := getDiskUsage(sharedDir)
 	if err != nil {
-		logger.Error("Failed to get disk stats: %v", err)
+		slog.Error("Failed to get disk stats", "error", err)
 		return DiskStats{}
 	}
 

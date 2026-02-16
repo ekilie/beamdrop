@@ -2,9 +2,9 @@ package db
 
 import (
 	"errors"
+	"log/slog"
 	"time"
 
-	"github.com/tachRoutine/beamdrop-go/pkg/logger"
 	"gorm.io/gorm"
 )
 
@@ -32,7 +32,7 @@ func StarFile(filePath string) error {
 
 	// If error is not "record not found", return the error
 	if !errors.Is(err, gorm.ErrRecordNotFound) {
-		logger.Error("failed to check if file is starred: %v", err)
+		slog.Error("Failed to check if file is starred", "error", err)
 		return err
 	}
 
@@ -43,11 +43,11 @@ func StarFile(filePath string) error {
 	}
 
 	if err := db.Create(&starredFile).Error; err != nil {
-		logger.Error("failed to star file: %v", err)
+		slog.Error("Failed to star file", "error", err)
 		return err
 	}
 
-	logger.Info("File starred: %s", filePath)
+	slog.Info("File starred", "path", filePath)
 	return nil
 }
 
@@ -57,17 +57,17 @@ func UnstarFile(filePath string) error {
 	result := db.Where("file_path = ?", filePath).Delete(&StarredFile{})
 
 	if result.Error != nil {
-		logger.Error("failed to unstar file: %v", result.Error)
+		slog.Error("Failed to unstar file", "error", result.Error)
 		return result.Error
 	}
 
 	if result.RowsAffected == 0 {
 		// File was not starred, but that's okay for toggle behavior
-		logger.Debug("File was not starred: %s", filePath)
+		slog.Debug("File was not starred", "path", filePath)
 		return nil
 	}
 
-	logger.Info("File unstarred: %s", filePath)
+	slog.Info("File unstarred", "path", filePath)
 	return nil
 }
 
@@ -85,7 +85,7 @@ func GetStarredFiles() ([]StarredFile, error) {
 	var starredFiles []StarredFile
 	err := db.Order("created_at DESC").Find(&starredFiles).Error
 	if err != nil {
-		logger.Error("failed to get starred files: %v", err)
+		slog.Error("Failed to get starred files", "error", err)
 		return nil, err
 	}
 	return starredFiles, nil

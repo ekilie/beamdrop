@@ -2,9 +2,9 @@ package db
 
 import (
 	"errors"
+	"log/slog"
 	"time"
 
-	"github.com/tachRoutine/beamdrop-go/pkg/logger"
 	"gorm.io/gorm"
 )
 
@@ -23,7 +23,7 @@ func CreateStatsTable() {
 	db := GetDB()
 	err := db.AutoMigrate(&ServerStats{})
 	if err != nil {
-		logger.Error("failed to migrate server stats table: %v", err)
+		slog.Error("Failed to migrate server stats table", "error", err)
 	}
 }
 
@@ -41,12 +41,12 @@ func InitializeStats() {
 		}
 		err = db.Create(&stats).Error
 		if err != nil {
-			logger.Error("failed to create initial server stats: %v", err)
+			slog.Error("Failed to create initial server stats", "error", err)
 		} else {
-			logger.Info("Initialized server stats record")
+			slog.Info("Initialized server stats record")
 		}
 	} else if err != nil {
-		logger.Error("failed to check for existing server stats: %v", err)
+		slog.Error("Failed to check for existing server stats", "error", err)
 	}
 }
 
@@ -57,7 +57,7 @@ func ResetStats() {
 	err := db.First(&stats).Error
 	if err != nil {
 		if !errors.Is(err, gorm.ErrRecordNotFound) {
-			logger.Error("failed to fetch server stats: %v", err)
+			slog.Error("Failed to fetch server stats", "error", err)
 			return
 		}
 
@@ -77,7 +77,7 @@ func IncrementDownloads() {
 	var stats ServerStats
 	err := db.First(&stats).Error
 	if err != nil {
-		logger.Error("failed to fetch server stats: %v", err)
+		slog.Error("Failed to fetch server stats", "error", err)
 		return
 	}
 	stats.Downloads++
@@ -90,7 +90,7 @@ func IncrementRequests() {
 	var stats ServerStats
 	err := db.First(&stats).Error
 	if err != nil {
-		logger.Error("failed to fetch server stats: %v", err)
+		slog.Error("Failed to fetch server stats", "error", err)
 		return
 	}
 	stats.Requests++
@@ -103,7 +103,7 @@ func IncrementUploads() {
 	var stats ServerStats
 	err := db.First(&stats).Error
 	if err != nil {
-		logger.Error("failed to fetch server stats: %v", err)
+		slog.Error("Failed to fetch server stats", "error", err)
 		return
 	}
 	stats.Uploads++
@@ -120,7 +120,7 @@ func Increment(field string) {
 	case "uploads":
 		IncrementUploads()
 	default:
-		logger.Warn("Unknown field to increment: %s", field)
+		slog.Warn("Unknown field to increment", "field", field)
 	}
 }
 

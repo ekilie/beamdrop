@@ -1,6 +1,7 @@
 package api
 
 import (
+	"log/slog"
 	"net/http"
 	"strings"
 	"time"
@@ -8,7 +9,6 @@ import (
 	"github.com/tachRoutine/beamdrop-go/pkg/crypto"
 	"github.com/tachRoutine/beamdrop-go/pkg/db"
 	"github.com/tachRoutine/beamdrop-go/pkg/errors"
-	"github.com/tachRoutine/beamdrop-go/pkg/logger"
 )
 
 // APIAuthMiddleware handles API key authentication
@@ -78,7 +78,7 @@ func (m *APIAuthMiddleware) Middleware(next http.Handler) http.Handler {
 		// Look up API key
 		apiKey, err := db.GetAPIKeyByAccessID(accessKeyID)
 		if err != nil {
-			logger.Error("Failed to look up API key: %v", err)
+			slog.Error("Failed to look up API key", "error", err)
 			errors.InternalError("Authentication error").WithCause(err).WriteHTTPResponse(w)
 			return
 		}
@@ -97,7 +97,7 @@ func (m *APIAuthMiddleware) Middleware(next http.Handler) http.Handler {
 		// Update last used timestamp (async to not slow down request)
 		go func() {
 			if err := db.UpdateLastUsed(accessKeyID); err != nil {
-				logger.Error("Failed to update last used: %v", err)
+				slog.Error("Failed to update last used", "error", err)
 			}
 		}()
 

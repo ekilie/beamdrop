@@ -4,9 +4,9 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"errors"
+	"log/slog"
 	"time"
 
-	"github.com/tachRoutine/beamdrop-go/pkg/logger"
 	"gorm.io/gorm"
 )
 
@@ -51,7 +51,7 @@ func GenerateKeyPair() (accessKeyID, secretKey string, err error) {
 func CreateAPIKey(name string, permissions string, bucketScope string, expiresIn *time.Duration) (*APIKey, string, error) {
 	accessKeyID, secretKey, err := GenerateKeyPair()
 	if err != nil {
-		logger.Error("Failed to generate key pair: %v", err)
+		slog.Error("Failed to generate key pair", "error", err)
 		return nil, "", err
 	}
 
@@ -73,11 +73,11 @@ func CreateAPIKey(name string, permissions string, bucketScope string, expiresIn
 
 	db := GetDB()
 	if err := db.Create(apiKey).Error; err != nil {
-		logger.Error("Failed to create API key: %v", err)
+		slog.Error("Failed to create API key", "error", err)
 		return nil, "", err
 	}
 
-	logger.Info("API key created: %s (%s)", name, accessKeyID)
+	slog.Info("API key created", "name", name, "access_key_id", accessKeyID)
 	return apiKey, secretKey, nil
 }
 
@@ -114,7 +114,7 @@ func ListAPIKeys() ([]APIKey, error) {
 	var keys []APIKey
 	err := db.Order("created_at DESC").Find(&keys).Error
 	if err != nil {
-		logger.Error("Failed to list API keys: %v", err)
+		slog.Error("Failed to list API keys", "error", err)
 		return nil, err
 	}
 	return keys, nil
@@ -125,13 +125,13 @@ func DeleteAPIKey(accessKeyID string) error {
 	db := GetDB()
 	result := db.Where("access_key_id = ?", accessKeyID).Delete(&APIKey{})
 	if result.Error != nil {
-		logger.Error("Failed to delete API key: %v", result.Error)
+		slog.Error("Failed to delete API key", "error", result.Error)
 		return result.Error
 	}
 	if result.RowsAffected == 0 {
 		return errors.New("API key not found")
 	}
-	logger.Info("API key deleted: %s", accessKeyID)
+	slog.Info("API key deleted", "access_key_id", accessKeyID)
 	return nil
 }
 
@@ -140,12 +140,12 @@ func DisableAPIKey(accessKeyID string) error {
 	db := GetDB()
 	result := db.Model(&APIKey{}).Where("access_key_id = ?", accessKeyID).Update("disabled", true)
 	if result.Error != nil {
-		logger.Error("Failed to disable API key: %v", result.Error)
+		slog.Error("Failed to disable API key", "error", result.Error)
 		return result.Error
 	}
 	if result.RowsAffected == 0 {
 		return errors.New("API key not found")
 	}
-	logger.Info("API key disabled: %s", accessKeyID)
+	slog.Info("API key disabled", "access_key_id", accessKeyID)
 	return nil
 }

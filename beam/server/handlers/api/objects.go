@@ -3,13 +3,13 @@ package api
 import (
 	stderrors "errors"
 	"io"
+	"log/slog"
 	"net/http"
 	"path/filepath"
 	"strconv"
 	"strings"
 
 	"github.com/tachRoutine/beamdrop-go/pkg/errors"
-	"github.com/tachRoutine/beamdrop-go/pkg/logger"
 	"github.com/tachRoutine/beamdrop-go/pkg/storage"
 )
 
@@ -83,7 +83,7 @@ func (h *ObjectHandler) getObject(w http.ResponseWriter, r *http.Request, bucket
 		case stderrors.Is(err, storage.ErrLockTimeout):
 			errors.ObjectLocked(key).WithCause(err).WriteHTTPResponse(w)
 		default:
-			logger.Error("Failed to get object %s/%s: %v", bucket, key, err)
+			slog.Error("Failed to get object", "bucket", bucket, "key", key, "error", err)
 			errors.ReadFailed("Failed to retrieve object").WithCause(err).WriteHTTPResponse(w)
 		}
 		return
@@ -122,13 +122,13 @@ func (h *ObjectHandler) putObject(w http.ResponseWriter, r *http.Request, bucket
 		case stderrors.Is(err, storage.ErrLockTimeout):
 			errors.ObjectLocked(key).WithCause(err).WriteHTTPResponse(w)
 		default:
-			logger.Error("Failed to put object %s/%s: %v", bucket, key, err)
+			slog.Error("Failed to put object", "bucket", bucket, "key", key, "error", err)
 			errors.WriteFailed("Failed to store object").WithCause(err).WriteHTTPResponse(w)
 		}
 		return
 	}
 
-	logger.Info("Object uploaded: %s/%s (%d bytes)", bucket, key, info.Size)
+	slog.Info("Object uploaded", "bucket", bucket, "key", key, "bytes", info.Size)
 
 	w.Header().Set("ETag", `"`+info.ETag+`"`)
 	sendJSON(w, map[string]any{
@@ -173,13 +173,13 @@ func (h *ObjectHandler) putObjectMultipart(w http.ResponseWriter, r *http.Reques
 		case stderrors.Is(err, storage.ErrLockTimeout):
 			errors.ObjectLocked(key).WithCause(err).WriteHTTPResponse(w)
 		default:
-			logger.Error("Failed to put object %s/%s: %v", bucket, key, err)
+			slog.Error("Failed to put object", "bucket", bucket, "key", key, "error", err)
 			errors.WriteFailed("Failed to store object").WithCause(err).WriteHTTPResponse(w)
 		}
 		return
 	}
 
-	logger.Info("Object uploaded (multipart): %s/%s (%d bytes)", bucket, key, info.Size)
+	slog.Info("Object uploaded (multipart)", "bucket", bucket, "key", key, "bytes", info.Size)
 
 	w.Header().Set("ETag", `"`+info.ETag+`"`)
 	sendJSON(w, map[string]any{
@@ -204,13 +204,13 @@ func (h *ObjectHandler) deleteObject(w http.ResponseWriter, r *http.Request, buc
 		case stderrors.Is(err, storage.ErrLockTimeout):
 			errors.ObjectLocked(key).WithCause(err).WriteHTTPResponse(w)
 		default:
-			logger.Error("Failed to delete object %s/%s: %v", bucket, key, err)
+			slog.Error("Failed to delete object", "bucket", bucket, "key", key, "error", err)
 			errors.New(errors.CodeDeleteFailed, errors.CategoryStorage, "Failed to delete object", http.StatusInternalServerError).WithCause(err).WriteHTTPResponse(w)
 		}
 		return
 	}
 
-	logger.Info("Object deleted: %s/%s", bucket, key)
+	slog.Info("Object deleted", "bucket", bucket, "key", key)
 	w.WriteHeader(http.StatusNoContent)
 }
 
@@ -261,7 +261,7 @@ func (h *ObjectHandler) listObjects(w http.ResponseWriter, r *http.Request, buck
 		case storage.ErrBucketNotFound:
 			errors.BucketNotFound(bucket).WriteHTTPResponse(w)
 		default:
-			logger.Error("Failed to list objects in %s: %v", bucket, err)
+			slog.Error("Failed to list objects", "bucket", bucket, "error", err)
 			errors.InternalError("Failed to list objects").WithCause(err).WriteHTTPResponse(w)
 		}
 		return

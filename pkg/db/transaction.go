@@ -2,8 +2,8 @@ package db
 
 import (
 	"fmt"
+	"log/slog"
 
-	"github.com/tachRoutine/beamdrop-go/pkg/logger"
 	"gorm.io/gorm"
 )
 
@@ -20,14 +20,14 @@ func WithTransaction(fn func(tx *gorm.DB) error) error {
 	defer func() {
 		if r := recover(); r != nil {
 			tx.Rollback()
-			logger.Error("Transaction panicked and was rolled back: %v", r)
+			slog.Error("Transaction panicked and was rolled back", "panic", r)
 			panic(r) // re-panic after rollback
 		}
 	}()
 
 	if err := fn(tx); err != nil {
 		if rbErr := tx.Rollback().Error; rbErr != nil {
-			logger.Error("Transaction rollback failed: %v (original error: %v)", rbErr, err)
+			slog.Error("Transaction rollback failed", "rollback_error", rbErr, "original_error", err)
 		}
 		return err
 	}

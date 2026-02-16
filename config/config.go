@@ -65,6 +65,7 @@ type Flags struct {
 	TLSKey         string
 	AllowedOrigins string // Comma-separated list of allowed CORS origins
 	APIAuth        bool   // Enable API key authentication for S3-like API
+	LogLevel       string // "debug", "info", "warn", "error" (default "info")
 }
 
 func GetDBPath() string {

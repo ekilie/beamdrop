@@ -21,6 +21,7 @@ func main() {
 	allowedOrigins := flag.String("allowed-origins", "", "Comma-separated list of allowed CORS origins (empty = CORS disabled)")
 	apiAuth := flag.Bool("api-auth", false, "Enable API key authentication for S3-like API endpoints")
 	logLevel := flag.String("log-level", "info", "Log level: debug, info, warn, error")
+	rateLimit := flag.Int("rate-limit", 100, "General rate limit in requests/min per IP (0 = disabled)")
 
 	// NOTE:Here i default it to 0 so when it zero we know that the flag wasnt passed
 	// Since the flag is a non-boolean value
@@ -46,6 +47,7 @@ func main() {
 		AllowedOrigins: *allowedOrigins,
 		APIAuth:        *apiAuth,
 		LogLevel:       *logLevel,
+		RateLimit:      *rateLimit,
 	}
 
 	if flag.NArg() > 0 {

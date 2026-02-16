@@ -7,11 +7,14 @@ import (
 
 // PublicRoutes are routes that don't require authentication
 var PublicRoutes = []string{
-	"/",            // Landing page (will check auth status)
-	"/auth/login",  // Login endpoint
-	"/auth/status", // Auth status check
-	"/health",      // Health check
-	"/ready",       // Readiness check
+	"/",               // Landing page (will check auth status)
+	"/auth/login",     // Login endpoint
+	"/auth/status",    // Auth status check
+	"/health",         // Health index
+	"/health/live",    // Liveness probe
+	"/health/ready",   // Readiness probe
+	"/health/startup", // Startup probe
+	"/ready",          // Legacy readiness check
 }
 
 // StaticPrefixes are static asset prefixes that don't require authentication

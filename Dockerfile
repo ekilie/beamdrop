@@ -75,9 +75,9 @@ VOLUME /data
 # Default port (beamdrop will also try 8080, 8888, … if 7777 is taken)
 EXPOSE 7777
 
-# Health check using the built-in /health endpoint
+# Health check using the lightweight liveness probe
 HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
-    CMD ["wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:7777/health"]
+    CMD ["wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:7777/health/live"]
 
 USER beamdrop:beamdrop
 

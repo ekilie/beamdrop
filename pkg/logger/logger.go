@@ -15,10 +15,8 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
-	"runtime"
 	"strings"
 	"sync"
-	"time"
 
 	"github.com/fatih/color"
 )
@@ -30,7 +28,6 @@ var (
 	warnColor  = color.New(color.FgHiYellow)
 	errorColor = color.New(color.FgHiRed, color.Bold)
 	timeColor  = color.New(color.FgWhite, color.Faint)
-	srcColor   = color.New(color.FgHiBlack)
 	keyColor   = color.New(color.FgHiBlue)
 )
 
@@ -128,17 +125,6 @@ func (h *colorHandler) Handle(_ context.Context, r slog.Record) error {
 	}
 	buf.WriteByte(' ')
 
-	// Source (file:line) – short path
-	if r.PC != 0 {
-		fs := runtime.CallersFrames([]uintptr{r.PC})
-		f, _ := fs.Next()
-		if f.File != "" {
-			file := shortFile(f.File)
-			srcColor.Fprintf(&buf, "%s:%d", file, f.Line)
-			buf.WriteByte(' ')
-		}
-	}
-
 	// Message
 	fmt.Fprint(&buf, r.Message)
 
@@ -184,15 +170,6 @@ func (h *colorHandler) WithGroup(name string) slog.Handler {
 		attrs:  h.attrs,
 		groups: append(append([]string{}, h.groups...), name),
 	}
-}
-
-// shortFile trims the path to show only the last two directory components.
-func shortFile(path string) string {
-	parts := strings.Split(filepath.ToSlash(path), "/")
-	if len(parts) > 2 {
-		return strings.Join(parts[len(parts)-2:], "/")
-	}
-	return path
 }
 
 // ---------------------------------------------------------------------------

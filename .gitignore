@@ -49,3 +49,4 @@ cmd/*/*
 
 .beamdrop_trash/*
 /beamdrop
+.beamdrop/*

@@ -1,8 +1,14 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"log/slog"
+	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"github.com/tachRoutine/beamdrop-go/beam/server"
 	"github.com/tachRoutine/beamdrop-go/config"
@@ -22,6 +28,7 @@ func main() {
 	apiAuth := flag.Bool("api-auth", false, "Enable API key authentication for S3-like API endpoints")
 	logLevel := flag.String("log-level", "info", "Log level: debug, info, warn, error")
 	rateLimit := flag.Int("rate-limit", 100, "General rate limit in requests/min per IP (0 = disabled)")
+	shutdownTimeout := flag.Duration("shutdown-timeout", 30*time.Second, "Graceful shutdown timeout")
 
 	// NOTE:Here i default it to 0 so when it zero we know that the flag wasnt passed
 	// Since the flag is a non-boolean value
@@ -37,17 +44,18 @@ func main() {
 	logger.Init(*logLevel, *sharedDir)
 
 	flags := config.Flags{
-		SharedDir:      *sharedDir,
-		NoQR:           *noQR,
-		Help:           *help,
-		Password:       *password,
-		Port:           *port,
-		TLSCert:        *tlsCert,
-		TLSKey:         *tlsKey,
-		AllowedOrigins: *allowedOrigins,
-		APIAuth:        *apiAuth,
-		LogLevel:       *logLevel,
-		RateLimit:      *rateLimit,
+		SharedDir:       *sharedDir,
+		NoQR:            *noQR,
+		Help:            *help,
+		Password:        *password,
+		Port:            *port,
+		TLSCert:         *tlsCert,
+		TLSKey:          *tlsKey,
+		AllowedOrigins:  *allowedOrigins,
+		APIAuth:         *apiAuth,
+		LogLevel:        *logLevel,
+		RateLimit:       *rateLimit,
+		ShutdownTimeout: *shutdownTimeout,
 	}
 
 	if flag.NArg() > 0 {
@@ -75,7 +83,39 @@ func main() {
 		logger.Fatal("Failed to create trash bin", "error", err)
 	}
 
-	if err := srv.Start(); err != nil {
-		logger.Fatal("Server error", "error", err)
+	// Channel to receive server errors
+	serverErr := make(chan error, 1)
+
+	// Start server in a goroutine
+	go func() {
+		if err := srv.Start(); err != nil && err != http.ErrServerClosed {
+			serverErr <- err
+		}
+		close(serverErr)
+	}()
+
+	// Wait for interrupt signal or server error
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
+
+	select {
+	case sig := <-quit:
+		slog.Info("Received shutdown signal", "signal", sig.String())
+	case err := <-serverErr:
+		if err != nil {
+			slog.Error("Server failed", "error", err)
+		}
 	}
+
+	// Graceful shutdown with timeout
+	slog.Info("Shutting down gracefully", "timeout", flags.ShutdownTimeout)
+	ctx, cancel := context.WithTimeout(context.Background(), flags.ShutdownTimeout)
+	defer cancel()
+
+	if err := srv.Shutdown(ctx); err != nil {
+		slog.Error("Shutdown completed with errors", "error", err)
+		os.Exit(1)
+	}
+
+	slog.Info("Shutdown complete")
 }

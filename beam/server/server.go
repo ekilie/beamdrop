@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"net"
@@ -24,6 +25,8 @@ type Server struct {
 	passwordService *auth.PasswordService
 	authMiddleware  *auth.AuthMiddleware
 	rateLimiter     *middleware.RateLimiter
+	httpServer      *http.Server
+	orphanCleaner   *db.OrphanCleaner
 }
 
 func New(sharedDir string, flags config.Flags) *Server {
@@ -96,6 +99,10 @@ func (s *Server) Start() error {
 		slog.Warn("Rate limiting is disabled")
 	}
 
+	// Start orphan cleaner for background DB maintenance
+	s.orphanCleaner = db.NewOrphanCleaner(s.sharedDir)
+	s.orphanCleaner.Start()
+
 	port := s.getPort()
 	ip := GetLocalIP()
 
@@ -120,6 +127,12 @@ func (s *Server) Start() error {
 
 	slog.Info("Server started", "url", url, "shared_dir", s.sharedDir)
 
+	addr := fmt.Sprintf(":%d", port)
+	s.httpServer = &http.Server{
+		Addr:    addr,
+		Handler: s,
+	}
+
 	// Start with TLS if configured
 	if s.flags.TLSCert != "" && s.flags.TLSKey != "" {
 		// Validate that TLS files exist
@@ -131,10 +144,56 @@ func (s *Server) Start() error {
 		}
 
 		slog.Info("Starting server with TLS enabled")
-		return http.ListenAndServeTLS(fmt.Sprintf(":%d", port), s.flags.TLSCert, s.flags.TLSKey, s)
+		return s.httpServer.ListenAndServeTLS(s.flags.TLSCert, s.flags.TLSKey)
 	}
 
-	return http.ListenAndServe(fmt.Sprintf(":%d", port), s)
+	return s.httpServer.ListenAndServe()
+}
+
+// Shutdown gracefully shuts down the server and all managed resources.
+// It drains in-flight HTTP requests within the given context deadline,
+// then closes the rate limiter, orphan cleaner, database, and logger.
+func (s *Server) Shutdown(ctx context.Context) error {
+	slog.Info("Initiating graceful shutdown...")
+
+	// 1. Stop accepting new connections and drain in-flight requests
+	var shutdownErr error
+	if s.httpServer != nil {
+		if err := s.httpServer.Shutdown(ctx); err != nil {
+			slog.Error("HTTP server shutdown error", "error", err)
+			shutdownErr = err
+		} else {
+			slog.Info("HTTP server drained successfully")
+		}
+	}
+
+	// 2. Stop rate limiter background cleanup
+	if s.rateLimiter != nil {
+		s.rateLimiter.Close()
+		slog.Info("Rate limiter stopped")
+	}
+
+	// 3. Stop orphan cleaner
+	if s.orphanCleaner != nil {
+		s.orphanCleaner.Stop()
+		slog.Info("Orphan cleaner stopped")
+	}
+
+	// 4. Close database connection
+	if err := db.Close(); err != nil {
+		slog.Error("Database close error", "error", err)
+		if shutdownErr == nil {
+			shutdownErr = err
+		}
+	} else {
+		slog.Info("Database connection closed")
+	}
+
+	// 5. Close logger (flush remaining logs)
+	logger.Close()
+	slog.Info("Logger closed")
+
+	return shutdownErr
 }
 
 // getPort returns the port to use for the server, either from the flags or by finding an available port

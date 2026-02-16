@@ -35,3 +35,15 @@ func openDB() {
 func GetDB() *gorm.DB {
 	return db
 }
+
+// Close closes the underlying database connection.
+func Close() error {
+	if db == nil {
+		return nil
+	}
+	sqlDB, err := db.DB()
+	if err != nil {
+		return err
+	}
+	return sqlDB.Close()
+}

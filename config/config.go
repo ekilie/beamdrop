@@ -6,6 +6,7 @@ import (
 	"net"
 	"os"
 	"path/filepath"
+	"time"
 )
 
 const (
@@ -56,17 +57,18 @@ type Config struct {
 }
 
 type Flags struct {
-	SharedDir      string
-	NoQR           bool
-	Port           int
-	Help           bool
-	Password       string
-	TLSCert        string
-	TLSKey         string
-	AllowedOrigins string // Comma-separated list of allowed CORS origins
-	APIAuth        bool   // Enable API key authentication for S3-like API
-	LogLevel       string // "debug", "info", "warn", "error" (default "info")
-	RateLimit      int    // General rate limit in requests/min (0 = disabled)
+	SharedDir       string
+	NoQR            bool
+	Port            int
+	Help            bool
+	Password        string
+	TLSCert         string
+	TLSKey          string
+	AllowedOrigins  string        // Comma-separated list of allowed CORS origins
+	APIAuth         bool          // Enable API key authentication for S3-like API
+	LogLevel        string        // "debug", "info", "warn", "error" (default "info")
+	RateLimit       int           // General rate limit in requests/min (0 = disabled)
+	ShutdownTimeout time.Duration // Graceful shutdown timeout (default 30s)
 }
 
 func GetDBPath() string {

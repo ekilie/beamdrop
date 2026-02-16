@@ -93,14 +93,65 @@ docker run -d \
   --name beamdrop \
   -p 7777:7777 \
   -v beamdrop-data:/data \
-  beamdrop \
-  --dir /data \
-  -p "your-password" \
-  --api-auth \
-  --rate-limit 100
+  -e BEAMDROP_PASSWORD="secret" \
+  -e BEAMDROP_API_AUTH=true \
+  -e BEAMDROP_RATE_LIMIT=100 \
+  beamdrop
 ```
 
 The image is ~39 MB, runs as non-root, and includes a `HEALTHCHECK` against `/health`.
+
+### Docker Compose (recommended)
+
+The easiest way to run BeamDrop:
+
+```bash
+# Start in background
+docker compose up -d
+
+# View logs
+docker compose logs -f beamdrop
+
+# Stop
+docker compose down
+```
+
+Configure via environment variables — create a `.env` file or export them:
+
+```bash
+# .env (optional)
+BEAMDROP_PORT=7777
+BEAMDROP_PASSWORD=your-secret-password
+BEAMDROP_LOG_LEVEL=info
+BEAMDROP_RATE_LIMIT=100
+BEAMDROP_API_AUTH=true
+BEAMDROP_ALLOWED_ORIGINS=https://example.com
+```
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `BEAMDROP_PORT` | `7777` | Port to listen on |
+| `BEAMDROP_PASSWORD` | *(none)* | Enable password authentication |
+| `BEAMDROP_LOG_LEVEL` | `info` | Log level: `debug`, `info`, `warn`, `error` |
+| `BEAMDROP_RATE_LIMIT` | `100` | Requests/min per IP (`0` = disabled) |
+| `BEAMDROP_API_AUTH` | *(off)* | Set to `true` to enable S3 API key auth |
+| `BEAMDROP_ALLOWED_ORIGINS` | *(none)* | Comma-separated CORS origins |
+| `BEAMDROP_TLS_CERT` | *(none)* | Path to TLS certificate (inside container) |
+| `BEAMDROP_TLS_KEY` | *(none)* | Path to TLS private key (inside container) |
+
+**Development mode** (debug logging, rate limiting off):
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
+```
+
+**With Caddy reverse proxy** (automatic HTTPS):
+
+1. Uncomment the `caddy` service in `docker-compose.yml`
+2. Set your domain: `export BEAMDROP_DOMAIN=files.example.com`
+3. Run: `docker compose up -d`
+
+Data is persisted in `./data/` on the host.
 
 ## Quick Start
 

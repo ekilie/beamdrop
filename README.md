@@ -27,6 +27,7 @@ Beamdrop provides both a web interface for interactive file management and a pro
   - Colored, human-readable terminal output
   - Structured JSON log file at `<dir>/.beamdrop/beamdrop.log`
   - Configurable log level
+- **Docker support**: Multi-stage Dockerfile with ~39 MB image, non-root user, health checks
 
 ## Installation
 
@@ -73,6 +74,33 @@ rm beamdrop-linux-arm64.tar.gz
 ### Windows
 
 Download the latest `.zip` from the [releases page](https://github.com/ekilie/beamdrop/releases), extract it, and add `beamdrop.exe` to your PATH.
+
+### Docker
+
+```bash
+# Build the image
+docker build -t beamdrop .
+
+# Run with a persistent volume
+docker run -d \
+  --name beamdrop \
+  -p 7777:7777 \
+  -v beamdrop-data:/data \
+  beamdrop
+
+# Run with all options
+docker run -d \
+  --name beamdrop \
+  -p 7777:7777 \
+  -v beamdrop-data:/data \
+  beamdrop \
+  --dir /data \
+  -p "your-password" \
+  --api-auth \
+  --rate-limit 100
+```
+
+The image is ~39 MB, runs as non-root, and includes a `HEALTHCHECK` against `/health`.
 
 ## Quick Start
 

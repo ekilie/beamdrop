@@ -65,7 +65,6 @@ type Flags struct {
 	TLSKey         string
 	AllowedOrigins string // Comma-separated list of allowed CORS origins
 	APIAuth        bool   // Enable API key authentication for S3-like API
-	LogFormat      string // "json" or "text" (default "text")
 	LogLevel       string // "debug", "info", "warn", "error" (default "info")
 }
 

@@ -27,10 +27,9 @@ Options:
 		Comma-separated list of allowed CORS origins (empty = CORS disabled for security)
   -api-auth
 		Enable API key authentication for S3-like API endpoints
-  -log-format string
-		Log output format: json or text (default "text")
   -log-level string
 		Log level: debug, info, warn, error (default "info")
+		Colored output in terminal; JSON logs saved to <dir>/.beamdrop/beamdrop.log
   -no-qr
 		Disable QR code generation
   -h

@@ -20,7 +20,6 @@ func main() {
 	tlsKey := flag.String("tls-key", "", "Path to TLS private key file for HTTPS")
 	allowedOrigins := flag.String("allowed-origins", "", "Comma-separated list of allowed CORS origins (empty = CORS disabled)")
 	apiAuth := flag.Bool("api-auth", false, "Enable API key authentication for S3-like API endpoints")
-	logFormat := flag.String("log-format", "text", "Log output format: json or text")
 	logLevel := flag.String("log-level", "info", "Log level: debug, info, warn, error")
 
 	// NOTE:Here i default it to 0 so when it zero we know that the flag wasnt passed
@@ -33,7 +32,8 @@ func main() {
 	flag.Parse()
 
 	// Initialize structured logger before anything else.
-	logger.Init(*logFormat, *logLevel)
+	// Terminal gets colored human-readable output; JSON logs go to <sharedDir>/.beamdrop/beamdrop.log
+	logger.Init(*logLevel, *sharedDir)
 
 	flags := config.Flags{
 		SharedDir:      *sharedDir,
@@ -45,7 +45,6 @@ func main() {
 		TLSKey:         *tlsKey,
 		AllowedOrigins: *allowedOrigins,
 		APIAuth:        *apiAuth,
-		LogFormat:      *logFormat,
 		LogLevel:       *logLevel,
 	}
 

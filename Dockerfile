@@ -7,7 +7,7 @@ WORKDIR /frontend
 
 # Install dependencies first (layer cache)
 COPY static/frontend/package.json static/frontend/bun.lock* static/frontend/bun.lockb* ./
-RUN bun install --frozen-lockfile
+RUN bun install
 
 # Copy source and build
 COPY static/frontend/ ./

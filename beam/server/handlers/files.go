@@ -52,7 +52,7 @@ func (h *FileHandler) ListFiles(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var fileList []File
+	fileList := make([]File, 0, len(files))
 	for _, f := range files {
 		info, err := f.Info()
 		if err != nil {

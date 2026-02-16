@@ -29,6 +29,9 @@ docs/
 # Docker
 Dockerfile
 .dockerignore
+docker-compose*.yml
+Caddyfile
+data/
 
 # CI / misc
 .github/

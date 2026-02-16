@@ -1,0 +1,64 @@
+# docker-compose.yml — Single-command deployment for BeamDrop
+#
+# Usage:
+#   docker compose up -d              # start in background
+#   docker compose logs -f beamdrop   # follow logs
+#   docker compose down               # stop
+#
+# All configuration is done through environment variables.
+# See docker-entrypoint.sh for the full list of BEAMDROP_* vars.
+
+services:
+  beamdrop:
+    build:
+      context: .
+      args:
+        VERSION: ${VERSION:-dev}
+        COMMIT: ${COMMIT:-unknown}
+        BUILD_DATE: ${BUILD_DATE:-unknown}
+    image: beamdrop:latest
+    container_name: beamdrop
+    restart: unless-stopped
+    ports:
+      - "${BEAMDROP_PORT:-7777}:${BEAMDROP_PORT:-7777}"
+    volumes:
+      - ./data:/data
+    environment:
+      - BEAMDROP_PORT=${BEAMDROP_PORT:-7777}
+      - BEAMDROP_PASSWORD=${BEAMDROP_PASSWORD:-}
+      - BEAMDROP_LOG_LEVEL=${BEAMDROP_LOG_LEVEL:-info}
+      - BEAMDROP_RATE_LIMIT=${BEAMDROP_RATE_LIMIT:-100}
+      - BEAMDROP_ALLOWED_ORIGINS=${BEAMDROP_ALLOWED_ORIGINS:-}
+      - BEAMDROP_API_AUTH=${BEAMDROP_API_AUTH:-}
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:${BEAMDROP_PORT:-7777}/health"]
+      interval: 30s
+      timeout: 5s
+      start_period: 5s
+      retries: 3
+
+  # ── Optional: Caddy reverse proxy with automatic HTTPS ──────────────────
+  # Uncomment the block below and set BEAMDROP_DOMAIN to enable auto-TLS.
+  #
+  # caddy:
+  #   image: caddy:2-alpine
+  #   container_name: beamdrop-caddy
+  #   restart: unless-stopped
+  #   ports:
+  #     - "80:80"
+  #     - "443:443"
+  #     - "443:443/udp"   # HTTP/3
+  #   volumes:
+  #     - ./Caddyfile:/etc/caddy/Caddyfile:ro
+  #     - caddy_data:/data
+  #     - caddy_config:/config
+  #   depends_on:
+  #     beamdrop:
+  #       condition: service_healthy
+  #   environment:
+  #     - DOMAIN=${BEAMDROP_DOMAIN:-localhost}
+
+# Uncomment if using Caddy
+# volumes:
+#   caddy_data:
+#   caddy_config:

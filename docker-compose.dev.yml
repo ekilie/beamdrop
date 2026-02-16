@@ -1,0 +1,23 @@
+# docker-compose.dev.yml — Development overrides
+#
+# Usage:
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
+#
+# Changes from production:
+#   - Debug log level
+#   - Mounts full source tree for hot-rebuild (rebuild container to pick up changes)
+#   - Exposes extra debug info
+
+services:
+  beamdrop:
+    build:
+      context: .
+      args:
+        VERSION: dev
+    environment:
+      - BEAMDROP_LOG_LEVEL=debug
+      - BEAMDROP_RATE_LIMIT=0
+    volumes:
+      - ./data:/data
+    # Override restart policy for development
+    restart: "no"

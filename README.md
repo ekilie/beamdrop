@@ -29,6 +29,7 @@ Beamdrop provides both a web interface for interactive file management and a pro
   - Configurable log level
 - **Docker support**: Multi-stage Dockerfile with ~39 MB image, non-root user, health checks
 - **Health probes**: Kubernetes-compatible `/health/live`, `/health/ready`, `/health/startup` endpoints with component-level status
+- **Prometheus metrics**: `/metrics` endpoint with request counters, latency histograms, storage gauges, and a ready-to-import Grafana dashboard
 
 ## Installation
 
@@ -153,6 +154,37 @@ docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
 3. Run: `docker compose up -d`
 
 Data is persisted in `./data/` on the host.
+
+### Prometheus & Grafana
+
+Beamdrop exposes a `/metrics` endpoint in Prometheus text format. Add it as a scrape target:
+
+```yaml
+# prometheus.yml
+scrape_configs:
+  - job_name: beamdrop
+    static_configs:
+      - targets: ["localhost:7777"]
+```
+
+A pre-built Grafana dashboard is available at [`docs/grafana-dashboard.json`](docs/grafana-dashboard.json). Import it via **Dashboards > Import** in Grafana.
+
+**Exported metrics:**
+
+| Metric | Type | Description |
+|--------|------|-------------|
+| `beamdrop_requests_total` | counter | HTTP requests by method, path, status |
+| `beamdrop_request_duration_seconds` | histogram | Request latency (p50/p95/p99) |
+| `beamdrop_auth_failures_total` | counter | Auth failures by reason |
+| `beamdrop_uploads_total` | counter | Completed uploads |
+| `beamdrop_downloads_total` | counter | Completed downloads |
+| `beamdrop_upload_size_bytes` | histogram | Upload file sizes |
+| `beamdrop_storage_bytes` | gauge | Bytes used by stored files |
+| `beamdrop_objects_total` | gauge | Number of stored files |
+| `beamdrop_active_connections` | gauge | In-flight HTTP requests |
+| `beamdrop_storage_free_bytes` | gauge | Free disk space |
+| `beamdrop_storage_total_bytes` | gauge | Total disk capacity |
+| `beamdrop_goroutines_count` | gauge | Go goroutine count |
 
 ## Quick Start
 

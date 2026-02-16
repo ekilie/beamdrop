@@ -116,6 +116,17 @@ func getCPUStats() CPUStats {
 	}
 }
 
+// GetDiskUsage returns raw disk usage for the given path.
+// It is a thin wrapper around the platform-specific getDiskUsage.
+func GetDiskUsage(path string) DiskUsage {
+	stat, err := getDiskUsage(path)
+	if err != nil {
+		slog.Error("Failed to get disk usage", "path", path, "error", err)
+		return DiskUsage{}
+	}
+	return *stat
+}
+
 // FormatBytes converts bytes to human-readable format
 func FormatBytes(bytes uint64) string {
 	const unit = 1024

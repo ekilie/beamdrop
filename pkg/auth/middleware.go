@@ -3,6 +3,8 @@ package auth
 import (
 	"net/http"
 	"strings"
+
+	"github.com/tachRoutine/beamdrop-go/pkg/metrics"
 )
 
 // PublicRoutes are routes that don't require authentication
@@ -15,6 +17,7 @@ var PublicRoutes = []string{
 	"/health/ready",   // Readiness probe
 	"/health/startup", // Startup probe
 	"/ready",          // Legacy readiness check
+	"/metrics",        // Prometheus metrics
 }
 
 // StaticPrefixes are static asset prefixes that don't require authentication
@@ -92,6 +95,15 @@ func (m *AuthMiddleware) RequireAuth(next http.Handler) http.Handler {
 				next.ServeHTTP(w, r)
 				return
 			}
+		}
+
+		// Determine failure reason for metrics
+		if authHeader != "" {
+			metrics.AuthFailuresTotal.WithLabelValues("invalid_token").Inc()
+		} else if cookie != nil {
+			metrics.AuthFailuresTotal.WithLabelValues("expired_token").Inc()
+		} else {
+			metrics.AuthFailuresTotal.WithLabelValues("missing_token").Inc()
 		}
 
 		// Unauthorized

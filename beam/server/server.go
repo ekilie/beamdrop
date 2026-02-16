@@ -8,26 +8,29 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/tachRoutine/beamdrop-go/beam/server/handlers"
 	"github.com/tachRoutine/beamdrop-go/config"
 	"github.com/tachRoutine/beamdrop-go/pkg/auth"
 	"github.com/tachRoutine/beamdrop-go/pkg/db"
 	"github.com/tachRoutine/beamdrop-go/pkg/logger"
+	"github.com/tachRoutine/beamdrop-go/pkg/metrics"
 	"github.com/tachRoutine/beamdrop-go/pkg/middleware"
 	"github.com/tachRoutine/beamdrop-go/pkg/qr"
 	"github.com/tachRoutine/beamdrop-go/pkg/storage"
 )
 
 type Server struct {
-	sharedDir       string
-	flags           config.Flags
-	mux             *http.ServeMux
-	passwordService *auth.PasswordService
-	authMiddleware  *auth.AuthMiddleware
-	rateLimiter     *middleware.RateLimiter
-	httpServer      *http.Server
-	orphanCleaner   *db.OrphanCleaner
+	sharedDir        string
+	flags            config.Flags
+	mux              *http.ServeMux
+	passwordService  *auth.PasswordService
+	authMiddleware   *auth.AuthMiddleware
+	rateLimiter      *middleware.RateLimiter
+	httpServer       *http.Server
+	orphanCleaner    *db.OrphanCleaner
+	metricsCollector *metrics.Collector
 }
 
 func New(sharedDir string, flags config.Flags) *Server {
@@ -74,6 +77,9 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	corsConfig := s.getCORSConfig()
 	handler = middleware.CORS(corsConfig)(handler)
 
+	// Apply Prometheus metrics middleware (outermost to capture all requests)
+	handler = metrics.Middleware(handler)
+
 	// Apply security headers middleware
 	enableHSTS := s.flags.TLSCert != "" && s.flags.TLSKey != ""
 	handler = middleware.SecurityHeaders(enableHSTS)(handler)
@@ -103,6 +109,10 @@ func (s *Server) Start() error {
 	// Start orphan cleaner for background DB maintenance
 	s.orphanCleaner = db.NewOrphanCleaner(s.sharedDir)
 	s.orphanCleaner.Start()
+
+	// Start Prometheus metrics background collector
+	s.metricsCollector = metrics.NewCollector(s.sharedDir, 15*time.Second)
+	s.metricsCollector.Start()
 
 	port := s.getPort()
 	ip := GetLocalIP()
@@ -177,13 +187,19 @@ func (s *Server) Shutdown(ctx context.Context) error {
 		slog.Info("Rate limiter stopped")
 	}
 
-	// 3. Stop orphan cleaner
+	// 3. Stop metrics collector
+	if s.metricsCollector != nil {
+		s.metricsCollector.Stop()
+		slog.Info("Metrics collector stopped")
+	}
+
+	// 4. Stop orphan cleaner
 	if s.orphanCleaner != nil {
 		s.orphanCleaner.Stop()
 		slog.Info("Orphan cleaner stopped")
 	}
 
-	// 4. Close database connection
+	// 5. Close database connection
 	if err := db.Close(); err != nil {
 		slog.Error("Database close error", "error", err)
 		if shutdownErr == nil {
@@ -193,7 +209,7 @@ func (s *Server) Shutdown(ctx context.Context) error {
 		slog.Info("Database connection closed")
 	}
 
-	// 5. Close logger (flush remaining logs)
+	// 6. Close logger (flush remaining logs)
 	logger.Close()
 	slog.Info("Logger closed")
 

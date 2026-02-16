@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/tachRoutine/beamdrop-go/pkg/auth"
+	"github.com/tachRoutine/beamdrop-go/pkg/metrics"
 )
 
 // AuthHandler handles authentication endpoints
@@ -59,6 +60,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 
 	if !h.passwordService.ValidatePassword(req.Password) {
 		slog.Warn("Failed login attempt")
+		metrics.AuthFailuresTotal.WithLabelValues("invalid_password").Inc()
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusUnauthorized)
 		json.NewEncoder(w).Encode(LoginResponse{

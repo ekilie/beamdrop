@@ -14,6 +14,7 @@ import (
 	"github.com/tachRoutine/beamdrop-go/config"
 	"github.com/tachRoutine/beamdrop-go/pkg/db"
 	"github.com/tachRoutine/beamdrop-go/pkg/errors"
+	"github.com/tachRoutine/beamdrop-go/pkg/metrics"
 	"github.com/tachRoutine/beamdrop-go/pkg/storage"
 )
 
@@ -93,6 +94,7 @@ func (h *FileHandler) Download(w http.ResponseWriter, r *http.Request) {
 	slog.Info("Serving download", "file", filename)
 	io.Copy(w, f)
 	db.IncrementDownloads()
+	metrics.DownloadsTotal.Inc()
 	slog.Info("Download completed", "file", filename)
 }
 
@@ -179,6 +181,8 @@ func (h *FileHandler) Upload(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	db.IncrementUploads()
+	metrics.UploadsTotal.Inc()
+	metrics.UploadSizeBytes.Observe(float64(n))
 	json.NewEncoder(w).Encode(map[string]string{"message": "Uploaded", "file": header.Filename})
 }
 

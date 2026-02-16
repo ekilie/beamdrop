@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/tachRoutine/beamdrop-go/beam/server/handlers"
 	"github.com/tachRoutine/beamdrop-go/beam/server/handlers/api"
 )
@@ -16,6 +17,9 @@ func (s *Server) setupRoutes() {
 	s.mux.HandleFunc("/health/startup", handlers.StartupHandler)
 	// Legacy alias
 	s.mux.HandleFunc("/ready", handlers.EnhancedReadinessHandler(s.sharedDir))
+
+	// Prometheus metrics
+	s.mux.Handle("/metrics", promhttp.Handler())
 
 	// Static files
 	s.mux.HandleFunc("/", handlers.StaticHandler)

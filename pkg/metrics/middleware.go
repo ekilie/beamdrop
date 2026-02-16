@@ -47,18 +47,18 @@ func NormalizePath(path string) string {
 
 	// Collapse /assets/*, /static/*, /share/* prefixes
 	for _, prefix := range []string{"/assets/", "/static/", "/share/"} {
-		if len(path) >= len(prefix) && path[:len(prefix)] == prefix {
+		if strings.HasPrefix(path, prefix) {
 			return prefix + "{file}"
 		}
 	}
 
 	// Collapse /api/shares/access/<id>
-	if len(path) > 20 && path[:20] == "/api/shares/access/" {
+	if strings.HasPrefix(path, "/api/shares/access/") {
 		return "/api/shares/access/{id}"
 	}
 
 	// Collapse /api/v1/buckets/<name>/...
-	if len(path) > 16 && path[:16] == "/api/v1/buckets/" {
+	if strings.HasPrefix(path, "/api/v1/buckets/") {
 		return "/api/v1/buckets/{bucket}"
 	}
 

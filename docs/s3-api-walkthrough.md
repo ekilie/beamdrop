@@ -10,21 +10,23 @@ A plain-English, file-by-file explanation of how the S3-compatible API works ins
 2. [How a Request Travels Through the Code](#2-request-lifecycle)
 3. [Route Registration (`beam/server/routes.go`)](#3-route-registration)
 4. [Authentication Middleware (`beam/server/handlers/api/middleware.go`)](#4-authentication-middleware)
-5. [Bucket Handler (`beam/server/handlers/api/buckets.go`)](#5-bucket-handler)
-6. [Object Handler (`beam/server/handlers/api/objects.go`)](#6-object-handler)
-7. [Storage Layer — BucketManager (`pkg/storage/bucket.go`)](#7-bucket-manager)
-8. [Storage Layer — ObjectManager (`pkg/storage/object.go`)](#8-object-manager)
-9. [Atomic Writes (`pkg/storage/atomic.go`)](#9-atomic-writes)
-10. [File-Level Locking (`pkg/storage/locks.go`)](#10-file-locking)
-11. [Database Transaction Safety (`pkg/db/`)](#11-db-transaction-safety)
-12. [API Key Management — Database (`pkg/db/api_keys.go`)](#12-api-key-database)
-13. [API Key Management — Handler (`beam/server/handlers/api/keys.go`)](#13-keys-handler)
-14. [Cryptography & Signatures (`pkg/crypto/signature.go`)](#14-cryptography)
-15. [Error Handling (`pkg/errors/errors.go`)](#15-error-handling)
-16. [How It All Connects — Diagrams](#16-diagrams)
-17. [Example Walkthrough: Uploading a File](#17-example-upload)
-18. [Example Walkthrough: Downloading a File](#18-example-download)
-19. [Glossary](#19-glossary)
+5. [Rate Limiting Middleware (`pkg/middleware/ratelimit.go`)](#5-rate-limiting)
+6. [Structured Logging (`pkg/logger/logger.go`)](#6-structured-logging)
+7. [Bucket Handler (`beam/server/handlers/api/buckets.go`)](#7-bucket-handler)
+8. [Object Handler (`beam/server/handlers/api/objects.go`)](#8-object-handler)
+9. [Storage Layer — BucketManager (`pkg/storage/bucket.go`)](#9-bucket-manager)
+10. [Storage Layer — ObjectManager (`pkg/storage/object.go`)](#10-object-manager)
+11. [Atomic Writes (`pkg/storage/atomic.go`)](#11-atomic-writes)
+12. [File-Level Locking (`pkg/storage/locks.go`)](#12-file-locking)
+13. [Database Transaction Safety (`pkg/db/`)](#13-db-transaction-safety)
+14. [API Key Management — Database (`pkg/db/api_keys.go`)](#14-api-key-database)
+15. [API Key Management — Handler (`beam/server/handlers/api/keys.go`)](#15-keys-handler)
+16. [Cryptography & Signatures (`pkg/crypto/signature.go`)](#16-cryptography)
+17. [Error Handling (`pkg/errors/errors.go`)](#17-error-handling)
+18. [How It All Connects — Diagrams](#18-diagrams)
+19. [Example Walkthrough: Uploading a File](#19-example-upload)
+20. [Example Walkthrough: Downloading a File](#20-example-download)
+21. [Glossary](#21-glossary)
 
 ---
 
@@ -33,12 +35,15 @@ A plain-English, file-by-file explanation of how the S3-compatible API works ins
 
 Beamdrop's S3 API lets you manage files programmatically using **buckets** (like folders) and **objects** (files inside those folders). It mimics the concepts from Amazon S3 but is backed by your **local filesystem** instead of cloud storage.
 
-### The Four Layers
+### The Five Layers
 
 ```
 ┌─────────────────────────────────────────────────┐
 │  HTTP Layer  (routes.go)                        │
 │  Receives HTTP requests, routes to handlers     │
+├─────────────────────────────────────────────────┤
+│  Rate Limiting  (pkg/middleware/ratelimit.go)   │
+│  Per-IP token-bucket throttling (3 tiers)       │
 ├─────────────────────────────────────────────────┤
 │  Auth Layer  (api/middleware.go)                │
 │  Validates API keys and request signatures      │
@@ -81,31 +86,39 @@ PUT /api/v1/buckets/photos/vacation/beach.jpg
 Step 1  →  Server receives HTTP request
               (beam/server/server.go — ServeHTTP method)
 
-Step 2  →  Route matching
+Step 2  →  Security headers & CORS middleware run
+              (pkg/middleware/security.go, cors.go)
+
+Step 3  →  Rate limiter checks per-IP token bucket
+              (pkg/middleware/ratelimit.go — classifies as
+               general / auth / upload tier, rejects with 429
+               if tokens exhausted)
+
+Step 4  →  Route matching
               (beam/server/routes.go — matches "/api/v1/buckets/")
 
-Step 3  →  API Auth Middleware runs
+Step 5  →  API Auth Middleware runs
               (api/middleware.go — checks API key + signature)
 
-Step 4  →  Router decides: bucket or object handler?
+Step 6  →  Router decides: bucket or object handler?
               Path has "photos/vacation/beach.jpg"
               → parts[0] = "photos" (bucket)
               → parts[1] = "vacation/beach.jpg" (key, non-empty)
               → Routes to ObjectHandler
 
-Step 5  →  ObjectHandler.Handle() dispatches by HTTP method
+Step 7  →  ObjectHandler.Handle() dispatches by HTTP method
               Method is PUT → calls putObject()
 
-Step 6  →  putObject() uses ObjectManager.PutObject()
+Step 8  →  putObject() uses ObjectManager.PutObject()
               (pkg/storage/object.go)
 
-Step 7  →  ObjectManager acquires a write lock
+Step 9  →  ObjectManager acquires a write lock
               (pkg/storage/locks.go — per-object locking)
 
-Step 8  →  ObjectManager validates names, creates dirs,
+Step 10 →  ObjectManager validates names, creates dirs,
               uses AtomicWriter to write the file safely
 
-Step 9  →  Write lock released, response sent back
+Step 11 →  Write lock released, response sent back
               with ETag, size, URL
 ```
 
@@ -226,8 +239,192 @@ When you start beamdrop **without** the `-api-auth` flag, all API requests go st
 
 ---
 
-<a name="5-bucket-handler"></a>
-## 5. Bucket Handler — `beam/server/handlers/api/buckets.go`
+<a name="5-rate-limiting"></a>
+## 5. Rate Limiting Middleware — `pkg/middleware/ratelimit.go`
+
+Beamdrop includes per-IP rate limiting to prevent abuse. It uses a **token-bucket** algorithm with three tiers, runs entirely in-memory, and requires zero external dependencies.
+
+### Where It Sits in the Chain
+
+Rate limiting runs **before** authentication — abusive IPs are blocked before they can even attempt auth:
+
+```
+Security Headers → CORS → Rate Limiter → Auth → Mux → Handlers
+```
+
+### The Three Tiers
+
+Different endpoints have different limits because not all operations have the same cost:
+
+| Tier | Endpoints | Default Rate | Why it's different |
+|------|-----------|-------------|-------------------|
+| **General** | Everything not listed below | 100 req/min | Normal browsing/API usage |
+| **Auth** | `/auth/login` | 5 req/min | Prevents brute-force password guessing |
+| **Upload** | `POST/PUT /upload`, `PUT /api/v1/buckets/…` | 10 req/min | Uploads are expensive (disk I/O, CPU for hashing) |
+
+Rates are configurable via the `-rate-limit` CLI flag, which sets the general rate. Auth and upload tiers are derived automatically:
+
+```
+General rate  = -rate-limit value (e.g. 100)
+Auth rate     = max(1, general / 20)   →  5
+Upload rate   = max(1, general / 10)   →  10
+```
+
+### How Token Buckets Work
+
+Each client IP gets **three buckets** (one per tier). A bucket starts full and drains as requests arrive:
+
+```
+Bucket capacity: 100 tokens (= general rate)
+Refill rate:     100/60 ≈ 1.67 tokens/second
+
+Request arrives → consume 1 token
+                  tokens > 0? → ✅ Allow request
+                  tokens = 0? → ❌ Return 429 Too Many Requests
+```
+
+The bucket refills continuously at a steady rate, so a client can burst up to the bucket capacity and then must slow down to the refill rate.
+
+### Request Classification
+
+The middleware inspects the request path and method to determine the tier:
+
+```go
+func classifyRequest(r *http.Request) tier {
+    // /auth/login → tierAuth (strictest)
+    // POST|PUT /upload, PUT /api/v1/buckets/... → tierUpload
+    // Everything else → tierGeneral
+}
+```
+
+### IP Extraction
+
+Client IPs are resolved in priority order:
+
+1. `X-Forwarded-For` header (first IP in the list — the original client)
+2. `X-Real-IP` header
+3. `RemoteAddr` (direct connection, stripped of port)
+
+This ensures correct per-IP tracking behind reverse proxies.
+
+### What Happens When a Client Is Rate-Limited
+
+```
+Client → PUT /api/v1/buckets/photos/pic.jpg
+           │
+           ▼
+     Rate limiter checks upload bucket for this IP
+           │
+     Tokens remaining = 0
+           │
+           ▼
+     429 Too Many Requests
+     Retry-After: 3
+     X-Retryable: true
+```
+
+The response uses the structured error system (see [Section 17](#17-error-handling)):
+
+```json
+{
+  "error": {
+    "code": "RATE_LIMIT_EXCEEDED",
+    "category": "RATE_LIMIT",
+    "message": "Rate limit exceeded. Try again in 3s",
+    "status": 429,
+    "retryable": true,
+    "retryAfter": 3,
+    "timestamp": "2026-02-12T10:30:00Z"
+  }
+}
+```
+
+### Background Cleanup
+
+Client buckets are lazily created on first request. A background goroutine runs every **5 minutes** and evicts entries for IPs not seen in the last **10 minutes**, keeping memory bounded.
+
+| Constant | Value | Meaning |
+|----------|-------|---------|
+| Cleanup interval | 5 min | How often stale entries are scanned |
+| Stale threshold | 10 min | How long since last request before eviction |
+
+### Disabling Rate Limiting
+
+Set `-rate-limit 0` (or omit the flag) to disable rate limiting entirely. When disabled, the middleware returns `next` directly — zero overhead.
+
+---
+
+<a name="6-structured-logging"></a>
+## 6. Structured Logging — `pkg/logger/logger.go`
+
+Beamdrop uses Go's standard `log/slog` package for structured logging with **dual output**:
+
+1. **Terminal** — colored, human-readable lines for interactive use
+2. **JSON file** — machine-parseable structured logs at `<sharedDir>/.beamdrop/beamdrop.log`
+
+### Initialization
+
+```go
+logger.Init(level, sharedDir)
+// level: "debug", "info", "warn", or "error"
+// sharedDir: base directory — log file goes to <sharedDir>/.beamdrop/beamdrop.log
+```
+
+Called once at startup from `main.go`. All subsequent logging uses `slog` directly:
+
+```go
+slog.Info("Rate limiting enabled", "general", rate, "unit", "req/min")
+slog.Warn("Orphan cleanup failed", "error", err)
+slog.Debug("Lock acquired", "bucket", bucket, "key", key)
+```
+
+### Terminal Output
+
+The terminal handler uses colored output for quick scanning:
+
+```
+14:30:05.123 INFO  Rate limiting enabled general=100 unit=req/min
+14:30:05.124 WARN  Orphan cleanup failed error="disk full"
+```
+
+| Level | Color |
+|-------|-------|
+| `DEBUG` | Cyan |
+| `INFO` | Green |
+| `WARN` | Yellow |
+| `ERROR` | Red (bold) |
+
+Source file paths are **not** shown in terminal output — they're only recorded in the JSON log file.
+
+### JSON Log File
+
+The file handler writes one JSON object per line with full detail:
+
+```json
+{"time":"2026-02-12T14:30:05.123Z","level":"INFO","source":{"function":"main.main","file":"cmd/beam/main.go","line":42},"msg":"Rate limiting enabled","general":100,"unit":"req/min"}
+```
+
+This is useful for log aggregation tools, `jq` queries, and post-incident analysis.
+
+### Log Levels
+
+Configure with the `-log-level` CLI flag:
+
+| Level | What it captures |
+|-------|-----------------|
+| `debug` | Everything — lock acquisition, request details, internal state |
+| `info` | Normal operations — startup, connections, uploads (default) |
+| `warn` | Recoverable issues — failed cleanups, deprecated usage |
+| `error` | Failures requiring attention — disk errors, DB corruption |
+
+### Fatal Logging
+
+`slog` has no built-in fatal level. Beamdrop provides `logger.Fatal()` which logs at error level and calls `os.Exit(1)`. Used only in `main.go` and `server.go` for unrecoverable startup failures.
+
+---
+
+<a name="7-bucket-handler"></a>
+## 7. Bucket Handler — `beam/server/handlers/api/buckets.go`
 
 Manages buckets (creating, listing, deleting directories).
 
@@ -289,8 +486,8 @@ func (h *BucketHandler) Handle(w http.ResponseWriter, r *http.Request) {
 
 ---
 
-<a name="6-object-handler"></a>
-## 6. Object Handler — `beam/server/handlers/api/objects.go`
+<a name="8-object-handler"></a>
+## 8. Object Handler — `beam/server/handlers/api/objects.go`
 
 Manages objects (files) inside buckets. This is the core of the S3 API.
 
@@ -431,8 +628,8 @@ The handler includes a `getContentType()` helper that maps file extensions to MI
 
 ---
 
-<a name="7-bucket-manager"></a>
-## 7. Storage Layer — BucketManager (`pkg/storage/bucket.go`)
+<a name="9-bucket-manager"></a>
+## 9. Storage Layer — BucketManager (`pkg/storage/bucket.go`)
 
 This is the **lowest-level** code that touches the filesystem for bucket operations. The handlers never write files directly — they always go through these managers.
 
@@ -521,8 +718,8 @@ Handlers use `errors.Is(err, storage.ErrLockTimeout)` to translate these into HT
 
 ---
 
-<a name="8-object-manager"></a>
-## 8. Storage Layer — ObjectManager (`pkg/storage/object.go`)
+<a name="10-object-manager"></a>
+## 10. Storage Layer — ObjectManager (`pkg/storage/object.go`)
 
 Handles file read/write operations. Uses `BucketManager` internally to resolve paths and check bucket existence.
 
@@ -535,7 +732,7 @@ type ObjectManager struct {
 }
 ```
 
-The `LockManager` is created automatically in `NewObjectManager()` and provides file-level locking for all object operations (see [Section 10](#10-file-locking) for details).
+The `LockManager` is created automatically in `NewObjectManager()` and provides file-level locking for all object operations (see [Section 12](#12-file-locking) for details).
 
 ### `PutObject()` — Writing a File
 
@@ -637,8 +834,8 @@ type ObjectInfo struct {
 
 ---
 
-<a name="9-atomic-writes"></a>
-## 9. Atomic Writes — `pkg/storage/atomic.go`
+<a name="11-atomic-writes"></a>
+## 11. Atomic Writes — `pkg/storage/atomic.go`
 
 This is a clever safety mechanism. **Why not just write directly to the file?**
 
@@ -691,8 +888,8 @@ func CleanupOrphanedTempFiles(rootDir string) error {
 
 ---
 
-<a name="10-file-locking"></a>
-## 10. File-Level Locking — `pkg/storage/locks.go`
+<a name="12-file-locking"></a>
+## 12. File-Level Locking — `pkg/storage/locks.go`
 
 This is the concurrency safety mechanism. **Why do we need per-file locking?**
 
@@ -786,7 +983,7 @@ The same pattern is used for `RLock()` (read locks).
 A background goroutine runs every **10 seconds**, scanning for write locks held longer than **5 minutes**. When it finds one, it logs a warning:
 
 ```
-WARN: Potential deadlock: write lock on "photos/pic.jpg" held for 5m30s (threshold 5m0s)
+14:35:30.123 WARN  Potential deadlock detected key=photos/pic.jpg held=5m30s threshold=5m0s
 ```
 
 This helps operators identify stuck uploads or crashes that left a lock in a bad state. The thresholds:
@@ -828,8 +1025,8 @@ The `LockManager` is created inside `NewObjectManager()` and runs a deadlock det
 
 ---
 
-<a name="11-db-transaction-safety"></a>
-## 11. Database Transaction Safety — `pkg/db/`
+<a name="13-db-transaction-safety"></a>
+## 13. Database Transaction Safety — `pkg/db/`
 
 Beamdrop uses SQLite via GORM for metadata storage (API keys, shareable links, starred files, server stats). Operations that touch **both the database and the filesystem** need special care — if one succeeds and the other fails, the system ends up in an inconsistent state.
 
@@ -848,7 +1045,7 @@ Step 4: User clicks the link → 404!  💥  (orphaned DB record)
 
 Or the reverse: a multi-step DB operation where the first insert succeeds but the second fails, leaving half-written data.
 
-### 11a. Transaction Helper — `pkg/db/transaction.go`
+### 13a. Transaction Helper — `pkg/db/transaction.go`
 
 For operations that involve **multiple DB writes** that should be all-or-nothing:
 
@@ -887,7 +1084,7 @@ err := db.WithTransaction(func(tx *gorm.DB) error {
 - If `fn` panics → transaction is **rolled back**, then panic propagates
 - If `fn` returns nil → transaction is **committed**
 
-### 11b. Saga Pattern — `pkg/db/saga.go`
+### 13b. Saga Pattern — `pkg/db/saga.go`
 
 Transactions only work within a single database. When you need to coordinate **DB writes + filesystem writes**, you need the **saga pattern** — a sequence of steps where each step has a compensating "undo" action.
 
@@ -942,7 +1139,7 @@ if err := saga.Execute(); err != nil {
 }
 ```
 
-### 11c. Orphaned Records Cleanup — `pkg/db/cleanup.go`
+### 13c. Orphaned Records Cleanup — `pkg/db/cleanup.go`
 
 Even with sagas, records can become orphaned over time (e.g., files deleted outside beamdrop, manual filesystem cleanup). The `OrphanCleaner` runs a background job to find and remove them.
 
@@ -974,7 +1171,7 @@ The cleaner runs once immediately on startup (to catch anything from while the s
 
 **Example log output:**
 ```
-INFO: Orphan cleanup: removed 3 starred files, 1 shareable links, 2 expired links
+15:00:00.456 INFO  Orphan cleanup complete starred=3 links=1 expired=2
 ```
 
 ### When Each Mechanism Is Used
@@ -989,8 +1186,8 @@ INFO: Orphan cleanup: removed 3 starred files, 1 shareable links, 2 expired link
 
 ---
 
-<a name="12-api-key-database"></a>
-## 12. API Key Management — Database (`pkg/db/api_keys.go`)
+<a name="14-api-key-database"></a>
+## 14. API Key Management — Database (`pkg/db/api_keys.go`)
 
 API keys are stored in a SQLite database using GORM (a Go ORM).
 
@@ -1041,8 +1238,8 @@ The secret key is **private** — it's used to sign requests and is **only shown
 
 ---
 
-<a name="13-keys-handler"></a>
-## 13. API Key Management — Handler (`beam/server/handlers/api/keys.go`)
+<a name="15-keys-handler"></a>
+## 15. API Key Management — Handler (`beam/server/handlers/api/keys.go`)
 
 This handler provides the HTTP API for managing API keys from the web UI or curl.
 
@@ -1116,8 +1313,8 @@ Notice: **no `secretKey`** in the list response. It's intentionally excluded.
 
 ---
 
-<a name="14-cryptography"></a>
-## 14. Cryptography & Signatures — `pkg/crypto/signature.go`
+<a name="16-cryptography"></a>
+## 16. Cryptography & Signatures — `pkg/crypto/signature.go`
 
 This package handles all the signing and verification logic.
 
@@ -1164,8 +1361,8 @@ Requests must have a timestamp within **15 minutes** of the server's clock. This
 
 ---
 
-<a name="15-error-handling"></a>
-## 15. Error Handling — `pkg/errors/errors.go`
+<a name="17-error-handling"></a>
+## 17. Error Handling — `pkg/errors/errors.go`
 
 Beamdrop has a structured error system with **codes**, **categories**, and **HTTP status mapping**.
 
@@ -1178,6 +1375,7 @@ Beamdrop has a structured error system with **codes**, **categories**, and **HTT
 | `AUTH` | Authentication/authorization failures |
 | `NOT_FOUND` | Resource doesn't exist |
 | `CONFLICT` | Resource already exists |
+| `RATE_LIMIT` | Client exceeded per-IP request rate |
 | `INTERNAL` | Server-side bugs |
 
 ### How Errors Flow
@@ -1211,26 +1409,51 @@ Each error factory function (like `errors.BucketNotFound()`) creates a structure
 }
 ```
 
+### Rate Limit Error Response
+
+Rate limit errors include extra fields to help clients implement retry logic:
+
+```json
+{
+  "error": {
+    "code": "RATE_LIMIT_EXCEEDED",
+    "category": "RATE_LIMIT",
+    "message": "Rate limit exceeded. Try again in 3s",
+    "status": 429,
+    "retryable": true,
+    "retryAfter": 3,
+    "timestamp": "2026-02-12T10:30:00Z"
+  }
+}
+```
+
+The `Retry-After` HTTP header is also set, and `X-Retryable: true` signals that the client should retry after the indicated delay.
+
 ---
 
-<a name="16-diagrams"></a>
-## 16. How It All Connects — Diagrams
+<a name="18-diagrams"></a>
+## 18. How It All Connects — Diagrams
 
 ### File Dependency Graph
 
 ```
-beam/server/routes.go
-    ├── beam/server/handlers/api/middleware.go  (auth)
-    ├── beam/server/handlers/api/buckets.go     (bucket HTTP logic)
-    │       └── pkg/storage/bucket.go           (bucket filesystem)
-    ├── beam/server/handlers/api/objects.go      (object HTTP logic)
-    │       ├── pkg/storage/object.go            (object filesystem)
-    │       │       ├── pkg/storage/bucket.go    (reused for path resolution)
-    │       │       ├── pkg/storage/atomic.go    (crash-safe writes)
-    │       │       └── pkg/storage/locks.go     (per-object read/write locking)
-    │       └── pkg/storage/bucket.go            (bucket existence check)
-    └── beam/server/handlers/api/keys.go         (API key management)
-            └── pkg/db/api_keys.go               (database CRUD)
+beam/server/server.go
+    ├── pkg/middleware/ratelimit.go               (per-IP rate limiting)
+    ├── pkg/middleware/cors.go                    (CORS headers)
+    ├── pkg/middleware/security.go                (security headers)
+    ├── pkg/auth/middleware.go                    (session auth)
+    └── beam/server/routes.go
+         ├── beam/server/handlers/api/middleware.go  (API key auth)
+         ├── beam/server/handlers/api/buckets.go     (bucket HTTP logic)
+         │       └── pkg/storage/bucket.go           (bucket filesystem)
+         ├── beam/server/handlers/api/objects.go      (object HTTP logic)
+         │       ├── pkg/storage/object.go            (object filesystem)
+         │       │       ├── pkg/storage/bucket.go    (reused for path resolution)
+         │       │       ├── pkg/storage/atomic.go    (crash-safe writes)
+         │       │       └── pkg/storage/locks.go     (per-object read/write locking)
+         │       └── pkg/storage/bucket.go            (bucket existence check)
+         └── beam/server/handlers/api/keys.go         (API key management)
+                 └── pkg/db/api_keys.go               (database CRUD)
 
 beam/server/handlers/shareable_links.go
     └── pkg/db/shareable_links.go                (shareable link CRUD)
@@ -1246,6 +1469,10 @@ beam/server/handlers/api/middleware.go
     ├── pkg/crypto/signature.go                  (HMAC signing/verification)
     └── pkg/db/api_keys.go                       (key lookup)
 
+pkg/middleware/ratelimit.go
+    └── pkg/errors/errors.go                     (429 rate limit responses)
+
+pkg/logger/logger.go                             (dual-output slog: terminal + JSON file)
 pkg/errors/errors.go                             (used by all handlers)
 ```
 
@@ -1267,6 +1494,17 @@ pkg/errors/errors.go                             (used by all handlers)
                            │  ServeHTTP() │
                            └──────┬───────┘
                                   │
+                       ┌──────────▼──────────┐
+                       │  Security + CORS    │
+                       │  headers middleware │
+                       └──────────┬──────────┘
+                                  │
+                       ┌──────────▼──────────┐
+                       │  ratelimit.go       │
+                       │  Check IP bucket    │
+                       │  (upload tier)      │
+                       └──────────┬──────────┘
+                                  │  ✓ Tokens available
                            ┌──────▼───────┐
                            │  routes.go   │
                            │  URL match   │
@@ -1304,8 +1542,8 @@ pkg/errors/errors.go                             (used by all handlers)
 
 ---
 
-<a name="17-example-upload"></a>
-## 17. Example Walkthrough: Uploading a File
+<a name="19-example-upload"></a>
+## 19. Example Walkthrough: Uploading a File
 
 ### Using curl (with auth disabled)
 
@@ -1369,8 +1607,8 @@ The `vacation/` directory was auto-created by `os.MkdirAll` in `PutObject()`.
 
 ---
 
-<a name="18-example-download"></a>
-## 18. Example Walkthrough: Downloading a File
+<a name="20-example-download"></a>
+## 20. Example Walkthrough: Downloading a File
 
 ```bash
 # Download the file
@@ -1389,8 +1627,8 @@ curl "http://localhost:7777/api/v1/buckets/photos?prefix=vacation/&delimiter=/"
 
 ---
 
-<a name="19-glossary"></a>
-## 19. Glossary
+<a name="21-glossary"></a>
+## 21. Glossary
 
 | Term | Meaning |
 |------|---------|
@@ -1416,23 +1654,30 @@ curl "http://localhost:7777/api/v1/buckets/photos?prefix=vacation/&delimiter=/"
 | **Orphan Cleaner** | Background job that removes DB records pointing to files that no longer exist on disk. |
 | **Sentinel Error** | A named error variable (e.g., `ErrBucketNotFound`) used for error comparison. |
 | **Mux** | HTTP request multiplexer — matches URLs to handler functions. |
+| **Token Bucket** | A rate limiting algorithm where tokens refill at a steady rate and each request consumes one token. |
+| **Rate Limiting Tier** | One of three endpoint categories (general/auth/upload) with different request-per-minute limits. |
+| **Retry-After** | HTTP header telling a rate-limited client how many seconds to wait before retrying. |
+| **slog** | Go's standard structured logging package (`log/slog`). Beamdrop uses it for all log output. |
+| **Structured Logging** | Log events as key-value pairs instead of free-form text, enabling machine parsing and querying. |
 
 ---
 
 ## Quick Reference: All S3 API Endpoints
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `GET` | `/api/v1/buckets` | List all buckets |
-| `PUT` | `/api/v1/buckets/{bucket}` | Create a bucket |
-| `GET` | `/api/v1/buckets/{bucket}` | Get bucket info / list objects |
-| `HEAD` | `/api/v1/buckets/{bucket}` | Check if bucket exists |
-| `DELETE` | `/api/v1/buckets/{bucket}` | Delete an empty bucket |
-| `GET` | `/api/v1/buckets/{bucket}/{key}` | Download an object |
-| `PUT` | `/api/v1/buckets/{bucket}/{key}` | Upload an object (raw body) |
-| `POST` | `/api/v1/buckets/{bucket}/{key}` | Upload an object (multipart form) |
-| `HEAD` | `/api/v1/buckets/{bucket}/{key}` | Get object metadata |
-| `DELETE` | `/api/v1/buckets/{bucket}/{key}` | Delete an object |
-| `GET` | `/api/v1/keys` | List API keys |
-| `POST` | `/api/v1/keys` | Create an API key |
-| `DELETE` | `/api/v1/keys?accessKeyId=...` | Delete an API key |
+All endpoints are subject to per-IP rate limiting when enabled (see [Section 5](#5-rate-limiting)). Upload endpoints (`PUT` object) use the stricter upload tier.
+
+| Method | Endpoint | Rate Tier | Description |
+|--------|----------|-----------|-------------|
+| `GET` | `/api/v1/buckets` | General | List all buckets |
+| `PUT` | `/api/v1/buckets/{bucket}` | General | Create a bucket |
+| `GET` | `/api/v1/buckets/{bucket}` | General | Get bucket info / list objects |
+| `HEAD` | `/api/v1/buckets/{bucket}` | General | Check if bucket exists |
+| `DELETE` | `/api/v1/buckets/{bucket}` | General | Delete an empty bucket |
+| `GET` | `/api/v1/buckets/{bucket}/{key}` | General | Download an object |
+| `PUT` | `/api/v1/buckets/{bucket}/{key}` | Upload | Upload an object (raw body) |
+| `POST` | `/api/v1/buckets/{bucket}/{key}` | Upload | Upload an object (multipart form) |
+| `HEAD` | `/api/v1/buckets/{bucket}/{key}` | General | Get object metadata |
+| `DELETE` | `/api/v1/buckets/{bucket}/{key}` | General | Delete an object |
+| `GET` | `/api/v1/keys` | General | List API keys |
+| `POST` | `/api/v1/keys` | General | Create an API key |
+| `DELETE` | `/api/v1/keys?accessKeyId=...` | General | Delete an API key |

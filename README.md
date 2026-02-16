@@ -29,6 +29,7 @@ Beamdrop provides both a web interface for interactive file management and a pro
   - Configurable log level
 - **Docker support**: Multi-stage Dockerfile with ~39 MB image, non-root user, health checks
 - **Health probes**: Kubernetes-compatible `/health/live`, `/health/ready`, `/health/startup` endpoints with component-level status
+- **Prometheus metrics**: `/metrics` endpoint with request counters, latency histograms, storage gauges, and a ready-to-import Grafana dashboard
 
 ## Installation
 

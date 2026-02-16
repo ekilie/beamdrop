@@ -1,0 +1,988 @@
+{
+    "__inputs": [
+        {
+            "name": "DS_PROMETHEUS",
+            "label": "Prometheus",
+            "description": "",
+            "type": "datasource",
+            "pluginId": "prometheus",
+            "pluginName": "Prometheus"
+        }
+    ],
+    "annotations": {
+        "list": [
+            {
+                "builtIn": 1,
+                "datasource": "-- Grafana --",
+                "enable": true,
+                "hide": true,
+                "iconColor": "rgba(0, 211, 255, 1)",
+                "name": "Annotations & Alerts",
+                "type": "dashboard"
+            }
+        ]
+    },
+    "description": "Beamdrop file server monitoring dashboard",
+    "editable": true,
+    "fiscalYearStartMonth": 0,
+    "graphTooltip": 1,
+    "id": null,
+    "links": [],
+    "panels": [
+        {
+            "collapsed": false,
+            "gridPos": {
+                "h": 1,
+                "w": 24,
+                "x": 0,
+                "y": 0
+            },
+            "id": 100,
+            "title": "Overview",
+            "type": "row"
+        },
+        {
+            "datasource": "${DS_PROMETHEUS}",
+            "fieldConfig": {
+                "defaults": {
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green",
+                                "value": null
+                            },
+                            {
+                                "color": "yellow",
+                                "value": 50
+                            },
+                            {
+                                "color": "red",
+                                "value": 100
+                            }
+                        ]
+                    },
+                    "unit": "reqps"
+                }
+            },
+            "gridPos": {
+                "h": 4,
+                "w": 4,
+                "x": 0,
+                "y": 1
+            },
+            "id": 1,
+            "options": {
+                "colorMode": "background",
+                "graphMode": "area",
+                "justifyMode": "auto",
+                "orientation": "auto",
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ],
+                    "fields": "",
+                    "values": false
+                },
+                "textMode": "auto"
+            },
+            "title": "Request Rate",
+            "type": "stat",
+            "targets": [
+                {
+                    "datasource": "${DS_PROMETHEUS}",
+                    "expr": "sum(rate(beamdrop_requests_total[5m]))",
+                    "legendFormat": "req/s"
+                }
+            ]
+        },
+        {
+            "datasource": "${DS_PROMETHEUS}",
+            "fieldConfig": {
+                "defaults": {
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green",
+                                "value": null
+                            },
+                            {
+                                "color": "red",
+                                "value": 1
+                            }
+                        ]
+                    },
+                    "unit": "short"
+                }
+            },
+            "gridPos": {
+                "h": 4,
+                "w": 4,
+                "x": 4,
+                "y": 1
+            },
+            "id": 2,
+            "options": {
+                "colorMode": "background",
+                "graphMode": "area",
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ],
+                    "fields": "",
+                    "values": false
+                }
+            },
+            "title": "Active Connections",
+            "type": "stat",
+            "targets": [
+                {
+                    "datasource": "${DS_PROMETHEUS}",
+                    "expr": "beamdrop_active_connections",
+                    "legendFormat": "connections"
+                }
+            ]
+        },
+        {
+            "datasource": "${DS_PROMETHEUS}",
+            "fieldConfig": {
+                "defaults": {
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green",
+                                "value": null
+                            }
+                        ]
+                    },
+                    "unit": "short"
+                }
+            },
+            "gridPos": {
+                "h": 4,
+                "w": 4,
+                "x": 8,
+                "y": 1
+            },
+            "id": 3,
+            "options": {
+                "colorMode": "background",
+                "graphMode": "area",
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ],
+                    "fields": "",
+                    "values": false
+                }
+            },
+            "title": "Total Objects",
+            "type": "stat",
+            "targets": [
+                {
+                    "datasource": "${DS_PROMETHEUS}",
+                    "expr": "beamdrop_objects_total",
+                    "legendFormat": "objects"
+                }
+            ]
+        },
+        {
+            "datasource": "${DS_PROMETHEUS}",
+            "fieldConfig": {
+                "defaults": {
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green",
+                                "value": null
+                            },
+                            {
+                                "color": "yellow",
+                                "value": 80
+                            },
+                            {
+                                "color": "red",
+                                "value": 95
+                            }
+                        ]
+                    },
+                    "unit": "percentunit",
+                    "min": 0,
+                    "max": 1
+                }
+            },
+            "gridPos": {
+                "h": 4,
+                "w": 4,
+                "x": 12,
+                "y": 1
+            },
+            "id": 4,
+            "options": {
+                "colorMode": "background",
+                "graphMode": "area",
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ],
+                    "fields": "",
+                    "values": false
+                }
+            },
+            "title": "Storage Used %",
+            "type": "stat",
+            "targets": [
+                {
+                    "datasource": "${DS_PROMETHEUS}",
+                    "expr": "beamdrop_storage_bytes / beamdrop_storage_total_bytes",
+                    "legendFormat": "used"
+                }
+            ]
+        },
+        {
+            "datasource": "${DS_PROMETHEUS}",
+            "fieldConfig": {
+                "defaults": {
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green",
+                                "value": null
+                            }
+                        ]
+                    },
+                    "unit": "decbytes"
+                }
+            },
+            "gridPos": {
+                "h": 4,
+                "w": 4,
+                "x": 16,
+                "y": 1
+            },
+            "id": 5,
+            "options": {
+                "colorMode": "background",
+                "graphMode": "none",
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ],
+                    "fields": "",
+                    "values": false
+                }
+            },
+            "title": "Storage Used",
+            "type": "stat",
+            "targets": [
+                {
+                    "datasource": "${DS_PROMETHEUS}",
+                    "expr": "beamdrop_storage_bytes",
+                    "legendFormat": "used"
+                }
+            ]
+        },
+        {
+            "datasource": "${DS_PROMETHEUS}",
+            "fieldConfig": {
+                "defaults": {
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green",
+                                "value": null
+                            }
+                        ]
+                    },
+                    "unit": "short"
+                }
+            },
+            "gridPos": {
+                "h": 4,
+                "w": 4,
+                "x": 20,
+                "y": 1
+            },
+            "id": 6,
+            "options": {
+                "colorMode": "background",
+                "graphMode": "area",
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ],
+                    "fields": "",
+                    "values": false
+                }
+            },
+            "title": "Goroutines",
+            "type": "stat",
+            "targets": [
+                {
+                    "datasource": "${DS_PROMETHEUS}",
+                    "expr": "beamdrop_goroutines_count",
+                    "legendFormat": "goroutines"
+                }
+            ]
+        },
+        {
+            "collapsed": false,
+            "gridPos": {
+                "h": 1,
+                "w": 24,
+                "x": 0,
+                "y": 5
+            },
+            "id": 101,
+            "title": "HTTP Traffic",
+            "type": "row"
+        },
+        {
+            "datasource": "${DS_PROMETHEUS}",
+            "fieldConfig": {
+                "defaults": {
+                    "custom": {
+                        "lineWidth": 1,
+                        "fillOpacity": 20,
+                        "spanNulls": false,
+                        "drawStyle": "line",
+                        "pointSize": 5,
+                        "showPoints": "auto"
+                    },
+                    "unit": "reqps"
+                }
+            },
+            "gridPos": {
+                "h": 8,
+                "w": 12,
+                "x": 0,
+                "y": 6
+            },
+            "id": 10,
+            "options": {
+                "legend": {
+                    "displayMode": "table",
+                    "placement": "bottom",
+                    "calcs": [
+                        "mean",
+                        "max"
+                    ]
+                },
+                "tooltip": {
+                    "mode": "multi"
+                }
+            },
+            "title": "Request Rate by Path",
+            "type": "timeseries",
+            "targets": [
+                {
+                    "datasource": "${DS_PROMETHEUS}",
+                    "expr": "sum(rate(beamdrop_requests_total[5m])) by (path)",
+                    "legendFormat": "{{ path }}"
+                }
+            ]
+        },
+        {
+            "datasource": "${DS_PROMETHEUS}",
+            "fieldConfig": {
+                "defaults": {
+                    "custom": {
+                        "lineWidth": 1,
+                        "fillOpacity": 20,
+                        "drawStyle": "line"
+                    },
+                    "unit": "reqps"
+                }
+            },
+            "gridPos": {
+                "h": 8,
+                "w": 12,
+                "x": 12,
+                "y": 6
+            },
+            "id": 11,
+            "options": {
+                "legend": {
+                    "displayMode": "table",
+                    "placement": "bottom",
+                    "calcs": [
+                        "mean",
+                        "max"
+                    ]
+                },
+                "tooltip": {
+                    "mode": "multi"
+                }
+            },
+            "title": "Request Rate by Status Code",
+            "type": "timeseries",
+            "targets": [
+                {
+                    "datasource": "${DS_PROMETHEUS}",
+                    "expr": "sum(rate(beamdrop_requests_total[5m])) by (status)",
+                    "legendFormat": "{{ status }}"
+                }
+            ]
+        },
+        {
+            "datasource": "${DS_PROMETHEUS}",
+            "fieldConfig": {
+                "defaults": {
+                    "custom": {
+                        "lineWidth": 1,
+                        "fillOpacity": 20,
+                        "drawStyle": "line"
+                    },
+                    "unit": "s"
+                }
+            },
+            "gridPos": {
+                "h": 8,
+                "w": 12,
+                "x": 0,
+                "y": 14
+            },
+            "id": 12,
+            "options": {
+                "legend": {
+                    "displayMode": "table",
+                    "placement": "bottom",
+                    "calcs": [
+                        "mean",
+                        "max",
+                        "p99"
+                    ]
+                },
+                "tooltip": {
+                    "mode": "multi"
+                }
+            },
+            "title": "Request Latency (p50 / p95 / p99)",
+            "type": "timeseries",
+            "targets": [
+                {
+                    "datasource": "${DS_PROMETHEUS}",
+                    "expr": "histogram_quantile(0.50, sum(rate(beamdrop_request_duration_seconds_bucket[5m])) by (le))",
+                    "legendFormat": "p50"
+                },
+                {
+                    "datasource": "${DS_PROMETHEUS}",
+                    "expr": "histogram_quantile(0.95, sum(rate(beamdrop_request_duration_seconds_bucket[5m])) by (le))",
+                    "legendFormat": "p95"
+                },
+                {
+                    "datasource": "${DS_PROMETHEUS}",
+                    "expr": "histogram_quantile(0.99, sum(rate(beamdrop_request_duration_seconds_bucket[5m])) by (le))",
+                    "legendFormat": "p99"
+                }
+            ]
+        },
+        {
+            "datasource": "${DS_PROMETHEUS}",
+            "fieldConfig": {
+                "defaults": {
+                    "custom": {
+                        "lineWidth": 1,
+                        "fillOpacity": 20,
+                        "drawStyle": "line"
+                    },
+                    "unit": "short"
+                }
+            },
+            "gridPos": {
+                "h": 8,
+                "w": 12,
+                "x": 12,
+                "y": 14
+            },
+            "id": 13,
+            "options": {
+                "legend": {
+                    "displayMode": "table",
+                    "placement": "bottom",
+                    "calcs": [
+                        "mean",
+                        "max"
+                    ]
+                },
+                "tooltip": {
+                    "mode": "multi"
+                }
+            },
+            "title": "Active Connections",
+            "type": "timeseries",
+            "targets": [
+                {
+                    "datasource": "${DS_PROMETHEUS}",
+                    "expr": "beamdrop_active_connections",
+                    "legendFormat": "active"
+                }
+            ]
+        },
+        {
+            "collapsed": false,
+            "gridPos": {
+                "h": 1,
+                "w": 24,
+                "x": 0,
+                "y": 22
+            },
+            "id": 102,
+            "title": "Uploads & Downloads",
+            "type": "row"
+        },
+        {
+            "datasource": "${DS_PROMETHEUS}",
+            "fieldConfig": {
+                "defaults": {
+                    "custom": {
+                        "lineWidth": 1,
+                        "fillOpacity": 20,
+                        "drawStyle": "line"
+                    },
+                    "unit": "ops"
+                }
+            },
+            "gridPos": {
+                "h": 8,
+                "w": 12,
+                "x": 0,
+                "y": 23
+            },
+            "id": 20,
+            "options": {
+                "legend": {
+                    "displayMode": "table",
+                    "placement": "bottom",
+                    "calcs": [
+                        "mean",
+                        "sum"
+                    ]
+                },
+                "tooltip": {
+                    "mode": "multi"
+                }
+            },
+            "title": "Upload / Download Rate",
+            "type": "timeseries",
+            "targets": [
+                {
+                    "datasource": "${DS_PROMETHEUS}",
+                    "expr": "rate(beamdrop_uploads_total[5m])",
+                    "legendFormat": "uploads/s"
+                },
+                {
+                    "datasource": "${DS_PROMETHEUS}",
+                    "expr": "rate(beamdrop_downloads_total[5m])",
+                    "legendFormat": "downloads/s"
+                }
+            ]
+        },
+        {
+            "datasource": "${DS_PROMETHEUS}",
+            "fieldConfig": {
+                "defaults": {
+                    "custom": {
+                        "lineWidth": 1,
+                        "fillOpacity": 20,
+                        "drawStyle": "line"
+                    },
+                    "unit": "decbytes"
+                }
+            },
+            "gridPos": {
+                "h": 8,
+                "w": 12,
+                "x": 12,
+                "y": 23
+            },
+            "id": 21,
+            "options": {
+                "legend": {
+                    "displayMode": "table",
+                    "placement": "bottom",
+                    "calcs": [
+                        "mean",
+                        "max"
+                    ]
+                },
+                "tooltip": {
+                    "mode": "multi"
+                }
+            },
+            "title": "Upload Size Distribution (p50 / p95)",
+            "type": "timeseries",
+            "targets": [
+                {
+                    "datasource": "${DS_PROMETHEUS}",
+                    "expr": "histogram_quantile(0.50, sum(rate(beamdrop_upload_size_bytes_bucket[5m])) by (le))",
+                    "legendFormat": "p50"
+                },
+                {
+                    "datasource": "${DS_PROMETHEUS}",
+                    "expr": "histogram_quantile(0.95, sum(rate(beamdrop_upload_size_bytes_bucket[5m])) by (le))",
+                    "legendFormat": "p95"
+                }
+            ]
+        },
+        {
+            "collapsed": false,
+            "gridPos": {
+                "h": 1,
+                "w": 24,
+                "x": 0,
+                "y": 31
+            },
+            "id": 103,
+            "title": "Storage",
+            "type": "row"
+        },
+        {
+            "datasource": "${DS_PROMETHEUS}",
+            "fieldConfig": {
+                "defaults": {
+                    "custom": {
+                        "lineWidth": 1,
+                        "fillOpacity": 20,
+                        "drawStyle": "line",
+                        "stacking": {
+                            "mode": "normal"
+                        }
+                    },
+                    "unit": "decbytes"
+                },
+                "overrides": [
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "free"
+                        },
+                        "properties": [
+                            {
+                                "id": "color",
+                                "value": {
+                                    "fixedColor": "green",
+                                    "mode": "fixed"
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "used"
+                        },
+                        "properties": [
+                            {
+                                "id": "color",
+                                "value": {
+                                    "fixedColor": "orange",
+                                    "mode": "fixed"
+                                }
+                            }
+                        ]
+                    }
+                ]
+            },
+            "gridPos": {
+                "h": 8,
+                "w": 12,
+                "x": 0,
+                "y": 32
+            },
+            "id": 30,
+            "options": {
+                "legend": {
+                    "displayMode": "table",
+                    "placement": "bottom",
+                    "calcs": [
+                        "lastNotNull"
+                    ]
+                },
+                "tooltip": {
+                    "mode": "multi"
+                }
+            },
+            "title": "Disk Space (Used vs Free)",
+            "type": "timeseries",
+            "targets": [
+                {
+                    "datasource": "${DS_PROMETHEUS}",
+                    "expr": "beamdrop_storage_bytes",
+                    "legendFormat": "used"
+                },
+                {
+                    "datasource": "${DS_PROMETHEUS}",
+                    "expr": "beamdrop_storage_free_bytes",
+                    "legendFormat": "free"
+                }
+            ]
+        },
+        {
+            "datasource": "${DS_PROMETHEUS}",
+            "fieldConfig": {
+                "defaults": {
+                    "custom": {
+                        "lineWidth": 1,
+                        "fillOpacity": 20,
+                        "drawStyle": "line"
+                    },
+                    "unit": "short"
+                }
+            },
+            "gridPos": {
+                "h": 8,
+                "w": 12,
+                "x": 12,
+                "y": 32
+            },
+            "id": 31,
+            "options": {
+                "legend": {
+                    "displayMode": "table",
+                    "placement": "bottom",
+                    "calcs": [
+                        "lastNotNull"
+                    ]
+                },
+                "tooltip": {
+                    "mode": "multi"
+                }
+            },
+            "title": "Object Count",
+            "type": "timeseries",
+            "targets": [
+                {
+                    "datasource": "${DS_PROMETHEUS}",
+                    "expr": "beamdrop_objects_total",
+                    "legendFormat": "objects"
+                }
+            ]
+        },
+        {
+            "collapsed": false,
+            "gridPos": {
+                "h": 1,
+                "w": 24,
+                "x": 0,
+                "y": 40
+            },
+            "id": 104,
+            "title": "Security",
+            "type": "row"
+        },
+        {
+            "datasource": "${DS_PROMETHEUS}",
+            "fieldConfig": {
+                "defaults": {
+                    "custom": {
+                        "lineWidth": 1,
+                        "fillOpacity": 20,
+                        "drawStyle": "line"
+                    },
+                    "unit": "ops"
+                }
+            },
+            "gridPos": {
+                "h": 8,
+                "w": 12,
+                "x": 0,
+                "y": 41
+            },
+            "id": 40,
+            "options": {
+                "legend": {
+                    "displayMode": "table",
+                    "placement": "bottom",
+                    "calcs": [
+                        "sum",
+                        "max"
+                    ]
+                },
+                "tooltip": {
+                    "mode": "multi"
+                }
+            },
+            "title": "Auth Failures by Reason",
+            "type": "timeseries",
+            "targets": [
+                {
+                    "datasource": "${DS_PROMETHEUS}",
+                    "expr": "sum(rate(beamdrop_auth_failures_total[5m])) by (reason)",
+                    "legendFormat": "{{ reason }}"
+                }
+            ]
+        },
+        {
+            "datasource": "${DS_PROMETHEUS}",
+            "fieldConfig": {
+                "defaults": {
+                    "custom": {
+                        "lineWidth": 1,
+                        "fillOpacity": 20,
+                        "drawStyle": "line"
+                    },
+                    "unit": "reqps"
+                }
+            },
+            "gridPos": {
+                "h": 8,
+                "w": 12,
+                "x": 12,
+                "y": 41
+            },
+            "id": 41,
+            "options": {
+                "legend": {
+                    "displayMode": "table",
+                    "placement": "bottom",
+                    "calcs": [
+                        "mean",
+                        "max"
+                    ]
+                },
+                "tooltip": {
+                    "mode": "multi"
+                }
+            },
+            "title": "Error Rate (4xx / 5xx)",
+            "type": "timeseries",
+            "targets": [
+                {
+                    "datasource": "${DS_PROMETHEUS}",
+                    "expr": "sum(rate(beamdrop_requests_total{status=~\"4..\"}[5m]))",
+                    "legendFormat": "4xx"
+                },
+                {
+                    "datasource": "${DS_PROMETHEUS}",
+                    "expr": "sum(rate(beamdrop_requests_total{status=~\"5..\"}[5m]))",
+                    "legendFormat": "5xx"
+                }
+            ]
+        },
+        {
+            "collapsed": false,
+            "gridPos": {
+                "h": 1,
+                "w": 24,
+                "x": 0,
+                "y": 49
+            },
+            "id": 105,
+            "title": "Runtime",
+            "type": "row"
+        },
+        {
+            "datasource": "${DS_PROMETHEUS}",
+            "fieldConfig": {
+                "defaults": {
+                    "custom": {
+                        "lineWidth": 1,
+                        "fillOpacity": 20,
+                        "drawStyle": "line"
+                    },
+                    "unit": "short"
+                }
+            },
+            "gridPos": {
+                "h": 8,
+                "w": 12,
+                "x": 0,
+                "y": 50
+            },
+            "id": 50,
+            "options": {
+                "legend": {
+                    "displayMode": "table",
+                    "placement": "bottom",
+                    "calcs": [
+                        "mean",
+                        "max"
+                    ]
+                },
+                "tooltip": {
+                    "mode": "multi"
+                }
+            },
+            "title": "Goroutine Count",
+            "type": "timeseries",
+            "targets": [
+                {
+                    "datasource": "${DS_PROMETHEUS}",
+                    "expr": "beamdrop_goroutines_count",
+                    "legendFormat": "goroutines"
+                }
+            ]
+        },
+        {
+            "datasource": "${DS_PROMETHEUS}",
+            "fieldConfig": {
+                "defaults": {
+                    "custom": {
+                        "lineWidth": 1,
+                        "fillOpacity": 20,
+                        "drawStyle": "line"
+                    },
+                    "unit": "decbytes"
+                }
+            },
+            "gridPos": {
+                "h": 8,
+                "w": 12,
+                "x": 12,
+                "y": 50
+            },
+            "id": 51,
+            "options": {
+                "legend": {
+                    "displayMode": "table",
+                    "placement": "bottom",
+                    "calcs": [
+                        "mean",
+                        "max"
+                    ]
+                },
+                "tooltip": {
+                    "mode": "multi"
+                }
+            },
+            "title": "Go Process Memory",
+            "type": "timeseries",
+            "targets": [
+                {
+                    "datasource": "${DS_PROMETHEUS}",
+                    "expr": "process_resident_memory_bytes{job=\"beamdrop\"}",
+                    "legendFormat": "RSS"
+                },
+                {
+                    "datasource": "${DS_PROMETHEUS}",
+                    "expr": "go_memstats_alloc_bytes{job=\"beamdrop\"}",
+                    "legendFormat": "heap alloc"
+                }
+            ]
+        }
+    ],
+    "schemaVersion": 39,
+    "tags": [
+        "beamdrop",
+        "file-server",
+        "prometheus"
+    ],
+    "templating": {
+        "list": []
+    },
+    "time": {
+        "from": "now-1h",
+        "to": "now"
+    },
+    "timepicker": {},
+    "timezone": "browser",
+    "title": "Beamdrop",
+    "uid": "beamdrop-overview",
+    "version": 1
+}

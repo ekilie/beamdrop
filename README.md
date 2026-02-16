@@ -28,6 +28,7 @@ Beamdrop provides both a web interface for interactive file management and a pro
   - Structured JSON log file at `<dir>/.beamdrop/beamdrop.log`
   - Configurable log level
 - **Docker support**: Multi-stage Dockerfile with ~39 MB image, non-root user, health checks
+- **Health probes**: Kubernetes-compatible `/health/live`, `/health/ready`, `/health/startup` endpoints with component-level status
 
 ## Installation
 
@@ -99,7 +100,7 @@ docker run -d \
   beamdrop
 ```
 
-The image is ~39 MB, runs as non-root, and includes a `HEALTHCHECK` against `/health`.
+The image is ~39 MB, runs as non-root, and includes a `HEALTHCHECK` against `/health/live`.
 
 ### Docker Compose (recommended)
 

@@ -61,7 +61,7 @@ const Index = () => {
         if (!response.ok) {
           throw new Error("Failed to fetch files");
         }
-        const fileList: FileItem[] = await response.json();
+        const fileList: FileItem[] = (await response.json()) ?? [];
         setFiles(fileList);
         setFilteredFiles(fileList);
       } catch (error) {

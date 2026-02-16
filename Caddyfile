@@ -1,0 +1,32 @@
+# Caddyfile — Reverse proxy with automatic HTTPS for BeamDrop
+#
+# Usage:
+#   1. Set BEAMDROP_DOMAIN in your .env or shell:
+#        export BEAMDROP_DOMAIN=files.example.com
+#   2. Uncomment the caddy service in docker-compose.yml
+#   3. docker compose up -d
+#
+# Caddy will automatically obtain and renew a Let's Encrypt TLS certificate
+# for the configured domain.
+
+{$DOMAIN:localhost} {
+	reverse_proxy beamdrop:{$BEAMDROP_PORT:7777}
+
+	# Compress responses
+	encode gzip zstd
+
+	# Security headers (Caddy sets most by default; add extras here)
+	header {
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		# Remove server identification
+		-Server
+	}
+
+	# Access log
+	log {
+		output stdout
+		format console
+	}
+}

@@ -63,6 +63,10 @@ RUN apk add --no-cache ca-certificates wget \
 # Copy the static binary
 COPY --from=builder /beamdrop /usr/local/bin/beamdrop
 
+# Copy the entrypoint script (translates env vars → CLI flags)
+COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
 # /data is the shared directory — mount a volume here for persistence.
 # The SQLite DB, logs, and uploaded files all live under this path.
 RUN mkdir -p /data && chown beamdrop:beamdrop /data
@@ -77,5 +81,5 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
 
 USER beamdrop:beamdrop
 
-ENTRYPOINT ["beamdrop"]
-CMD ["--dir", "/data"]
+ENTRYPOINT ["docker-entrypoint.sh"]
+CMD []

@@ -1,18 +1,18 @@
 package db
 
 import (
-	"log/slog"
-	"sync"
+    "log/slog"
+    "sync"
 
-	"github.com/glebarez/sqlite"
-	"github.com/tachRoutine/beamdrop-go/config"
-	"gorm.io/gorm"
-	gormlogger "gorm.io/gorm/logger"
+    "github.com/glebarez/sqlite"
+    "github.com/tachRoutine/beamdrop-go/config"
+    "gorm.io/gorm"
+    gormlogger "gorm.io/gorm/logger"
 )
 
 var (
-	db   *gorm.DB
-	once sync.Once
+    db   *gorm.DB
+    once sync.Once
 )
 
 // Init explicitly initializes the database. Must be called after config flags
@@ -26,29 +26,30 @@ func Init() {
 }
 
 func openDB() {
-	var dbPath string = config.DBPath
-	// logger.Info("Opening database at: %s", dbPath)
-	var err error
-	db, err = gorm.Open(sqlite.Open(dbPath), &gorm.Config{
-		Logger: gormlogger.Default.LogMode(gormlogger.Silent),
-	})
-	if err != nil {
-		slog.Error("Failed to connect database", "error", err)
-	}
+    var dbPath string = config.DBPath
+    var err error
+    slog.Info("Opening database", "path", dbPath)
+    db, err = gorm.Open(sqlite.Open(dbPath), &gorm.Config{
+        Logger: gormlogger.Default.LogMode(gormlogger.Silent),
+    })
+    if err != nil {
+        slog.Error("Failed to connect database", "error", err)
+    }
 }
 
 func GetDB() *gorm.DB {
-	return db
+    Init() // NOTE: this ensures DB is open (no-op after first call)
+    return db
 }
 
 // Close closes the underlying database connection.
 func Close() error {
-	if db == nil {
-		return nil
-	}
-	sqlDB, err := db.DB()
-	if err != nil {
-		return err
-	}
-	return sqlDB.Close()
+    if db == nil {
+        return nil
+    }
+    sqlDB, err := db.DB()
+    if err != nil {
+        return err
+    }
+    return sqlDB.Close()
 }

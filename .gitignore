@@ -50,3 +50,5 @@ cmd/*/*
 .beamdrop_trash/*
 /beamdrop
 .beamdrop/*
+
+beamdrop.db

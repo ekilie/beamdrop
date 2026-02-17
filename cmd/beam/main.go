@@ -12,6 +12,7 @@ import (
 
 	"github.com/tachRoutine/beamdrop-go/beam/server"
 	"github.com/tachRoutine/beamdrop-go/config"
+	"github.com/tachRoutine/beamdrop-go/pkg/db"
 	"github.com/tachRoutine/beamdrop-go/pkg/logger"
 	"github.com/tachRoutine/beamdrop-go/pkg/styles"
 )
@@ -21,6 +22,7 @@ func main() {
 	noQR := flag.Bool("no-qr", false, "Disable QR code generation")
 	help := flag.Bool("h", false, "Show help message")
 	password := flag.String("p", "", "Password authentication")
+	dbPath := flag.String("db-path", "", "Path to database file (default: <sharedDir>/.beamdrop/beamdrop.db)")
 	versionFlag := flag.Bool("v", false, "Show version information")
 	tlsCert := flag.String("tls-cert", "", "Path to TLS certificate file for HTTPS")
 	tlsKey := flag.String("tls-key", "", "Path to TLS private key file for HTTPS")
@@ -33,15 +35,25 @@ func main() {
 	// NOTE:Here i default it to 0 so when it zero we know that the flag wasnt passed
 	// Since the flag is a non-boolean value
 	port := flag.Int("port", 0, "Set the port that beamdrop will run on")
+	flag.Parse()
+
 	if *versionFlag {
 		styles.InfoStyle.Println("Beamdrop Version:", config.VERSION)
 		return
 	}
-	flag.Parse()
 
 	// Initialize structured logger before anything else.
 	// Terminal gets colored human-readable output; JSON logs go to <sharedDir>/.beamdrop/beamdrop.log
 	logger.Init(*logLevel, *sharedDir)
+
+	// Apply custom DB path if provided in the flag
+	if *dbPath != "" {
+		config.SetDBPath(*dbPath)
+	}
+
+	// Initialize database now that the DB path is finalized
+	db.Init()
+	db.AutoMigrate()
 
 	flags := config.Flags{
 		SharedDir:       *sharedDir,
@@ -56,6 +68,7 @@ func main() {
 		LogLevel:        *logLevel,
 		RateLimit:       *rateLimit,
 		ShutdownTimeout: *shutdownTimeout,
+		DBPath:          *dbPath,
 	}
 
 	if flag.NArg() > 0 {

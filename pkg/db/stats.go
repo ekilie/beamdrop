@@ -20,7 +20,6 @@ func (ServerStats) TableName() string {
 	return "server_stats"
 }
 func CreateStatsTable() {
-	db := GetDB()
 	err := db.AutoMigrate(&ServerStats{})
 	if err != nil {
 		slog.Error("Failed to migrate server stats table", "error", err)

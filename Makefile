@@ -15,7 +15,7 @@ CGO_ENABLED ?= 0
 
 # ── Development ───────────────────────────────────────────────────────────────
 run: build
-	./cmd/beam/beamdrop -p="tach"
+	./cmd/beam/beamdrop -p="tach" --db-path="./beamdrop.db"
 
 build-ui:
 	cd ./static/frontend && bun install && bun run build

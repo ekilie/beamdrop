@@ -15,15 +15,20 @@ var (
 	once sync.Once
 )
 
-func init() {
-	once.Do(openDB)
-	CreateStatsTable()
+// Init explicitly initializes the database. Must be called after config flags
+// (like --db-path) have been applied. Safe to call multiple times; only the
+// first call takes effect.
+func Init() {
+	once.Do(func() {
+		openDB()
+		CreateStatsTable()
+	})
 }
 
 func openDB() {
 	var dbPath string = config.DBPath
-	// logger.Info("Opening database at: %s", dbPath)
 	var err error
+	slog.Info("Opening database", "path", dbPath)
 	db, err = gorm.Open(sqlite.Open(dbPath), &gorm.Config{
 		Logger: gormlogger.Default.LogMode(gormlogger.Silent),
 	})

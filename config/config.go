@@ -69,6 +69,7 @@ type Flags struct {
 	LogLevel        string        // "debug", "info", "warn", "error" (default "info")
 	RateLimit       int           // General rate limit in requests/min (0 = disabled)
 	ShutdownTimeout time.Duration // Graceful shutdown timeout (default 30s)
+	DBPath          string        // Path to database file (default: <sharedDir>/.beamdrop/beamdrop.db)
 }
 
 func GetDBPath() string {
@@ -115,9 +116,6 @@ func init() {
 
 	if _, err := os.Stat(ConfigPath); os.IsNotExist(err) {
 		createConfigDb()
-	} else {
-		// For now, we just log that we're loading the existing config
-		log.Printf("Loading existing config from: %s", ConfigPath)
 	}
 }
 

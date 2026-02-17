@@ -21,6 +21,7 @@ func main() {
 	noQR := flag.Bool("no-qr", false, "Disable QR code generation")
 	help := flag.Bool("h", false, "Show help message")
 	password := flag.String("p", "", "Password authentication")
+	dbPath := flag.String("db-path", "", "Path to database file (default: <sharedDir>/.beamdrop/beamdrop.db)")
 	versionFlag := flag.Bool("v", false, "Show version information")
 	tlsCert := flag.String("tls-cert", "", "Path to TLS certificate file for HTTPS")
 	tlsKey := flag.String("tls-key", "", "Path to TLS private key file for HTTPS")
@@ -56,6 +57,7 @@ func main() {
 		LogLevel:        *logLevel,
 		RateLimit:       *rateLimit,
 		ShutdownTimeout: *shutdownTimeout,
+		DBPath:          *dbPath,
 	}
 
 	if flag.NArg() > 0 {

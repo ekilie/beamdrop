@@ -69,6 +69,7 @@ type Flags struct {
 	LogLevel        string        // "debug", "info", "warn", "error" (default "info")
 	RateLimit       int           // General rate limit in requests/min (0 = disabled)
 	ShutdownTimeout time.Duration // Graceful shutdown timeout (default 30s)
+	DBPath          string        // Path to database file (default: <sharedDir>/.beamdrop/beamdrop.db)
 }
 
 func GetDBPath() string {

@@ -483,50 +483,7 @@ export function AppSidebar({ password = "" }: AppSidebarProps) {
           </>
         )}
 
-        {!isCollapsed && (
-          <>
-            <Separator className="my-4 bg-sidebar-border" />
-
-            {/* Quick Actions */}
-            <SidebarGroup>
-              <SidebarGroupLabel className="text-sidebar-foreground/80 font-mono text-xs">
-                QUICK ACTIONS
-              </SidebarGroupLabel>
-              <SidebarGroupContent>
-                <SidebarMenu>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton
-                      onClick={() => {
-                        const uploadSection = document.querySelector(
-                          "[data-upload-section]"
-                        );
-                        uploadSection?.scrollIntoView({ behavior: "smooth" });
-                      }}
-                      className="hover:bg-sidebar-accent"
-                    >
-                      <Upload className="w-4 h-4" />
-                      <span className="font-mono text-sm">UPLOAD FILES</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton
-                      onClick={() => {
-                        const filesSection = document.querySelector(
-                          "[data-files-section]"
-                        );
-                        filesSection?.scrollIntoView({ behavior: "smooth" });
-                      }}
-                      className="hover:bg-sidebar-accent"
-                    >
-                      <HardDrive className="w-4 h-4" />
-                      <span className="font-mono text-sm">BROWSE FILES</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
-          </>
-        )}
+        
       </SidebarContent>
 
       <SidebarFooter className="p-4">

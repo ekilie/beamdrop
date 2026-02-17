@@ -52,6 +52,7 @@ func main() {
 
 	// Initialize database now that the DB path is finalized
 	db.Init()
+	db.AutoMigrate()
 
 	flags := config.Flags{
 		SharedDir:       *sharedDir,

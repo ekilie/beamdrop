@@ -116,9 +116,6 @@ func init() {
 
 	if _, err := os.Stat(ConfigPath); os.IsNotExist(err) {
 		createConfigDb()
-	} else {
-		// For now, we just log that we're loading the existing config
-		log.Printf("Loading existing config from: %s", ConfigPath)
 	}
 }
 

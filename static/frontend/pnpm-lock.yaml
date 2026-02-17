@@ -129,6 +129,9 @@ importers:
       '@tailwindcss/typography':
         specifier: ^0.5.16
         version: 0.5.19(tailwindcss@3.4.18(tsx@4.21.0))
+      '@tanstack/router-cli':
+        specifier: ^1.160.1
+        version: 1.160.1
       '@tanstack/router-devtools':
         specifier: ^1.160.2
         version: 1.160.2(@tanstack/react-router@1.160.2(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(@tanstack/router-core@1.160.0)(csstype@3.1.3)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
@@ -1589,6 +1592,11 @@ packages:
     peerDependencies:
       react: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
       react-dom: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
+
+  '@tanstack/router-cli@1.160.1':
+    resolution: {integrity: sha512-m0vEqMXkTmwbXTAgNXJrQW4zDIIpV4Y2ngtZZKB6yWr5/hylyakh5g/15zOQosPDfF3CaJZFtbvjfpL4UfIUKg==}
+    engines: {node: '>=12'}
+    hasBin: true
 
   '@tanstack/router-core@1.160.0':
     resolution: {integrity: sha512-vbh6OsE0MG+0c+SKh2uk5yEEZlWsxT96Ub2JaTs7ixOvZp3Wu9PTEIe2BA3cShNZhEsDI0Le4NqgY4XIaHLLvA==}
@@ -4034,6 +4042,14 @@ snapshots:
       react: 18.3.1
       react-dom: 18.3.1(react@18.3.1)
       use-sync-external-store: 1.6.0(react@18.3.1)
+
+  '@tanstack/router-cli@1.160.1':
+    dependencies:
+      '@tanstack/router-generator': 1.160.1
+      chokidar: 3.6.0
+      yargs: 17.7.2
+    transitivePeerDependencies:
+      - supports-color
 
   '@tanstack/router-core@1.160.0':
     dependencies:

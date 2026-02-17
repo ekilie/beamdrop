@@ -5,17 +5,17 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/components/ThemeProvider";
 
 export const Route = createRootRoute({
-  component: RootLayout,
+    component: RootLayout,
 });
 
 function RootLayout() {
-  return (
-    <ThemeProvider defaultTheme="system" storageKey="beamdrop-ui-theme">
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <Outlet />
-      </TooltipProvider>
-    </ThemeProvider>
-  );
+    return (
+        <ThemeProvider defaultTheme="system" storageKey="beamdrop-ui-theme">
+            <TooltipProvider>
+                <Toaster />
+                <Sonner />
+                <Outlet />
+            </TooltipProvider>
+        </ThemeProvider>
+    );
 }

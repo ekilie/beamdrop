@@ -44,6 +44,10 @@ func main() {
 	// Terminal gets colored human-readable output; JSON logs go to <sharedDir>/.beamdrop/beamdrop.log
 	logger.Init(*logLevel, *sharedDir)
 
+	// Apply custom DB path if provided in the flag
+    if *dbPath != "" {
+        config.SetDBPath(*dbPath)
+    }
 	flags := config.Flags{
 		SharedDir:       *sharedDir,
 		NoQR:            *noQR,

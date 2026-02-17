@@ -18,6 +18,7 @@ args="$args --no-qr"
 [ -n "$BEAMDROP_LOG_LEVEL" ]       && args="$args --log-level $BEAMDROP_LOG_LEVEL"
 [ -n "$BEAMDROP_RATE_LIMIT" ]      && args="$args --rate-limit $BEAMDROP_RATE_LIMIT"
 [ -n "$BEAMDROP_ALLOWED_ORIGINS" ] && args="$args --allowed-origins $BEAMDROP_ALLOWED_ORIGINS"
+[ -n "$BEAMDROP_DB_PATH" ]         && args="$args --db-path $BEAMDROP_DB_PATH"
 [ -n "$BEAMDROP_TLS_CERT" ]        && args="$args --tls-cert $BEAMDROP_TLS_CERT"
 [ -n "$BEAMDROP_TLS_KEY" ]         && args="$args --tls-key $BEAMDROP_TLS_KEY"
 

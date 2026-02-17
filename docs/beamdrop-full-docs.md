@@ -116,6 +116,7 @@ docker compose up -d
 | `-tls-cert` | Path to TLS certificate file | None |
 | `-tls-key` | Path to TLS private key file | None |
 | `-allowed-origins` | Comma-separated CORS origins | None (CORS disabled) |
+| `-db-path` | Path to database file | `~/.beamdrop/beamdrop.db` |
 | `-rate-limit` | Requests/min per IP (0 = disabled) | `100` |
 | `-log-level` | `debug`, `info`, `warn`, `error` | `info` |
 | `-no-qr` | Disable QR code display | `false` |
@@ -133,6 +134,7 @@ docker compose up -d
 | `BEAMDROP_RATE_LIMIT` | `100` | Requests/min per IP |
 | `BEAMDROP_API_AUTH` | `false` | Enable S3 API key auth |
 | `BEAMDROP_ALLOWED_ORIGINS` | — | CORS origins |
+| `BEAMDROP_DB_PATH` | — | Path to database file |
 | `BEAMDROP_TLS_CERT` | — | TLS certificate path |
 | `BEAMDROP_TLS_KEY` | — | TLS private key path |
 

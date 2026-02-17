@@ -33,6 +33,8 @@ Options:
   -rate-limit int
 		General rate limit in requests/min per IP (default 100, 0 = disabled)
 		Auth endpoints: 5% of general rate; Upload endpoints: 10% of general rate
+  -db-path string
+		Path to database file (default: ~/.beamdrop/beamdrop.db)
   -shutdown-timeout duration
 		Graceful shutdown timeout for draining connections (default 30s)
   -no-qr

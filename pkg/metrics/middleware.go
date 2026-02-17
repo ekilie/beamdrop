@@ -1,6 +1,9 @@
 package metrics
 
 import (
+	"bufio"
+	"fmt"
+	"net"
 	"net/http"
 	"strconv"
 	"strings"
@@ -28,6 +31,15 @@ func (rc *responseCapture) Write(b []byte) (int, error) {
 		rc.written = true
 	}
 	return rc.ResponseWriter.Write(b)
+}
+
+// Hijack implements http.Hijacker so that WebSocket upgrades work
+// through the metrics middleware.
+func (rc *responseCapture) Hijack() (net.Conn, *bufio.ReadWriter, error) {
+	if hj, ok := rc.ResponseWriter.(http.Hijacker); ok {
+		return hj.Hijack()
+	}
+	return nil, nil, fmt.Errorf("underlying ResponseWriter does not implement http.Hijacker")
 }
 
 // NormalizePath reduces high-cardinality URL paths to a stable label

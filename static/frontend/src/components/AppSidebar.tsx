@@ -13,6 +13,7 @@ import {
   Home,
   Share2,
   FileText,
+  Settings,
 } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
@@ -32,7 +33,6 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { SettingsDialog } from "@/components/SettingsDialog";
 
 interface SystemStats {
   memory: {
@@ -173,6 +173,64 @@ export function AppSidebar({ password = "" }: AppSidebarProps) {
       </SidebarHeader>
 
       <SidebarContent className="px-4">
+        {/* Navigation */}
+        <SidebarGroup>
+          <SidebarGroupLabel className="text-sidebar-foreground/80 font-mono text-xs">
+            NAVIGATION
+          </SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  onClick={() => navigate("/")}
+                  className={`hover:bg-sidebar-accent ${location.pathname === "/" ? "bg-sidebar-accent" : ""}`}
+                >
+                  <Home className="w-4 h-4" />
+                  {!isCollapsed && <span className="font-mono text-sm">HOME</span>}
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  onClick={() => navigate("/shares")}
+                  className={`hover:bg-sidebar-accent ${location.pathname === "/shares" ? "bg-sidebar-accent" : ""}`}
+                >
+                  <Share2 className="w-4 h-4" />
+                  {!isCollapsed && <span className="font-mono text-sm">SHARES</span>}
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  onClick={() => navigate("/api-keys")}
+                  className={`hover:bg-sidebar-accent ${location.pathname === "/api-keys" ? "bg-sidebar-accent" : ""}`}
+                >
+                  <Key className="w-4 h-4" />
+                  {!isCollapsed && <span className="font-mono text-sm">API KEYS</span>}
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  onClick={() => navigate("/logs")}
+                  className={`hover:bg-sidebar-accent ${location.pathname === "/logs" ? "bg-sidebar-accent" : ""}`}
+                >
+                  <FileText className="w-4 h-4" />
+                  {!isCollapsed && <span className="font-mono text-sm">LOGS</span>}
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  onClick={() => navigate("/settings")}
+                  className={`hover:bg-sidebar-accent ${location.pathname === "/settings" ? "bg-sidebar-accent" : ""}`}
+                >
+                  <Settings className="w-4 h-4" />
+                  {!isCollapsed && <span className="font-mono text-sm">SETTINGS</span>}
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <Separator className="my-4 bg-sidebar-border" />
+
         {/* Server Status */}
         <SidebarGroup>
           <SidebarGroupLabel className="text-sidebar-foreground/80 font-mono text-xs">
@@ -429,55 +487,6 @@ export function AppSidebar({ password = "" }: AppSidebarProps) {
           <>
             <Separator className="my-4 bg-sidebar-border" />
 
-            {/* Navigation */}
-            <SidebarGroup>
-              <SidebarGroupLabel className="text-sidebar-foreground/80 font-mono text-xs">
-                NAVIGATION
-              </SidebarGroupLabel>
-              <SidebarGroupContent>
-                <SidebarMenu>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton
-                      onClick={() => navigate("/")}
-                      className={`hover:bg-sidebar-accent ${location.pathname === "/" ? "bg-sidebar-accent" : ""}`}
-                    >
-                      <Home className="w-4 h-4" />
-                      <span className="font-mono text-sm">HOME</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton
-                      onClick={() => navigate("/shares")}
-                      className={`hover:bg-sidebar-accent ${location.pathname === "/shares" ? "bg-sidebar-accent" : ""}`}
-                    >
-                      <Share2 className="w-4 h-4" />
-                      <span className="font-mono text-sm">SHARES</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton
-                      onClick={() => navigate("/api-keys")}
-                      className={`hover:bg-sidebar-accent ${location.pathname === "/api-keys" ? "bg-sidebar-accent" : ""}`}
-                    >
-                      <Key className="w-4 h-4" />
-                      <span className="font-mono text-sm">API KEYS</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton
-                      onClick={() => navigate("/logs")}
-                      className={`hover:bg-sidebar-accent ${location.pathname === "/logs" ? "bg-sidebar-accent" : ""}`}
-                    >
-                      <FileText className="w-4 h-4" />
-                      <span className="font-mono text-sm">LOGS</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
-
-            <Separator className="my-4 bg-sidebar-border" />
-
             {/* Quick Actions */}
             <SidebarGroup>
               <SidebarGroupLabel className="text-sidebar-foreground/80 font-mono text-xs">
@@ -525,7 +534,6 @@ export function AppSidebar({ password = "" }: AppSidebarProps) {
           <div className="space-y-4 w-full">
             <div className="flex items-center justify-center gap-2 w-full">
               <ThemeToggle />
-              <SettingsDialog />
             </div>
             <div className="text-center w-full">
               <p className="text-xs font-mono text-sidebar-foreground/60">
@@ -536,7 +544,6 @@ export function AppSidebar({ password = "" }: AppSidebarProps) {
         ) : (
           <div className="flex flex-col items-center justify-center gap-2 w-full">
             <ThemeToggle />
-            <SettingsDialog />
           </div>
         )}
       </SidebarFooter>

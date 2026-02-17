@@ -7,7 +7,6 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { SettingsDialog } from "@/components/SettingsDialog";
 import { Button } from "@/components/ui/button";
 import { AuthProvider, useAuth } from "@/context/auth";
 import Index from "./pages/Index";
@@ -17,6 +16,7 @@ import ShareAccess from "./pages/ShareAccess";
 import { ApiKeysPage } from "./components/ApiKeysPage";
 import { SharesManagementPage } from "./components/SharesManagementPage";
 import LogsPage from "./pages/LogsPage";
+import SettingsPage from "./pages/SettingsPage";
 import { Menu, LogOut, Loader2 } from "lucide-react";
 
 const queryClient = new QueryClient();
@@ -80,7 +80,6 @@ function MainLayout() {
                 </Button>
               )}
               <ThemeToggle />
-              <SettingsDialog />
             </div>
           </header>
 
@@ -90,6 +89,7 @@ function MainLayout() {
               <Route path="/shares" element={<SharesManagementPage />} />
               <Route path="/api-keys" element={<ApiKeysPage />} />
               <Route path="/logs" element={<LogsPage />} />
+              <Route path="/settings" element={<SettingsPage />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </main>

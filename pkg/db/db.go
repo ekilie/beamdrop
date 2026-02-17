@@ -15,9 +15,14 @@ var (
 	once sync.Once
 )
 
-func init() {
-	once.Do(openDB)
-	CreateStatsTable()
+// Init explicitly initializes the database. Must be called after config flags
+// (like --db-path) have been applied. Safe to call multiple times; only the
+// first call takes effect.
+func Init() {
+    once.Do(func() {
+        openDB()
+        CreateStatsTable()
+    })
 }
 
 func openDB() {

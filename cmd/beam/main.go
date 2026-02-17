@@ -12,6 +12,7 @@ import (
 
 	"github.com/tachRoutine/beamdrop-go/beam/server"
 	"github.com/tachRoutine/beamdrop-go/config"
+	"github.com/tachRoutine/beamdrop-go/pkg/db"
 	"github.com/tachRoutine/beamdrop-go/pkg/logger"
 	"github.com/tachRoutine/beamdrop-go/pkg/styles"
 )
@@ -45,9 +46,13 @@ func main() {
 	logger.Init(*logLevel, *sharedDir)
 
 	// Apply custom DB path if provided in the flag
-    if *dbPath != "" {
-        config.SetDBPath(*dbPath)
-    }
+	if *dbPath != "" {
+		config.SetDBPath(*dbPath)
+	}
+
+	// Initialize database now that the DB path is finalized
+	db.Init()
+
 	flags := config.Flags{
 		SharedDir:       *sharedDir,
 		NoQR:            *noQR,

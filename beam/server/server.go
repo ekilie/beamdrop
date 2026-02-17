@@ -88,7 +88,6 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) Start() error {
-	db.Init()
 	db.AutoMigrate()
 
 	// Cleaningup any orphaned temp files from interrupted writes

@@ -68,7 +68,8 @@ interface AppSidebarProps {
 export function AppSidebar({ password = "" }: AppSidebarProps) {
   const { state } = useSidebar();
   const navigate = useNavigate();
-  const location = useLocation();
+  const routerState = useRouterState();
+  const pathname = routerState.location.pathname;
   const [stats, setStats] = useState<SidebarStats>({
     downloads: 0,
     uploads: 0,
@@ -182,8 +183,8 @@ export function AppSidebar({ password = "" }: AppSidebarProps) {
             <SidebarMenu>
               <SidebarMenuItem>
                 <SidebarMenuButton
-                  onClick={() => navigate("/")}
-                  className={`hover:bg-sidebar-accent ${location.pathname === "/" ? "bg-sidebar-accent" : ""}`}
+                  onClick={() => navigate({ to: "/" })}
+                  className={`hover:bg-sidebar-accent ${pathname === "/" ? "bg-sidebar-accent" : ""}`}
                 >
                   <Home className="w-4 h-4" />
                   {!isCollapsed && <span className="font-mono text-sm">HOME</span>}
@@ -191,8 +192,8 @@ export function AppSidebar({ password = "" }: AppSidebarProps) {
               </SidebarMenuItem>
               <SidebarMenuItem>
                 <SidebarMenuButton
-                  onClick={() => navigate("/shares")}
-                  className={`hover:bg-sidebar-accent ${location.pathname === "/shares" ? "bg-sidebar-accent" : ""}`}
+                  onClick={() => navigate({ to: "/shares" })}
+                  className={`hover:bg-sidebar-accent ${pathname === "/shares" ? "bg-sidebar-accent" : ""}`}
                 >
                   <Share2 className="w-4 h-4" />
                   {!isCollapsed && <span className="font-mono text-sm">SHARES</span>}
@@ -200,8 +201,8 @@ export function AppSidebar({ password = "" }: AppSidebarProps) {
               </SidebarMenuItem>
               <SidebarMenuItem>
                 <SidebarMenuButton
-                  onClick={() => navigate("/api-keys")}
-                  className={`hover:bg-sidebar-accent ${location.pathname === "/api-keys" ? "bg-sidebar-accent" : ""}`}
+                  onClick={() => navigate({ to: "/api-keys" })}
+                  className={`hover:bg-sidebar-accent ${pathname === "/api-keys" ? "bg-sidebar-accent" : ""}`}
                 >
                   <Key className="w-4 h-4" />
                   {!isCollapsed && <span className="font-mono text-sm">API KEYS</span>}
@@ -209,8 +210,8 @@ export function AppSidebar({ password = "" }: AppSidebarProps) {
               </SidebarMenuItem>
               <SidebarMenuItem>
                 <SidebarMenuButton
-                  onClick={() => navigate("/logs")}
-                  className={`hover:bg-sidebar-accent ${location.pathname === "/logs" ? "bg-sidebar-accent" : ""}`}
+                  onClick={() => navigate({ to: "/logs" })}
+                  className={`hover:bg-sidebar-accent ${pathname === "/logs" ? "bg-sidebar-accent" : ""}`}
                 >
                   <FileText className="w-4 h-4" />
                   {!isCollapsed && <span className="font-mono text-sm">LOGS</span>}
@@ -218,8 +219,8 @@ export function AppSidebar({ password = "" }: AppSidebarProps) {
               </SidebarMenuItem>
               <SidebarMenuItem>
                 <SidebarMenuButton
-                  onClick={() => navigate("/settings")}
-                  className={`hover:bg-sidebar-accent ${location.pathname === "/settings" ? "bg-sidebar-accent" : ""}`}
+                  onClick={() => navigate({ to: "/settings" })}
+                  className={`hover:bg-sidebar-accent ${pathname === "/settings" ? "bg-sidebar-accent" : ""}`}
                 >
                   <Settings className="w-4 h-4" />
                   {!isCollapsed && <span className="font-mono text-sm">SETTINGS</span>}

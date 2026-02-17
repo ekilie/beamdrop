@@ -15,7 +15,7 @@ import {
   FileText,
   Settings,
 } from "lucide-react";
-import { useNavigate, useLocation } from "@tanstack/react-router";
+import { useNavigate, useRouterState } from "@tanstack/react-router";
 import {
   Sidebar,
   SidebarContent,

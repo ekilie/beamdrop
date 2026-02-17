@@ -303,7 +303,7 @@ export default function ShareAccess() {
           <CardContent>
             <p className="text-muted-foreground mb-4">{error}</p>
             <Button
-              onClick={() => navigate("/")}
+              onClick={() => navigate({ to: "/" })}
               variant="outline"
               className="w-full"
             >
@@ -413,7 +413,7 @@ export default function ShareAccess() {
           </Card>
 
           <div className="mt-4 text-center">
-            <Button onClick={() => navigate("/")} variant="outline">
+            <Button onClick={() => navigate({ to: "/" })} variant="outline">
               Go to Beamdrop
             </Button>
           </div>

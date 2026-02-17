@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate } from "@tanstack/react-router";
 import {
   Card,
   CardContent,
@@ -184,7 +184,7 @@ function FilePreview({
 }
 
 export default function ShareAccess() {
-  const { token } = useParams<{ token: string }>();
+  const { token } = useParams({ from: "/share/$token" });
   const navigate = useNavigate();
   const [password, setPassword] = useState("");
   const [fileInfo, setFileInfo] = useState<ShareFileInfo | null>(null);

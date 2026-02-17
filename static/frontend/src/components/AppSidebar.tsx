@@ -15,7 +15,7 @@ import {
   FileText,
   Settings,
 } from "lucide-react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation } from "@tanstack/react-router";
 import {
   Sidebar,
   SidebarContent,
@@ -483,7 +483,7 @@ export function AppSidebar({ password = "" }: AppSidebarProps) {
           </>
         )}
 
-        
+
       </SidebarContent>
 
       <SidebarFooter className="p-4">

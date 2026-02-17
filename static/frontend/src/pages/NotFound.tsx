@@ -1,18 +1,19 @@
-import { useLocation, useNavigate } from "react-router-dom";
+import { useRouter, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { FileQuestion, ArrowLeft } from "lucide-react";
 
 const NotFound = () => {
-  const location = useLocation();
+  const router = useRouter();
   const navigate = useNavigate();
+  const pathname = router.state.location.pathname;
 
   useEffect(() => {
     console.error(
       "404 Error: User attempted to access non-existent route:",
-      location.pathname
+      pathname
     );
-  }, [location.pathname]);
+  }, [pathname]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-muted/20 p-4">
@@ -40,12 +41,12 @@ const NotFound = () => {
 
           <p className="text-sm font-mono text-muted-foreground uppercase tracking-wide mb-6">
             The route{" "}
-            <span className="text-primary break-all normal-case">{location.pathname}</span>{" "}
+            <span className="text-primary break-all normal-case">{pathname}</span>{" "}
             doesn't exist
           </p>
 
           <Button
-            onClick={() => navigate("/")}
+            onClick={() => navigate({ to: "/" })}
             className="w-full font-mono uppercase tracking-wide transition-smooth hover:scale-[1.02] gap-2"
           >
             <ArrowLeft className="w-4 h-4" />

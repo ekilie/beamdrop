@@ -18,6 +18,7 @@ import (
 	"github.com/tachRoutine/beamdrop-go/pkg/metrics"
 	"github.com/tachRoutine/beamdrop-go/pkg/middleware"
 	"github.com/tachRoutine/beamdrop-go/pkg/qr"
+	"github.com/tachRoutine/beamdrop-go/pkg/reqctx"
 	"github.com/tachRoutine/beamdrop-go/pkg/storage"
 )
 
@@ -83,6 +84,9 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// Apply security headers middleware
 	enableHSTS := s.flags.TLSCert != "" && s.flags.TLSKey != ""
 	handler = middleware.SecurityHeaders(enableHSTS)(handler)
+
+	// Apply request context middleware (outermost – sets X-Request-ID and enriches context)
+	handler = reqctx.Middleware()(handler)
 
 	handler.ServeHTTP(w, r)
 }

@@ -11,11 +11,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/tachRoutine/beamdrop-go/config"
-	"github.com/tachRoutine/beamdrop-go/pkg/db"
-	"github.com/tachRoutine/beamdrop-go/pkg/errors"
-	"github.com/tachRoutine/beamdrop-go/pkg/metrics"
-	"github.com/tachRoutine/beamdrop-go/pkg/storage"
+	"github.com/ekilie/beamdrop/config"
+	"github.com/ekilie/beamdrop/pkg/db"
+	"github.com/ekilie/beamdrop/pkg/errors"
+	"github.com/ekilie/beamdrop/pkg/metrics"
+	"github.com/ekilie/beamdrop/pkg/storage"
 )
 
 type FileHandler struct {

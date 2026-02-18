@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/tachRoutine/beamdrop-go/pkg/system"
+	"github.com/ekilie/beamdrop/pkg/system"
 )
 
 // Collector periodically gathers storage and runtime gauges and

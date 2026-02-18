@@ -11,8 +11,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/tachRoutine/beamdrop-go/pkg/db"
-	"github.com/tachRoutine/beamdrop-go/pkg/errors"
+	"github.com/ekilie/beamdrop/pkg/db"
+	"github.com/ekilie/beamdrop/pkg/errors"
 )
 
 type FileOperationsHandler struct {

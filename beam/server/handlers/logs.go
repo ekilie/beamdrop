@@ -9,8 +9,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/tachRoutine/beamdrop-go/pkg/errors"
-	"github.com/tachRoutine/beamdrop-go/pkg/logger"
+	"github.com/ekilie/beamdrop/pkg/errors"
+	"github.com/ekilie/beamdrop/pkg/logger"
 )
 
 // LogEntry represents a single structured JSON log line.

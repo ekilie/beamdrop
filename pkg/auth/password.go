@@ -7,8 +7,8 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/ekilie/beamdrop/pkg/db"
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/tachRoutine/beamdrop-go/pkg/db"
 	"golang.org/x/crypto/bcrypt"
 )
 

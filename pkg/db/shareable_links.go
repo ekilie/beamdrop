@@ -7,7 +7,7 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/tachRoutine/beamdrop-go/pkg/crypto"
+	"github.com/ekilie/beamdrop/pkg/crypto"
 	"gorm.io/gorm"
 )
 

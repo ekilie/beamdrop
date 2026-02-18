@@ -41,9 +41,9 @@ COPY --from=frontend /frontend/dist ./static/frontend/dist
 # Build static binary
 RUN CGO_ENABLED=0 GOOS=linux go build \
     -ldflags "-s -w \
-    -X 'github.com/tachRoutine/beamdrop-go/config.VERSION=${VERSION}' \
-    -X 'github.com/tachRoutine/beamdrop-go/config.Commit=${COMMIT}' \
-    -X 'github.com/tachRoutine/beamdrop-go/config.BuildDate=${BUILD_DATE}'" \
+    -X 'github.com/ekilie/beamdrop/config.VERSION=${VERSION}' \
+    -X 'github.com/ekilie/beamdrop/config.Commit=${COMMIT}' \
+    -X 'github.com/ekilie/beamdrop/config.BuildDate=${BUILD_DATE}'" \
     -o /beamdrop ./cmd/beam
 
 # ─────────────────────────────────────────────────────────────────────────────

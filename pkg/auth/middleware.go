@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/tachRoutine/beamdrop-go/pkg/metrics"
+	"github.com/ekilie/beamdrop/pkg/metrics"
 )
 
 // PublicRoutes are routes that don't require authentication

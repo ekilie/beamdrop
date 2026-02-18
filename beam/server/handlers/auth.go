@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/tachRoutine/beamdrop-go/pkg/auth"
-	"github.com/tachRoutine/beamdrop-go/pkg/metrics"
+	"github.com/ekilie/beamdrop/pkg/auth"
+	"github.com/ekilie/beamdrop/pkg/metrics"
 )
 
 // AuthHandler handles authentication endpoints

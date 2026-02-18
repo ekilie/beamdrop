@@ -5,7 +5,7 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/tachRoutine/beamdrop-go/pkg/db"
+	"github.com/ekilie/beamdrop/pkg/db"
 )
 
 func StatsHandler(w http.ResponseWriter, r *http.Request) {

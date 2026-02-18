@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/tachRoutine/beamdrop-go/pkg/db"
+	"github.com/ekilie/beamdrop/pkg/db"
 )
 
 type ShareableLinkHandler struct {

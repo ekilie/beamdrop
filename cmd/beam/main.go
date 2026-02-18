@@ -10,11 +10,11 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/tachRoutine/beamdrop-go/beam/server"
-	"github.com/tachRoutine/beamdrop-go/config"
-	"github.com/tachRoutine/beamdrop-go/pkg/db"
-	"github.com/tachRoutine/beamdrop-go/pkg/logger"
-	"github.com/tachRoutine/beamdrop-go/pkg/styles"
+	"github.com/ekilie/beamdrop/beam/server"
+	"github.com/ekilie/beamdrop/config"
+	"github.com/ekilie/beamdrop/pkg/db"
+	"github.com/ekilie/beamdrop/pkg/logger"
+	"github.com/ekilie/beamdrop/pkg/styles"
 )
 
 func main() {

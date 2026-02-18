@@ -4,8 +4,8 @@ import (
 	"log/slog"
 	"sync"
 
+	"github.com/ekilie/beamdrop/config"
 	"github.com/glebarez/sqlite"
-	"github.com/tachRoutine/beamdrop-go/config"
 	"gorm.io/gorm"
 	gormlogger "gorm.io/gorm/logger"
 )

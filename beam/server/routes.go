@@ -4,9 +4,9 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/ekilie/beamdrop/beam/server/handlers"
+	"github.com/ekilie/beamdrop/beam/server/handlers/api"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"github.com/tachRoutine/beamdrop-go/beam/server/handlers"
-	"github.com/tachRoutine/beamdrop-go/beam/server/handlers/api"
 )
 
 func (s *Server) setupRoutes() {

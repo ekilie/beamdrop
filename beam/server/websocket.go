@@ -5,9 +5,9 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/ekilie/beamdrop/pkg/db"
+	"github.com/ekilie/beamdrop/pkg/system"
 	"github.com/gorilla/websocket"
-	"github.com/tachRoutine/beamdrop-go/pkg/db"
-	"github.com/tachRoutine/beamdrop-go/pkg/system"
 )
 
 var upgrader = websocket.Upgrader{

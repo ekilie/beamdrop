@@ -9,7 +9,7 @@ import (
 	"path"
 	"strings"
 
-	"github.com/tachRoutine/beamdrop-go/static"
+	"github.com/ekilie/beamdrop/static"
 )
 
 func StaticHandler(w http.ResponseWriter, r *http.Request) {

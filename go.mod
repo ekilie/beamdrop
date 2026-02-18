@@ -1,4 +1,4 @@
-module github.com/tachRoutine/beamdrop-go
+module github.com/ekilie/beamdrop
 
 go 1.25.0
 

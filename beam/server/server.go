@@ -10,16 +10,16 @@ import (
 	"strings"
 	"time"
 
-	"github.com/tachRoutine/beamdrop-go/beam/server/handlers"
-	"github.com/tachRoutine/beamdrop-go/config"
-	"github.com/tachRoutine/beamdrop-go/pkg/auth"
-	"github.com/tachRoutine/beamdrop-go/pkg/db"
-	"github.com/tachRoutine/beamdrop-go/pkg/logger"
-	"github.com/tachRoutine/beamdrop-go/pkg/metrics"
-	"github.com/tachRoutine/beamdrop-go/pkg/middleware"
-	"github.com/tachRoutine/beamdrop-go/pkg/qr"
-	"github.com/tachRoutine/beamdrop-go/pkg/reqctx"
-	"github.com/tachRoutine/beamdrop-go/pkg/storage"
+	"github.com/ekilie/beamdrop/beam/server/handlers"
+	"github.com/ekilie/beamdrop/config"
+	"github.com/ekilie/beamdrop/pkg/auth"
+	"github.com/ekilie/beamdrop/pkg/db"
+	"github.com/ekilie/beamdrop/pkg/logger"
+	"github.com/ekilie/beamdrop/pkg/metrics"
+	"github.com/ekilie/beamdrop/pkg/middleware"
+	"github.com/ekilie/beamdrop/pkg/qr"
+	"github.com/ekilie/beamdrop/pkg/reqctx"
+	"github.com/ekilie/beamdrop/pkg/storage"
 )
 
 type Server struct {

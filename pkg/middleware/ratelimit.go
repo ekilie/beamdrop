@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	apperrors "github.com/tachRoutine/beamdrop-go/pkg/errors"
+	apperrors "github.com/ekilie/beamdrop/pkg/errors"
 )
 
 // ---------------------------------------------------------------------------

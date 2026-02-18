@@ -18,8 +18,8 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/ekilie/beamdrop/pkg/reqctx"
 	"github.com/fatih/color"
-	"github.com/tachRoutine/beamdrop-go/pkg/reqctx"
 )
 
 // ANSI color printers for each log level.

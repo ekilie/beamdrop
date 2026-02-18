@@ -9,8 +9,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/tachRoutine/beamdrop-go/config"
-	"github.com/tachRoutine/beamdrop-go/pkg/db"
+	"github.com/ekilie/beamdrop/config"
+	"github.com/ekilie/beamdrop/pkg/db"
 )
 
 // ---------------------------------------------------------------------------

@@ -19,8 +19,11 @@ func Middleware() func(http.Handler) http.Handler {
 			// Create a new request with the enriched context
 			r = r.WithContext(ctx)
 
-			// Log request start
+			// Propagate the request ID back in the response header
 			requestID := GetRequestID(ctx)
+			w.Header().Set(RequestIDHeader, requestID)
+
+			// Log request start
 			slog.Debug("Request started", "requestID", requestID, "method", r.Method, "path", r.URL.Path)
 
 			// Wrap response writer to detect when client disconnects

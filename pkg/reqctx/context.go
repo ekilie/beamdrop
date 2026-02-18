@@ -64,9 +64,18 @@ func GetGlobalConfig() *TimeoutConfig {
 	return globalConfig
 }
 
-// WithRequestID adds a request ID to the context
+// WithRequestID adds a new generated request ID to the context
 func WithRequestID(ctx context.Context) context.Context {
 	return context.WithValue(ctx, RequestIDKey, uuid.New().String())
+}
+
+// WithExistingRequestID adds an existing request ID to the context.
+// If the provided id is empty, a new UUID is generated.
+func WithExistingRequestID(ctx context.Context, id string) context.Context {
+	if id == "" {
+		return WithRequestID(ctx)
+	}
+	return context.WithValue(ctx, RequestIDKey, id)
 }
 
 // GetRequestID retrieves the request ID from context
@@ -155,9 +164,14 @@ func WithCustomTimeout(ctx context.Context, timeout time.Duration) (context.Cont
 	return context.WithTimeout(ctx, timeout)
 }
 
-// EnrichContext enriches a context with request metadata from an HTTP request
+// RequestIDHeader is the HTTP header used to propagate request IDs.
+const RequestIDHeader = "X-Request-ID"
+
+// EnrichContext enriches a context with request metadata from an HTTP request.
+// If the incoming request carries an X-Request-ID header the value is reused;
+// otherwise a new UUID is generated.
 func EnrichContext(ctx context.Context, r *http.Request) context.Context {
-	ctx = WithRequestID(ctx)
+	ctx = WithExistingRequestID(ctx, r.Header.Get(RequestIDHeader))
 	ctx = WithStartTime(ctx)
 	ctx = WithRemoteAddr(ctx, r.RemoteAddr)
 	ctx = WithUserAgent(ctx, r.UserAgent())

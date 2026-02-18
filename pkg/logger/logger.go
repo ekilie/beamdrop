@@ -19,6 +19,7 @@ import (
 	"sync"
 
 	"github.com/fatih/color"
+	"github.com/tachRoutine/beamdrop-go/pkg/reqctx"
 )
 
 // ANSI color printers for each log level.
@@ -113,7 +114,7 @@ func (h *colorHandler) Enabled(_ context.Context, l slog.Level) bool {
 	return l >= h.level
 }
 
-func (h *colorHandler) Handle(_ context.Context, r slog.Record) error {
+func (h *colorHandler) Handle(ctx context.Context, r slog.Record) error {
 	var buf strings.Builder
 
 	// Timestamp
@@ -133,6 +134,13 @@ func (h *colorHandler) Handle(_ context.Context, r slog.Record) error {
 		debugColor.Fprintf(&buf, "%-5s", levelStr)
 	}
 	buf.WriteByte(' ')
+
+	// Request ID from context (if present)
+	if rid := reqctx.GetRequestID(ctx); rid != "" {
+		keyColor.Fprint(&buf, "[")
+		fmt.Fprint(&buf, rid[:8]) // short form for readability
+		keyColor.Fprint(&buf, "] ")
+	}
 
 	// Message
 	fmt.Fprint(&buf, r.Message)
@@ -199,6 +207,11 @@ func (m *multiHandler) Enabled(ctx context.Context, l slog.Level) bool {
 }
 
 func (m *multiHandler) Handle(ctx context.Context, r slog.Record) error {
+	// Inject request ID from context into every log record so the JSON
+	// handler (and any other handler) outputs it automatically.
+	if rid := reqctx.GetRequestID(ctx); rid != "" {
+		r.AddAttrs(slog.String("requestID", rid))
+	}
 	for _, h := range m.handlers {
 		if h.Enabled(ctx, r.Level) {
 			if err := h.Handle(ctx, r); err != nil {

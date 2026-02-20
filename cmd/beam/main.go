@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
+	"strings"
 	"syscall"
 	"time"
 
@@ -16,6 +18,61 @@ import (
 	"github.com/ekilie/beamdrop/pkg/logger"
 	"github.com/ekilie/beamdrop/pkg/styles"
 )
+
+// envStr returns the environment variable value if the flag was not explicitly set.
+func envStr(flagName, envName string, flagVal *string) {
+	if isFlagSet(flagName) {
+		return
+	}
+	if v := os.Getenv(envName); v != "" {
+		*flagVal = v
+	}
+}
+
+// envBool sets the bool flag from an env var ("true"/"1") when the flag was not explicitly set.
+func envBool(flagName, envName string, flagVal *bool) {
+	if isFlagSet(flagName) {
+		return
+	}
+	if v := os.Getenv(envName); v != "" {
+		*flagVal = strings.EqualFold(v, "true") || v == "1"
+	}
+}
+
+// envInt sets the int flag from an env var when the flag was not explicitly set.
+func envInt(flagName, envName string, flagVal *int) {
+	if isFlagSet(flagName) {
+		return
+	}
+	if v := os.Getenv(envName); v != "" {
+		if n, err := strconv.Atoi(v); err == nil {
+			*flagVal = n
+		}
+	}
+}
+
+// envDuration sets the duration flag from an env var when the flag was not explicitly set.
+func envDuration(flagName, envName string, flagVal *time.Duration) {
+	if isFlagSet(flagName) {
+		return
+	}
+	if v := os.Getenv(envName); v != "" {
+		if d, err := time.ParseDuration(v); err == nil {
+			*flagVal = d
+		}
+	}
+}
+
+// isFlagSet reports whether a flag was explicitly provided on the command line.
+func isFlagSet(name string) bool {
+	found := false
+	flag.Visit(func(f *flag.Flag) {
+		if f.Name == name {
+			found = true
+		}
+	})
+	return found
+}
 
 func main() {
 	sharedDir := flag.String("dir", ".", "Directory to share files from")
@@ -36,6 +93,20 @@ func main() {
 	// Since the flag is a non-boolean value
 	port := flag.Int("port", 0, "Set the port that beamdrop will run on")
 	flag.Parse()
+
+	// Environment variable fallbacks (CLI flags always take precedence)
+	envStr("dir", "BEAMDROP_DIR", sharedDir)
+	envStr("p", "BEAMDROP_PASSWORD", password)
+	envStr("db-path", "BEAMDROP_DB_PATH", dbPath)
+	envStr("tls-cert", "BEAMDROP_TLS_CERT", tlsCert)
+	envStr("tls-key", "BEAMDROP_TLS_KEY", tlsKey)
+	envStr("allowed-origins", "BEAMDROP_ALLOWED_ORIGINS", allowedOrigins)
+	envStr("log-level", "BEAMDROP_LOG_LEVEL", logLevel)
+	envBool("no-qr", "BEAMDROP_NO_QR", noQR)
+	envBool("api-auth", "BEAMDROP_API_AUTH", apiAuth)
+	envInt("port", "BEAMDROP_PORT", port)
+	envInt("rate-limit", "BEAMDROP_RATE_LIMIT", rateLimit)
+	envDuration("shutdown-timeout", "BEAMDROP_SHUTDOWN_TIMEOUT", shutdownTimeout)
 
 	if *versionFlag {
 		styles.InfoStyle.Println("Beamdrop Version:", config.VERSION)

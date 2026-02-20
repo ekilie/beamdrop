@@ -44,6 +44,22 @@ Options:
   -v
 		Show version information
 
+Environment Variables:
+  All flags can be set via environment variables. CLI flags take precedence.
+
+    BEAMDROP_DIR              -dir
+    BEAMDROP_PASSWORD         -p
+    BEAMDROP_PORT             -port
+    BEAMDROP_DB_PATH          -db-path
+    BEAMDROP_TLS_CERT         -tls-cert
+    BEAMDROP_TLS_KEY          -tls-key
+    BEAMDROP_ALLOWED_ORIGINS  -allowed-origins
+    BEAMDROP_API_AUTH         -api-auth        ("true"/"1" to enable)
+    BEAMDROP_NO_QR            -no-qr           ("true"/"1" to enable)
+    BEAMDROP_LOG_LEVEL        -log-level
+    BEAMDROP_RATE_LIMIT       -rate-limit
+    BEAMDROP_SHUTDOWN_TIMEOUT -shutdown-timeout (Go duration, e.g. "30s")
+
 S3-like API:
   When running, beamdrop exposes an S3-compatible API at /api/v1/
   Buckets are stored under the shared directory in a 'buckets' folder.

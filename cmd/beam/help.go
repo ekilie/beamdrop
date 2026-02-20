@@ -7,8 +7,6 @@ import (
 func Help() string {
 	return `beamdrop - A simple file sharing tool with S3-like API
 
-NOTE: YOU NEED TO BE IN THE SAME NETWORK AS THE RECEIVER
-
 Usage:
   beam [options]
 

@@ -10,8 +10,10 @@ import (
 )
 
 const (
-	PORT          = 7777
+	PORT = 7777
+
 	ConfigDirName = ".beamdrop"
+
 	// MaxUploadSize defines the maximum upload file size (100MB by default)
 	MaxUploadSize int64 = 100 * 1024 * 1024 // 100MB in bytes
 )

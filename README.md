@@ -229,7 +229,7 @@ beamdrop -dir /path/to/share -api-auth -tls-cert cert.pem -tls-key key.pem
 | `-tls-cert` | Path to TLS certificate | None |
 | `-tls-key` | Path to TLS private key | None |
 | `-allowed-origins` | CORS allowed origins (comma-separated) | None |
-| `-db-path` | Path to database file | `~/.beamdrop/beamdrop.db` |
+| `-db-path` | Path to database file or directory (directory auto-appends `beamdrop.db`) | `~/.beamdrop/beamdrop.db` |
 | `-rate-limit` | Rate limit in requests/min per IP (0 = disabled) | 100 |
 | `-log-level` | Log level: debug, info, warn, error | info |
 | `-qr` | Enable QR code display | false |

@@ -119,7 +119,7 @@ docker compose up -d
 | `-db-path` | Path to database file | `~/.beamdrop/beamdrop.db` |
 | `-rate-limit` | Requests/min per IP (0 = disabled) | `100` |
 | `-log-level` | `debug`, `info`, `warn`, `error` | `info` |
-| `-no-qr` | Disable QR code display | `false` |
+| `-qr` | Enable QR code display | `false` |
 | `-shutdown-timeout` | Graceful shutdown timeout | `30s` |
 | `-v` | Show version | — |
 | `-h` | Show help | — |
@@ -133,6 +133,7 @@ docker compose up -d
 | `BEAMDROP_LOG_LEVEL` | `info` | Log level |
 | `BEAMDROP_RATE_LIMIT` | `100` | Requests/min per IP |
 | `BEAMDROP_API_AUTH` | `false` | Enable S3 API key auth |
+| `BEAMDROP_QR` | `false` | Enable QR code display |
 | `BEAMDROP_ALLOWED_ORIGINS` | — | CORS origins |
 | `BEAMDROP_DB_PATH` | — | Path to database file |
 | `BEAMDROP_TLS_CERT` | — | TLS certificate path |

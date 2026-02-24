@@ -201,8 +201,8 @@ beamdrop -dir /path/to/share -log-level debug
       General rate limit in requests/min per IP (default 100, 0 = disabled)
 -log-level string
       Log level: debug, info, warn, error (default "info")
--no-qr
-      Disable QR code generation
+-qr
+      Enable QR code generation
 -h
       Show help message
 -v

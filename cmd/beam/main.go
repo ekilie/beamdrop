@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"flag"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
@@ -17,6 +18,7 @@ import (
 	"github.com/ekilie/beamdrop/pkg/db"
 	"github.com/ekilie/beamdrop/pkg/logger"
 	"github.com/ekilie/beamdrop/pkg/styles"
+	"github.com/ekilie/beamdrop/static"
 )
 
 // envStr returns the environment variable value if the flag was not explicitly set.
@@ -76,7 +78,7 @@ func isFlagSet(name string) bool {
 
 func main() {
 	sharedDir := flag.String("dir", ".", "Directory to share files from")
-	noQR := flag.Bool("no-qr", false, "Disable QR code generation")
+	QR := flag.Bool("qr", false, "Enable QR code generation")
 	help := flag.Bool("h", false, "Show help message")
 	password := flag.String("p", "", "Password authentication")
 	dbPath := flag.String("db-path", "", "Path to database file (default: <sharedDir>/.beamdrop/beamdrop.db)")
@@ -94,6 +96,8 @@ func main() {
 	port := flag.Int("port", 0, "Set the port that beamdrop will run on")
 	flag.Parse()
 
+	fmt.Println(static.BeamdropAscii)
+
 	// Environment variable fallbacks (CLI flags always take precedence)
 	envStr("dir", "BEAMDROP_DIR", sharedDir)
 	envStr("p", "BEAMDROP_PASSWORD", password)
@@ -102,7 +106,7 @@ func main() {
 	envStr("tls-key", "BEAMDROP_TLS_KEY", tlsKey)
 	envStr("allowed-origins", "BEAMDROP_ALLOWED_ORIGINS", allowedOrigins)
 	envStr("log-level", "BEAMDROP_LOG_LEVEL", logLevel)
-	envBool("no-qr", "BEAMDROP_NO_QR", noQR)
+	envBool("qr", "BEAMDROP_QR", QR)
 	envBool("api-auth", "BEAMDROP_API_AUTH", apiAuth)
 	envInt("port", "BEAMDROP_PORT", port)
 	envInt("rate-limit", "BEAMDROP_RATE_LIMIT", rateLimit)
@@ -128,7 +132,7 @@ func main() {
 
 	flags := config.Flags{
 		SharedDir:       *sharedDir,
-		NoQR:            *noQR,
+		QR:              *QR,
 		Help:            *help,
 		Password:        *password,
 		Port:            *port,

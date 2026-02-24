@@ -69,6 +69,9 @@ func Init(level, sharedDir string) {
 				fileHandler = slog.NewJSONHandler(f, &slog.HandlerOptions{
 					Level:     lvl,
 					AddSource: true,
+					ReplaceAttr: func(_ []string, a slog.Attr) slog.Attr {
+						return sanitizeSourceAttr(a)
+					},
 				})
 			}
 		}
@@ -249,4 +252,50 @@ func parseLevel(s string) slog.Level {
 	default:
 		return slog.LevelInfo
 	}
+}
+
+func sanitizeSourceAttr(a slog.Attr) slog.Attr {
+	if a.Key != slog.SourceKey {
+		return a
+	}
+
+	value := a.Value.Any()
+	switch src := value.(type) {
+	case *slog.Source:
+		if src == nil {
+			return a
+		}
+		copied := *src
+		copied.File = sanitizeSourceFilePath(copied.File)
+		return slog.Any(slog.SourceKey, &copied)
+	case slog.Source:
+		src.File = sanitizeSourceFilePath(src.File)
+		return slog.Any(slog.SourceKey, src)
+	default:
+		return a
+	}
+}
+
+func sanitizeSourceFilePath(path string) string {
+	if path == "" {
+		return path
+	}
+
+	cleaned := filepath.ToSlash(path)
+
+	const moduleRoot = "github.com/ekilie/beamdrop/"
+	if idx := strings.Index(cleaned, moduleRoot); idx >= 0 {
+		return cleaned[idx+len(moduleRoot):]
+	}
+
+	if idx := strings.LastIndex(cleaned, "/beamdrop/"); idx >= 0 {
+		return cleaned[idx+len("/beamdrop/"):]
+	}
+
+	parts := strings.Split(cleaned, "/")
+	if len(parts) <= 3 {
+		return cleaned
+	}
+
+	return strings.Join(parts[len(parts)-3:], "/")
 }

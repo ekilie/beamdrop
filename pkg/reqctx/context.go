@@ -22,6 +22,8 @@ const (
 	UserAgentKey ContextKey = "user_agent"
 	// RemoteAddrKey is the context key for remote address
 	RemoteAddrKey ContextKey = "remote_addr"
+	// AccessKeyIDKey is the context key for the authenticated API access key ID
+	AccessKeyIDKey ContextKey = "access_key_id"
 )
 
 // TimeoutConfig holds configurable timeout durations

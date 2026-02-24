@@ -4,7 +4,13 @@ import "log/slog"
 
 func AutoMigrate() {
 	slog.Info("Running database migrations")
-	err := db.AutoMigrate(&ServerStats{}, &Config{}, &StarredFile{}, &APIKey{}, &ShareableLink{})
+	err := db.AutoMigrate(
+		&ServerStats{}, 
+		&Config{}, 
+		&StarredFile{}, 
+		&APIKey{}, 
+		&ShareableLink{},
+		&PresignedURL{})
 	if err != nil {
 		slog.Error("Failed to migrate database", "error", err)
 	}

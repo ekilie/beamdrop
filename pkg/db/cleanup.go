@@ -67,13 +67,15 @@ func (oc *OrphanCleaner) RunOnce() {
 	orphanedStars := oc.cleanupStarredFiles()
 	orphanedLinks := oc.cleanupShareableLinks()
 	expiredLinks := oc.cleanupExpiredLinks()
+	expiredPresigned := oc.cleanupExpiredPresignedURLs()
 
-	total := orphanedStars + orphanedLinks + expiredLinks
+	total := orphanedStars + orphanedLinks + expiredLinks + expiredPresigned
 	if total > 0 {
 		slog.Info("Orphan cleanup completed",
 			"starred_removed", orphanedStars,
 			"links_removed", orphanedLinks,
-			"expired_removed", expiredLinks)
+			"expired_removed", expiredLinks,
+			"presigned_removed", expiredPresigned)
 	}
 }
 
@@ -133,6 +135,17 @@ func (oc *OrphanCleaner) cleanupExpiredLinks() int {
 	result := db.Where("expires_at IS NOT NULL AND expires_at < ?", now).Delete(&ShareableLink{})
 	if result.Error != nil {
 		slog.Error("Orphan cleanup: failed to delete expired links", "error", result.Error)
+		return 0
+	}
+	return int(result.RowsAffected)
+}
+
+func (oc *OrphanCleaner) cleanupExpiredPresignedURLs() int {
+	db := GetDB()
+	now := time.Now()
+	result := db.Where("expires_at IS NOT NULL AND expires_at < ?", now).Delete(&PresignedURL{})
+	if result.Error != nil {
+		slog.Error("Orphan cleanup: failed to delete expired presigned URLs", "error", result.Error)
 		return 0
 	}
 	return int(result.RowsAffected)

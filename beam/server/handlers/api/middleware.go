@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"log/slog"
 	"net/http"
 	"strings"
@@ -9,6 +10,7 @@ import (
 	"github.com/ekilie/beamdrop/pkg/crypto"
 	"github.com/ekilie/beamdrop/pkg/db"
 	"github.com/ekilie/beamdrop/pkg/errors"
+	"github.com/ekilie/beamdrop/pkg/reqctx"
 )
 
 // APIAuthMiddleware handles API key authentication
@@ -103,7 +105,9 @@ func (m *APIAuthMiddleware) Middleware(next http.Handler) http.Handler {
 
 		// TODO: Check permissions against requested action
 
-		next.ServeHTTP(w, r)
+		// Store the authenticated access key ID in request context
+		ctx := context.WithValue(r.Context(), reqctx.AccessKeyIDKey, accessKeyID)
+		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
 

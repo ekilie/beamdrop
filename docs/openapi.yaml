@@ -56,6 +56,11 @@ tags:
     description: Create and manage storage buckets
   - name: Objects
     description: Upload, download, and manage objects
+  - name: Presigned URLs
+    description: |
+      Create, manage, and use presigned URLs for sharing files.
+      Supports both client-side HMAC URLs (query params on object endpoint)
+      and server-side pretty URLs (/dl/{token}) via the URL registry.
 
 components:
   securitySchemes:

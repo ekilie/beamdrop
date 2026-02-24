@@ -219,8 +219,9 @@ beamdrop -dir /path/to/share -log-level debug
 6. **Keep rate limiting enabled** — the default of 100 req/min is suitable for most use cases
 7. **Monitor logs** — check `<dir>/.beamdrop/beamdrop.log` for rate limit warnings and suspicious activity
 8. **Keep the software updated** to get the latest security patches
-9. **Use short-lived presigned URLs** — prefer 1–24 hour expiry for download links; never rely on very long expiry times as they break on API key rotation
-10. **Rotate API keys periodically** — create a new key, update your application, then delete the old key; be aware this invalidates all presigned URLs generated with the old key
+9. **Use short-lived presigned URLs** — prefer 1–24 hour expiry for download links; never rely on very long expiry times as they break on API key rotation. For individually revocable links, use the server-side pretty presigned URL registry (`POST /api/v1/presign`)
+10. **Rotate API keys periodically** — create a new key, update your application, then delete the old key; be aware this invalidates all client-side HMAC presigned URLs generated with the old key (server-side pretty URLs are not affected by key rotation)
+11. **Prefer server-side pretty presigned URLs for sensitive content** — they support download limits, individual revocation, and download tracking, giving you more control than client-side HMAC URLs
 
 ## Examples
 

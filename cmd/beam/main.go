@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"flag"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
@@ -17,6 +18,7 @@ import (
 	"github.com/ekilie/beamdrop/pkg/db"
 	"github.com/ekilie/beamdrop/pkg/logger"
 	"github.com/ekilie/beamdrop/pkg/styles"
+	"github.com/ekilie/beamdrop/static"
 )
 
 // envStr returns the environment variable value if the flag was not explicitly set.
@@ -93,6 +95,8 @@ func main() {
 	// Since the flag is a non-boolean value
 	port := flag.Int("port", 0, "Set the port that beamdrop will run on")
 	flag.Parse()
+
+	fmt.Println(static.BeamdropAscii)
 
 	// Environment variable fallbacks (CLI flags always take precedence)
 	envStr("dir", "BEAMDROP_DIR", sharedDir)

@@ -127,7 +127,7 @@ func (s *Server) Start() error {
 
 	url := fmt.Sprintf("%s://%s:%d", protocol, ip, port)
 
-	if !s.flags.NoQR {
+	if s.flags.QR {
 		qr.ShowQrCode(url)
 	}
 

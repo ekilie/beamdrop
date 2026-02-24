@@ -56,7 +56,7 @@ chmod +x /usr/local/bin/beamdrop
 Test Beamdrop:
 
 ```bash
-beamdrop -p='yourpassword' --no-qr
+beamdrop -p='yourpassword' --qr
 ```
 
 Open in browser:
@@ -87,7 +87,7 @@ After=network.target
 [Service]
 User=forge
 WorkingDirectory=/home/forge
-ExecStart=/usr/local/bin/beamdrop -p='yourpassword' --no-qr
+ExecStart=/usr/local/bin/beamdrop -p='yourpassword' --qr
 Restart=always
 RestartSec=5
 Environment=BEAMDROP_PORT=7777

@@ -35,8 +35,8 @@ Options:
 		Path to database file (default: ~/.beamdrop/beamdrop.db)
   -shutdown-timeout duration
 		Graceful shutdown timeout for draining connections (default 30s)
-  -no-qr
-		Disable QR code generation
+  -qr
+		Enable QR code generation
   -h
 		Show this help message
   -v
@@ -53,7 +53,7 @@ Environment Variables:
     BEAMDROP_TLS_KEY          -tls-key
     BEAMDROP_ALLOWED_ORIGINS  -allowed-origins
     BEAMDROP_API_AUTH         -api-auth        ("true"/"1" to enable)
-    BEAMDROP_NO_QR            -no-qr           ("true"/"1" to enable)
+    BEAMDROP_QR               -qr              ("true"/"1" to enable)
     BEAMDROP_LOG_LEVEL        -log-level
     BEAMDROP_RATE_LIMIT       -rate-limit
     BEAMDROP_SHUTDOWN_TIMEOUT -shutdown-timeout (Go duration, e.g. "30s")

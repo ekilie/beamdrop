@@ -60,7 +60,7 @@ type Config struct {
 
 type Flags struct {
 	SharedDir       string
-	NoQR            bool
+	QR            bool
 	Port            int
 	Help            bool
 	Password        string

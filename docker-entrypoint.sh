@@ -10,8 +10,8 @@ set -e
 
 args="--dir ${BEAMDROP_DIR:-/data}"
 
-# Always disable QR in containers (no terminal to scan it)
-args="$args --no-qr"
+# Always Enable QR in containers (no terminal to scan it)
+args="$args --qr"
 
 [ -n "$BEAMDROP_PORT" ]            && args="$args --port $BEAMDROP_PORT"
 [ -n "$BEAMDROP_PASSWORD" ]        && args="$args -p $BEAMDROP_PASSWORD"

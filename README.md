@@ -127,6 +127,7 @@ BEAMDROP_PASSWORD=your-secret-password
 BEAMDROP_LOG_LEVEL=info
 BEAMDROP_RATE_LIMIT=100
 BEAMDROP_API_AUTH=true
+BEAMDROP_QR=false
 BEAMDROP_ALLOWED_ORIGINS=https://example.com
 ```
 
@@ -137,6 +138,7 @@ BEAMDROP_ALLOWED_ORIGINS=https://example.com
 | `BEAMDROP_LOG_LEVEL` | `info` | Log level: `debug`, `info`, `warn`, `error` |
 | `BEAMDROP_RATE_LIMIT` | `100` | Requests/min per IP (`0` = disabled) |
 | `BEAMDROP_API_AUTH` | *(off)* | Set to `true` to enable S3 API key auth |
+| `BEAMDROP_QR` | `false` | Set to `true` to print startup QR code |
 | `BEAMDROP_ALLOWED_ORIGINS` | *(none)* | Comma-separated CORS origins |
 | `BEAMDROP_TLS_CERT` | *(none)* | Path to TLS certificate (inside container) |
 | `BEAMDROP_TLS_KEY` | *(none)* | Path to TLS private key (inside container) |
@@ -230,7 +232,7 @@ beamdrop -dir /path/to/share -api-auth -tls-cert cert.pem -tls-key key.pem
 | `-db-path` | Path to database file | `~/.beamdrop/beamdrop.db` |
 | `-rate-limit` | Rate limit in requests/min per IP (0 = disabled) | 100 |
 | `-log-level` | Log level: debug, info, warn, error | info |
-| `-no-qr` | Disable QR code display | false |
+| `-qr` | Enable QR code display | false |
 | `-v` | Show version | - |
 | `-h` | Show help | - |
 

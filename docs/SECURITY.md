@@ -219,6 +219,8 @@ beamdrop -dir /path/to/share -log-level debug
 6. **Keep rate limiting enabled** — the default of 100 req/min is suitable for most use cases
 7. **Monitor logs** — check `<dir>/.beamdrop/beamdrop.log` for rate limit warnings and suspicious activity
 8. **Keep the software updated** to get the latest security patches
+9. **Use short-lived presigned URLs** — prefer 1–24 hour expiry for download links; never rely on very long expiry times as they break on API key rotation
+10. **Rotate API keys periodically** — create a new key, update your application, then delete the old key; be aware this invalidates all presigned URLs generated with the old key
 
 ## Examples
 

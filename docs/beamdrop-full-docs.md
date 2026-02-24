@@ -806,18 +806,81 @@ GET /api/v1/buckets/{bucket}?prefix=<prefix>&delimiter=<delimiter>&max-keys=<n>
 
 ### Presigned URLs
 
-Access objects without full HMAC auth by generating a presigned URL with a time-limited token.
+Access objects without full HMAC auth by generating a presigned URL with a time-limited token. The URL is self-contained — anyone with the link can access the file until it expires. No API key is required on the client side.
 
 **URL Format:**
 ```
 GET /api/v1/buckets/{bucket}/{key}?token=<token>&expires=<timestamp>&access_key=<access_key_id>
 ```
 
-The token is generated client-side using:
+#### Token Generation (Client-Side)
+
+The token is an HMAC-SHA256 signature of four fields joined by newlines:
+
 ```
 message = "<METHOD>\n<BUCKET>\n<KEY>\n<UNIX_TIMESTAMP>"
 token = Base64URL(HMAC-SHA256(secret_key, message))
 ```
+
+| Field | Example | Description |
+|-------|---------|-------------|
+| `METHOD` | `GET` | HTTP method the URL is valid for |
+| `BUCKET` | `photos` | Bucket name (not the full path) |
+| `KEY` | `vacation/beach.jpg` | Object key within the bucket |
+| `UNIX_TIMESTAMP` | `1707741600` | Expiration time as Unix seconds |
+
+#### Query Parameters
+
+| Parameter | Example | Description |
+|-----------|---------|-------------|
+| `token` | `aB3d...` | Base64URL-encoded HMAC-SHA256 token |
+| `expires` | `2026-02-12T12:00:00Z` | When the link expires (RFC 3339 or compact ISO `20260212T120000Z`) |
+| `access_key` | `BDK_abc123` | Access Key ID used to generate the token |
+
+#### Example: Generate a presigned URL with cURL
+
+```bash
+# Configuration
+SECRET_KEY="sk_your_secret_key"
+ACCESS_KEY="BDK_your_access_key"
+BUCKET="photos"
+KEY="vacation/beach.jpg"
+EXPIRES_UNIX=$(date -d '+1 hour' +%s)  # 1 hour from now
+
+# Generate token
+MESSAGE=$(printf "GET\n%s\n%s\n%s" "$BUCKET" "$KEY" "$EXPIRES_UNIX")
+TOKEN=$(printf '%s' "$MESSAGE" | openssl dgst -sha256 -hmac "$SECRET_KEY" -binary | base64 | tr '+/' '-_' | tr -d '=')
+EXPIRES_ISO=$(date -u -d@${EXPIRES_UNIX} +%Y-%m-%dT%H:%M:%SZ)
+
+# Use the URL
+curl "http://localhost:8090/api/v1/buckets/${BUCKET}/${KEY}?token=${TOKEN}&expires=${EXPIRES_ISO}&access_key=${ACCESS_KEY}"
+```
+
+#### Important Behaviors & Limitations
+
+- **Always expires** — there is no "permanent" presigned URL. The server always checks `time.Now().After(expiresAt)`.
+- **Tied to API key** — deleting, disabling, or rotating the API key invalidates all presigned URLs generated with it.
+- **Method-specific** — a token generated for `GET` will not work for `PUT`. The HTTP method is part of the signature.
+- **Key-specific** — a token for `photos/pic.jpg` cannot be reused for `photos/other.jpg`.
+- **No maximum expiry** — you can set expiry far in the future (e.g. 10 years), but it breaks on key rotation.
+- **No individual revocation** — to invalidate a leaked URL, either delete the object or disable the entire API key.
+
+#### Suggested Expiry Durations
+
+| Use case | Duration |
+|----------|----------|
+| One-time download link (email, chat) | 1–24 hours |
+| Embedded in a web page (avatars) | 1–7 days |
+| Client portal / invoice download | 7–30 days |
+| Semi-permanent asset | 1–10 years (breaks on key rotation) |
+
+#### Alternatives for Permanent Public Access
+
+If you need files to be permanently accessible without signing:
+
+1. **Run without `-api-auth`** — all S3 API reads are public
+2. **Proxy through your app** — your backend authenticates to Beamdrop and streams the file to end users
+3. **Use shareable links** — the `/api/shares` feature provides token-based sharing with optional password protection and expiry
 
 ---
 

@@ -640,6 +640,28 @@ paths:
       description: |
         Download an object from a bucket. Supports partial downloads 
         using the Range header.
+
+        ### Presigned URL Access
+
+        Objects can also be accessed via presigned URLs without the `Authorization` header.
+        Append these query parameters instead:
+
+        ```
+        GET /buckets/{bucket}/{key}?token=TOKEN&expires=ISO8601&access_key=BDK_xxx
+        ```
+
+        **How to generate the token (client-side):**
+        ```
+        message   = "GET\n{bucket}\n{key}\n{unix_timestamp_of_expiry}"
+        token     = Base64URL(HMAC-SHA256(secret_key, message))
+        ```
+
+        **Limitations:**
+        - Presigned URLs **always expire** — the server checks the `expires` timestamp on every request.
+        - If the API key is deleted or disabled, all presigned URLs created with it become invalid.
+        - Individual URLs cannot be revoked without disabling the API key.
+        - The token is method-specific — a GET token does not work for PUT.
+        - For permanent public access, run Beamdrop without the `-api-auth` flag.
       security:
         - BearerAuth: []
       parameters:
@@ -661,6 +683,29 @@ paths:
             type: string
           description: Byte range to download
           example: bytes=0-1023
+        - name: token
+          in: query
+          schema:
+            type: string
+          description: |
+            Presigned URL token. Base64URL-encoded HMAC-SHA256 of
+            `METHOD\nBUCKET\nKEY\nUNIX_EXPIRY_TIMESTAMP` signed with the API secret key.
+            When present, the `Authorization` header is not required.
+        - name: expires
+          in: query
+          schema:
+            type: string
+            format: date-time
+          description: |
+            Expiration timestamp for the presigned URL (RFC 3339 or compact ISO format).
+            Required when `token` is present. Example: `2026-03-01T12:00:00Z`
+        - name: access_key
+          in: query
+          schema:
+            type: string
+          description: |
+            Access Key ID of the API key used to generate the presigned token.
+            Required when `token` is present. Example: `BDK_abc123`
       responses:
         "200":
           description: Object content

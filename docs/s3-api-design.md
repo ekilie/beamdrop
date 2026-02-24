@@ -70,8 +70,10 @@ X-Beamdrop-Date: 2026-02-09T12:00:00Z
 
 #### 2. Query String (Presigned URLs)
 ```
-/api/v1/buckets/my-bucket/file.txt?access_key=BDK_xxx&expires=1707480000&signature=xxxx
+/api/v1/buckets/my-bucket/file.txt?token=BASE64URL_TOKEN&expires=2026-02-09T13:00:00Z&access_key=BDK_xxx
 ```
+
+Presigned URLs embed authentication into the URL itself. The `token` is generated client-side using HMAC-SHA256. See the [Presigned URLs](#presigned-urls) section below for full details.
 
 ### Signature Generation (Simplified HMAC)
 ```go
@@ -244,33 +246,103 @@ Authorization: Bearer <credentials>
 
 ### Presigned URLs
 
-#### Generate Presigned URL
-```http
-POST /api/v1/presign
-Authorization: Bearer <credentials>
-Content-Type: application/json
+Presigned URLs let you share a time-limited, self-contained download (or upload) link. The URL embeds all authentication info — the recipient does not need an API key.
 
-{
-    "bucket": "my-bucket",
-    "key": "uploads/file.pdf",
-    "method": "PUT",           // GET or PUT
-    "expiresIn": 3600,         // Seconds (max 7 days)
-    "contentType": "application/pdf",  // Required for PUT
-    "maxSize": 10485760        // Optional: max upload size for PUT
-}
+**Presigned URLs are generated client-side**, not via a server endpoint. The server only verifies them on access.
+
+#### How to Generate a Presigned URL
+
+```
+Step 1: Choose an expiry time → expiresAt = now + duration (as Unix timestamp)
+Step 2: Build the HMAC message → "METHOD\nBUCKET\nKEY\nUNIX_TIMESTAMP"
+Step 3: Compute the token     → Base64URL(HMAC-SHA256(secret_key, message))
+Step 4: Build the URL          → /api/v1/buckets/{bucket}/{key}?token=TOKEN&expires=ISO8601&access_key=BDK_xxx
 ```
 
-**Response:**
-```json
-{
-    "url": "http://192.168.1.100:8080/api/v1/buckets/my-bucket/uploads/file.pdf?token=xxx&expires=1707483600",
-    "method": "PUT",
-    "expiresAt": "2026-02-09T13:00:00Z",
-    "headers": {
-        "Content-Type": "application/pdf"
-    }
-}
+#### Token Generation (All Languages)
+
+**Go:**
+```go
+message := fmt.Sprintf("%s\n%s\n%s\n%d", method, bucket, key, expiresAt.Unix())
+h := hmac.New(sha256.New, []byte(secretKey))
+h.Write([]byte(message))
+token := base64.URLEncoding.EncodeToString(h.Sum(nil))
 ```
+
+**Python:**
+```python
+import hmac, hashlib, base64
+message = f"{method}\n{bucket}\n{key}\n{int(expires_at.timestamp())}"
+token = base64.urlsafe_b64encode(
+    hmac.new(secret_key.encode(), message.encode(), hashlib.sha256).digest()
+).rstrip(b"=").decode()
+```
+
+**PHP:**
+```php
+$message = implode("\n", [$method, $bucket, $key, (string) $expiresAtUnix]);
+$token = rtrim(strtr(base64_encode(
+    hash_hmac('sha256', $message, $secretKey, binary: true)
+), '+/', '-_'), '=');
+```
+
+**JavaScript / Node.js:**
+```javascript
+const crypto = require('crypto');
+const message = [method, bucket, key, Math.floor(expiresAt / 1000)].join('\n');
+const token = crypto.createHmac('sha256', secretKey)
+  .update(message).digest('base64url');
+```
+
+**cURL (bash):**
+```bash
+EXPIRES_UNIX=$(date -d '+1 hour' +%s)
+MESSAGE="GET\n${BUCKET}\n${KEY}\n${EXPIRES_UNIX}"
+TOKEN=$(printf '%s' "$MESSAGE" | openssl dgst -sha256 -hmac "$SECRET_KEY" -binary | base64 | tr '+/' '-_' | tr -d '=')
+curl "http://server:8090/api/v1/buckets/${BUCKET}/${KEY}?token=${TOKEN}&expires=$(date -u -d@${EXPIRES_UNIX} +%Y-%m-%dT%H:%M:%SZ)&access_key=${ACCESS_KEY}"
+```
+
+#### Query Parameters
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `token` | Yes | Base64URL-encoded HMAC-SHA256 token |
+| `expires` | Yes | Expiration timestamp — RFC 3339 (`2026-02-09T13:00:00Z`) or compact ISO (`20260209T130000Z`) |
+| `access_key` | Yes | Access Key ID (`BDK_xxx`) used to generate the token |
+
+#### Server Verification Flow
+
+1. Check `expires` — if `time.Now()` is past the timestamp, reject with 403
+2. Extract bucket and key from the URL path
+3. Look up the API key by `access_key`
+4. Recompute the token using the stored secret key
+5. Constant-time comparison (`hmac.Equal`) of computed vs. provided token
+
+#### Important Behaviors & Limitations
+
+| Behavior | Detail |
+|----------|--------|
+| **Always expires** | There is no "permanent" presigned URL. The server always checks `time.Now().After(expiresAt)`. |
+| **Tied to API key** | Deleting, disabling, or rotating the API key invalidates all presigned URLs generated with it. |
+| **Method-specific** | A token for `GET` will not work for `PUT` — the method is part of the signed message. |
+| **Key-specific** | A token for `photos/pic.jpg` will not work for `photos/other.jpg`. |
+| **No maximum expiry** | You can set expiry to year 2100, but URLs break on key rotation. |
+| **No individual revocation** | To revoke a URL, delete the object or disable the API key. |
+
+#### Suggested Expiry Durations
+
+| Use case | Duration |
+|----------|----------|
+| One-time download link (email, chat) | 1–24 hours |
+| Embedded in web page (avatars) | 1–7 days |
+| Client portal / invoice download | 7–30 days |
+| Semi-permanent asset | 1–10 years (fragile — breaks on key rotation) |
+
+#### Alternatives to Presigned URLs for Permanent Access
+
+- **Disable `-api-auth`** — all reads are public, no signing needed
+- **Proxy through your app** — your backend fetches from Beamdrop and streams to the client
+- **Use shareable links** — Beamdrop's `/api/shares` feature provides token-based sharing with optional password protection
 
 ---
 

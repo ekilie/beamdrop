@@ -140,6 +140,7 @@ BEAMDROP_ALLOWED_ORIGINS=https://example.com
 | `BEAMDROP_API_AUTH` | *(off)* | Set to `true` to enable S3 API key auth |
 | `BEAMDROP_QR` | `false` | Set to `true` to print startup QR code |
 | `BEAMDROP_ALLOWED_ORIGINS` | *(none)* | Comma-separated CORS origins |
+| `BEAMDROP_DB_PATH` | *(none)* | Path to DB file or directory (directory auto-appends `beamdrop.db`) |
 | `BEAMDROP_TLS_CERT` | *(none)* | Path to TLS certificate (inside container) |
 | `BEAMDROP_TLS_KEY` | *(none)* | Path to TLS private key (inside container) |
 

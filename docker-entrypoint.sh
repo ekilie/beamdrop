@@ -10,9 +10,6 @@ set -e
 
 args="--dir ${BEAMDROP_DIR:-/data}"
 
-# Always Enable QR in containers (no terminal to scan it)
-args="$args --qr"
-
 [ -n "$BEAMDROP_PORT" ]            && args="$args --port $BEAMDROP_PORT"
 [ -n "$BEAMDROP_PASSWORD" ]        && args="$args -p $BEAMDROP_PASSWORD"
 [ -n "$BEAMDROP_LOG_LEVEL" ]       && args="$args --log-level $BEAMDROP_LOG_LEVEL"
@@ -24,7 +21,11 @@ args="$args --qr"
 
 # Boolean flags — only add when explicitly set to a truthy value
 case "${BEAMDROP_API_AUTH:-}" in
-    1|true|yes) args="$args --api-auth" ;;
+    1|[Tt][Rr][Uu][Ee]|[Yy][Ee][Ss]|[Oo][Nn]) args="$args --api-auth" ;;
+esac
+
+case "${BEAMDROP_QR:-}" in
+    1|[Tt][Rr][Uu][Ee]|[Yy][Ee][Ss]|[Oo][Nn]) args="$args --qr" ;;
 esac
 
 # If the caller passed extra arguments (docker run ... beamdrop --flag),

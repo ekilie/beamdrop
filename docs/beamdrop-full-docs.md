@@ -2201,10 +2201,16 @@ services:
     volumes:
       - ./data:/data
     environment:
+      BEAMDROP_PORT: ${BEAMDROP_PORT:-7777}
       BEAMDROP_PASSWORD: ${BEAMDROP_PASSWORD:-}
       BEAMDROP_API_AUTH: ${BEAMDROP_API_AUTH:-false}
       BEAMDROP_RATE_LIMIT: ${BEAMDROP_RATE_LIMIT:-100}
       BEAMDROP_LOG_LEVEL: ${BEAMDROP_LOG_LEVEL:-info}
+      BEAMDROP_QR: ${BEAMDROP_QR:-false}
+      BEAMDROP_ALLOWED_ORIGINS: ${BEAMDROP_ALLOWED_ORIGINS:-}
+      BEAMDROP_DB_PATH: ${BEAMDROP_DB_PATH:-}
+      BEAMDROP_TLS_CERT: ${BEAMDROP_TLS_CERT:-}
+      BEAMDROP_TLS_KEY: ${BEAMDROP_TLS_KEY:-}
     healthcheck:
       test: ["CMD", "wget", "-q", "--spider", "http://localhost:7777/health/live"]
       interval: 30s

@@ -290,9 +290,26 @@ class Beamdrop
     // ──────────────────────────────────────────────
     //  Presigned URLs
     // ──────────────────────────────────────────────
+    //
+    //  Beamdrop supports TWO types of presigned URLs:
+    //
+    //  1. Client-side (HMAC) presigned URLs — generated locally using your secret key.
+    //     No server round-trip. URL contains the HMAC token, expiry, and access key in
+    //     query params. Longer/uglier, but works without the server-side registry feature.
+    //     Use: presignedUrl()
+    //
+    //  2. Server-side (pretty) presigned URLs — created via POST /api/v1/presign.
+    //     Returns a short /dl/{token} URL. Supports max-download limits. Individually
+    //     revocable. Requires the server-side presigned URL registry feature.
+    //     Use: createPrettyPresignedUrl(), revokePrettyPresignedUrl(), listPrettyPresignedUrls()
+    //
 
     /**
-     * Generate a time-limited presigned URL for downloading a file.
+     * Generate a client-side HMAC presigned URL for downloading a file.
+     *
+     * This is the traditional method — the token is computed locally from your
+     * secret key. No server request is made. The resulting URL is long but works
+     * without the server-side presigned URL registry.
      *
      * The URL can be shared with anyone — no API key required to access it.
      * The link expires after $expiresIn seconds.
@@ -326,6 +343,79 @@ class Beamdrop
         ]);
 
         return "{$this->baseUrl}{$path}?{$query}";
+    }
+
+    /**
+     * Create a server-side pretty presigned URL via the registry.
+     *
+     * This calls POST /api/v1/presign on the server to register a short
+     * download URL like https://files.example.com/dl/a1b2c3d4... that is
+     * clean enough to share in emails, embed in pages, or send to clients.
+     *
+     * Advantages over client-side presigned URLs:
+     *   - Short, clean /dl/{token} URLs
+     *   - Optional max download limit
+     *   - Individually revocable (DELETE /api/v1/presign/{token})
+     *   - Server tracks download count
+     *
+     * @param  string   $bucket        Bucket name.
+     * @param  string   $key           Object key.
+     * @param  int|null $expiresIn     Seconds until the URL expires (null = no expiry).
+     * @param  int|null $maxDownloads  Maximum number of downloads (null = unlimited).
+     * @param  string   $method        HTTP method the URL is valid for (default: "GET").
+     * @return array{token: string, url: string, bucket: string, key: string, method: string, expiresAt: ?string, maxDownloads: ?int, createdAt: string}
+     *
+     * @throws BeamdropException on failure.
+     */
+    public function createPrettyPresignedUrl(
+        string $bucket,
+        string $key,
+        ?int $expiresIn = null,
+        ?int $maxDownloads = null,
+        string $method = 'GET',
+    ): array {
+        $payload = [
+            'bucket' => $bucket,
+            'key' => $key,
+            'method' => $method,
+        ];
+
+        if ($expiresIn !== null) {
+            $payload['expiresIn'] = $expiresIn;
+        }
+
+        if ($maxDownloads !== null) {
+            $payload['maxDownloads'] = $maxDownloads;
+        }
+
+        return $this->request('POST', '/api/v1/presign', json_encode($payload));
+    }
+
+    /**
+     * Revoke (delete) a server-side pretty presigned URL.
+     *
+     * Once revoked, the /dl/{token} URL immediately returns 404.
+     *
+     * @param  string $token  The presigned URL token (from createPrettyPresignedUrl).
+     * @return true
+     *
+     * @throws BeamdropException 404 if token not found.
+     */
+    public function revokePrettyPresignedUrl(string $token): true
+    {
+        $this->request('DELETE', "/api/v1/presign/{$token}");
+
+        return true;
+    }
+
+    /**
+     * List all server-side pretty presigned URLs.
+     *
+     * @return array{urls: array, count: int}
+     */
+    public function listPrettyPresignedUrls(): array
+    {
+        return $this->request('GET', '/api/v1/presign');
     }
 
     // ──────────────────────────────────────────────
@@ -434,7 +524,9 @@ class Beamdrop
         ];
 
         if ($body !== null) {
-            $headers[] = 'Content-Type: application/octet-stream';
+            // Detect JSON bodies (starts with { or [) vs raw binary
+            $isJson = isset($body[0]) && ($body[0] === '{' || $body[0] === '[');
+            $headers[] = 'Content-Type: ' . ($isJson ? 'application/json' : 'application/octet-stream');
             $headers[] = 'Content-Length: ' . strlen($body);
         }
 

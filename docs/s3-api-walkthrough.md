@@ -262,6 +262,55 @@ Step 4: Build the URL        → /api/v1/buckets/photos/pic.jpg?token=TOKEN&expi
 
 **For truly public / permanent files**, consider running Beamdrop without `-api-auth` (all reads are public), or serving files through your application as a proxy.
 
+#### Method 3: Server-Side Pretty Presigned URLs (URL Registry)
+
+```
+POST /api/v1/presign → creates a short /dl/{token} URL
+GET  /dl/{token}     → anyone can download (no auth required)
+```
+
+Instead of generating long HMAC-signed URLs client-side, you can create short, clean download links via the server-side presigned URL registry. This requires an authenticated API call to create the link, but the resulting `/dl/{token}` URL is short enough to share in emails, embed in pages, or send to clients.
+
+**Advantages over client-side presigned URLs:**
+
+| Feature | Client-Side (HMAC) | Server-Side (Pretty) |
+|---------|-------------------|---------------------|
+| URL length | Long (token + expires + access_key in query) | Short (`/dl/a1b2c3d4...`) |
+| Server round-trip to create | None | One POST request |
+| Max download limit | No | Yes |
+| Individually revocable | No | Yes (`DELETE /api/v1/presign/{token}`) |
+| Download tracking | No | Yes (server counts) |
+| Survives API key rotation | No — HMAC is tied to the key | Yes — token is in the database |
+
+**Create a pretty presigned URL:**
+```bash
+curl -X POST https://server/api/v1/presign \
+  -H "Authorization: Bearer BDK_xxx:signature" \
+  -H "X-Beamdrop-Date: 2026-02-24T12:00:00Z" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "bucket": "photos",
+    "key": "vacation/beach.jpg",
+    "expiresIn": 3600,
+    "maxDownloads": 100
+  }'
+# → {"token": "a1b2c3d4...", "url": "https://server/dl/a1b2c3d4...", ...}
+```
+
+**Download (public — no auth):**
+```bash
+curl https://server/dl/a1b2c3d4...
+```
+
+**Revoke:**
+```bash
+curl -X DELETE https://server/api/v1/presign/a1b2c3d4... \
+  -H "Authorization: Bearer BDK_xxx:signature" \
+  -H "X-Beamdrop-Date: ..."
+```
+
+**Both methods can be used together.** Use client-side HMAC URLs for quick, ephemeral use cases. Use server-side pretty URLs for user-facing links where you need clean URLs, download limits, or revocation.
+
 #### What If Auth Is Disabled?
 
 ```go
@@ -1397,9 +1446,10 @@ The four fields in the message are: **HTTP method**, **bucket name**, **object k
 | **Use case** | Server-to-server API calls | Shareable links for end users |
 
 **Important limitations:**
-- Presigned URLs **always expire** — the server hard-checks `time.Now().After(expiresAt)`. There is no bypass.
-- If the API key is **deleted or disabled**, all presigned URLs generated with that key become invalid immediately.
-- Individual presigned URLs **cannot be revoked** without disabling the entire API key.
+- Client-side presigned URLs **always expire** — the server hard-checks `time.Now().After(expiresAt)`. There is no bypass.
+- If the API key is **deleted or disabled**, all client-side presigned URLs generated with that key become invalid immediately.
+- Individual client-side presigned URLs **cannot be revoked** without disabling the entire API key.
+- For individually revocable URLs, use the server-side pretty presigned URL registry (`POST /api/v1/presign` → `/dl/{token}`).
 - For truly permanent public access, run without `-api-auth` or proxy files through your application.
 
 ### Timestamp Validation
@@ -1695,7 +1745,7 @@ curl "http://localhost:7777/api/v1/buckets/photos?prefix=vacation/&delimiter=/"
 | **Access Key ID** | Public identifier for an API key (starts with `BDK_`). |
 | **Secret Key** | Private key used for signing requests (starts with `sk_`). Shown once. |
 | **HMAC-SHA256** | A cryptographic algorithm that proves you know a secret without revealing it. |
-| **Presigned URL** | A temporary URL with auth baked in, so anyone with the link can access the file. Always expires — there is no permanent presigned URL. Tied to the API key that created it. |
+| **Presigned URL** | A temporary URL with auth baked in, so anyone with the link can access the file. Beamdrop supports two types: (1) client-side HMAC URLs computed locally (long, with query params) and (2) server-side pretty URLs created via `POST /api/v1/presign` (short `/dl/{token}` URLs, individually revocable). |
 | **Atomic Write** | A write strategy that prevents corrupted files by using temp file + rename. |
 | **File-Level Lock** | A per-object read/write lock that prevents concurrent writes to the same key. |
 | **Write Lock** | An exclusive lock — only one goroutine can hold it at a time. Used for uploads and deletes. |

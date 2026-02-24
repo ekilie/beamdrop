@@ -323,7 +323,21 @@ $result = $beamdrop->listObjects(
 
 ### 7.5 Presigned URLs (Temporary Links)
 
-Generate a time-limited link that anyone can use to download a file — no API key required on their end:
+Beamdrop supports **two methods** for creating presigned URLs. You can use either or both depending on your needs:
+
+| | Method 1: Client-Side (HMAC) | Method 2: Server-Side (Pretty) |
+|---|---|---|
+| **Function** | `presignedUrl()` | `createPrettyPresignedUrl()` |
+| **URL shape** | `/api/v1/buckets/…?token=…&expires=…&access_key=…` | `/dl/a1b2c3d4e5f6…` |
+| **Server round-trip** | None — computed locally | POST to `/api/v1/presign` |
+| **Max download limit** | No | Yes |
+| **Individually revocable** | No | Yes (`revokePrettyPresignedUrl()`) |
+| **Download tracking** | No | Yes (server counts downloads) |
+| **Requires** | Nothing extra | Server-side presigned URL registry feature |
+
+#### Method 1: Client-Side HMAC Presigned URL
+
+Generate a time-limited link computed entirely on the client side — no server call needed:
 
 ```php
 $url = $beamdrop->presignedUrl(
@@ -336,9 +350,39 @@ $url = $beamdrop->presignedUrl(
 //     ?token=ABC123...&expires=2026-02-23T15:00:00Z&access_key=BDK_a1b2c3d4e5f6g7h8
 ```
 
-Use this in emails, client portals, or any place where you need a temporary download link without exposing credentials.
+#### Method 2: Server-Side Pretty Presigned URL
 
-#### How It Works Under the Hood
+Create a short, clean `/dl/{token}` URL via the server-side registry. Supports download limits and individual revocation:
+
+```php
+// Create a pretty presigned URL (1-hour expiry, max 10 downloads)
+$result = $beamdrop->createPrettyPresignedUrl(
+    bucket:       'invoices',
+    key:          'company-5/2026/01/INV-1042.pdf',
+    expiresIn:    3600,    // 1 hour (null = no expiry)
+    maxDownloads: 10,      // optional limit (null = unlimited)
+);
+
+// $result['url']   → "https://files.yoursite.com/dl/a1b2c3d4e5f6789a..."
+// $result['token'] → "a1b2c3d4e5f6789a..."
+
+// Revoke a pretty presigned URL immediately
+$beamdrop->revokePrettyPresignedUrl($result['token']);
+
+// List all active pretty presigned URLs
+$all = $beamdrop->listPrettyPresignedUrls();
+// $all['urls']  — array of presigned URL records
+// $all['count'] — total count
+```
+
+#### When to Use Which
+
+- **Use `presignedUrl()`** — for quick, ephemeral links where you don't need revocation or download tracking. No server round-trip.
+- **Use `createPrettyPresignedUrl()`** — for user-facing links (emails, client portals, invoices) where you want clean URLs, download limits, or the ability to revoke individual links.
+
+Both methods can be used together in the same application.
+
+#### How It Works Under the Hood (Client-Side Method)
 
 The `presignedUrl()` method builds a self-contained URL with three query parameters:
 
@@ -350,6 +394,15 @@ The `presignedUrl()` method builds a self-contained URL with three query paramet
 
 The signed message is: `METHOD\nBUCKET\nKEY\nUNIX_TIMESTAMP` — changing any part invalidates the token.
 
+#### How It Works Under the Hood (Server-Side Method)
+
+The `createPrettyPresignedUrl()` method calls `POST /api/v1/presign` which:
+1. Generates a random 16-byte hex token
+2. Stores it in the database with the bucket, key, expiry, and download limit
+3. Returns a short `/dl/{token}` URL
+
+When someone visits `/dl/{token}`, the server looks up the token, checks expiry and download limits, increments the counter, and streams the file.
+
 #### Suggested Expiry Times
 
 | Use case | `expiresIn` value |
@@ -359,15 +412,18 @@ The signed message is: `METHOD\nBUCKET\nKEY\nUNIX_TIMESTAMP` — changing any pa
 | Client portal / invoice link | `604800`–`2592000` (7–30 days) |
 | Semi-permanent assets | `315360000` (10 years — works but see warning below) |
 
-> **Warning:** Presigned URLs **always expire** — there is no "permanent" option. If you delete, disable, or rotate the API key, **all** presigned URLs generated with it become invalid immediately. For truly permanent public files, either run Beamdrop without `-api-auth` or proxy files through a Laravel controller (see section 7.1 for an example).
+> **Warning (client-side method):** Client-side presigned URLs **always expire** — there is no "permanent" option. If you delete, disable, or rotate the API key, **all** client-side presigned URLs generated with it become invalid immediately.
 
-#### Cannot Revoke Individual URLs
+> **Warning (server-side method):** Pretty presigned URLs are stored in the database. If you delete the database, all pretty URLs are lost. However, they are **not** tied to the API key — rotating your API key does NOT invalidate pretty URLs.
 
-There is no way to revoke a single presigned URL. If a link is leaked, your options are:
+#### Revoking URLs
 
-1. **Delete the object** — the URL will return 404.
-2. **Disable/delete the API key** — all presigned URLs from that key stop working (but so do your app's API calls until you update credentials).
-3. **Wait for expiry** — if you used a short `expiresIn`, the problem resolves itself.
+| Method | Client-Side HMAC | Server-Side Pretty |
+|--------|-----------------|-------------------|
+| Revoke a single URL | Not possible | `$beamdrop->revokePrettyPresignedUrl($token)` |
+| Delete the object | URL returns 404 | URL returns 404 |
+| Disable/rotate API key | All HMAC URLs break | Pretty URLs still work |
+| Wait for expiry | Resolves itself | Resolves itself |
 
 ---
 
@@ -451,7 +507,10 @@ All methods available on the `Beamdrop` service class:
 | `headObject(string $bucket, string $key)` | Get file metadata without downloading | `['content_type', 'content_length', 'etag', 'last_modified']` |
 | `objectExists(string $bucket, string $key)` | Check if a file exists | `bool` |
 | `listObjects(string $bucket, ...)` | List objects with prefix/delimiter filtering | `['contents', 'commonPrefixes', ...]` |
-| `presignedUrl(string $bucket, string $key, int $expiresIn)` | Generate a temporary download URL | `string` (full URL) |
+| `presignedUrl(string $bucket, string $key, int $expiresIn)` | Generate a client-side HMAC presigned URL | `string` (full URL) |
+| `createPrettyPresignedUrl(string $bucket, string $key, ...)` | Create a server-side pretty presigned URL (`/dl/{token}`) | `['token', 'url', 'bucket', 'key', ...]` |
+| `revokePrettyPresignedUrl(string $token)` | Revoke a server-side pretty presigned URL | `true` |
+| `listPrettyPresignedUrls()` | List all server-side pretty presigned URLs | `['urls' => [...], 'count' => n]` |
 
 ---
 

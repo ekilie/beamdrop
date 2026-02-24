@@ -644,7 +644,11 @@ paths:
         ### Presigned URL Access
 
         Objects can also be accessed via presigned URLs without the `Authorization` header.
-        Append these query parameters instead:
+        Beamdrop supports two types of presigned URLs:
+
+        #### Method 1: Client-Side HMAC Presigned URLs
+
+        Append these query parameters instead of the `Authorization` header:
 
         ```
         GET /buckets/{bucket}/{key}?token=TOKEN&expires=ISO8601&access_key=BDK_xxx
@@ -656,11 +660,26 @@ paths:
         token     = Base64URL(HMAC-SHA256(secret_key, message))
         ```
 
-        **Limitations:**
+        #### Method 2: Server-Side Pretty Presigned URLs
+
+        Create a short `/dl/{token}` URL via `POST /api/v1/presign` (see the presign endpoints below).
+        These URLs are individually revocable, support download limits, and are short enough for emails.
+
+        ```
+        GET /dl/{token}
+        ```
+
+        **Limitations (client-side HMAC method):**
         - Presigned URLs **always expire** — the server checks the `expires` timestamp on every request.
-        - If the API key is deleted or disabled, all presigned URLs created with it become invalid.
-        - Individual URLs cannot be revoked without disabling the API key.
+        - If the API key is deleted or disabled, all HMAC presigned URLs created with it become invalid.
+        - Individual HMAC URLs cannot be revoked without disabling the API key.
         - The token is method-specific — a GET token does not work for PUT.
+
+        **Advantages (server-side pretty method):**
+        - Short, clean URLs.
+        - Individually revocable via `DELETE /api/v1/presign/{token}`.
+        - Optional max download limit.
+        - Survives API key rotation.
         - For permanent public access, run Beamdrop without the `-api-auth` flag.
       security:
         - BearerAuth: []
@@ -815,3 +834,243 @@ paths:
           $ref: "#/components/responses/NotFound"
         "401":
           $ref: "#/components/responses/Unauthorized"
+
+  /api/v1/presign:
+    post:
+      tags:
+        - Presigned URLs
+      summary: Create a pretty presigned URL
+      description: |
+        Create a server-side pretty presigned URL that produces a short `/dl/{token}` download link.
+        The URL is individually revocable and optionally limited by expiry or download count.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - bucket
+                - key
+              properties:
+                bucket:
+                  type: string
+                  description: Bucket name
+                  example: photos
+                key:
+                  type: string
+                  description: Object key
+                  example: vacation/beach.jpg
+                method:
+                  type: string
+                  enum: [GET, PUT]
+                  default: GET
+                  description: HTTP method the URL is valid for
+                expiresIn:
+                  type: integer
+                  description: Seconds until the URL expires (omit for no expiry)
+                  example: 3600
+                maxDownloads:
+                  type: integer
+                  description: Maximum number of downloads (omit for unlimited)
+                  example: 100
+      responses:
+        "201":
+          description: Pretty presigned URL created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                    example: a1b2c3d4e5f6789a0b1c2d3e4f5a6b7c
+                  url:
+                    type: string
+                    example: https://files.example.com/dl/a1b2c3d4e5f6789a0b1c2d3e4f5a6b7c
+                  bucket:
+                    type: string
+                  key:
+                    type: string
+                  method:
+                    type: string
+                  expiresAt:
+                    type: string
+                    format: date-time
+                    nullable: true
+                  maxDownloads:
+                    type: integer
+                    nullable: true
+                  createdAt:
+                    type: string
+                    format: date-time
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+    get:
+      tags:
+        - Presigned URLs
+      summary: List all pretty presigned URLs
+      description: List all server-side pretty presigned URLs, including expired ones (until cleanup).
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: List of presigned URLs
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  urls:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                        token:
+                          type: string
+                        bucket:
+                          type: string
+                        key:
+                          type: string
+                        method:
+                          type: string
+                        expiresAt:
+                          type: string
+                          format: date-time
+                          nullable: true
+                        maxDownloads:
+                          type: integer
+                          nullable: true
+                        downloadCount:
+                          type: integer
+                        createdBy:
+                          type: string
+                        createdAt:
+                          type: string
+                          format: date-time
+                  count:
+                    type: integer
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/v1/presign/{token}:
+    get:
+      tags:
+        - Presigned URLs
+      summary: Get a specific pretty presigned URL
+      description: Get details of a specific server-side pretty presigned URL by token.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: token
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Presigned URL token
+      responses:
+        "200":
+          description: Presigned URL details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  token:
+                    type: string
+                  bucket:
+                    type: string
+                  key:
+                    type: string
+                  method:
+                    type: string
+                  expiresAt:
+                    type: string
+                    format: date-time
+                    nullable: true
+                  maxDownloads:
+                    type: integer
+                    nullable: true
+                  downloadCount:
+                    type: integer
+                  createdBy:
+                    type: string
+                  createdAt:
+                    type: string
+                    format: date-time
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+    delete:
+      tags:
+        - Presigned URLs
+      summary: Revoke a pretty presigned URL
+      description: |
+        Delete a server-side pretty presigned URL by token. Once revoked,
+        the `/dl/{token}` URL immediately returns 404.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: token
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Presigned URL token to revoke
+      responses:
+        "200":
+          description: Presigned URL revoked
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Presigned URL revoked
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /dl/{token}:
+    get:
+      tags:
+        - Presigned URLs
+      summary: Download via pretty presigned URL
+      description: |
+        Download a file using a server-side pretty presigned URL token.
+        This endpoint is public — no authentication required.
+        The server checks expiry and download limits before serving the file.
+      parameters:
+        - name: token
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Pretty presigned URL token
+      responses:
+        "200":
+          description: File content
+          headers:
+            Content-Type:
+              schema:
+                type: string
+              description: MIME type of the file
+            Content-Length:
+              schema:
+                type: integer
+              description: File size in bytes
+        "404":
+          description: Token not found
+        "410":
+          description: Link expired or download limit reached

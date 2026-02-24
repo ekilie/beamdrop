@@ -292,14 +292,20 @@ curl "http://localhost:8080/api/v1/buckets/my-bucket?list&prefix=path/" \
   -H "X-Beamdrop-Date: ${TIMESTAMP}"
 ```
 
-## API Documentation
+## Documentation
+
+### For Developers
+
+- **[Developer Guide](docs/DEVELOPER-GUIDE.md)** - Comprehensive guide to the codebase structure and S3 API implementation
+- API Design: [docs/s3-api-design.md](docs/s3-api-design.md)
+- Security: [docs/SECURITY.md](docs/SECURITY.md)
+
+### API Documentation
 
 - OpenAPI Specification: [docs/openapi.yaml](docs/openapi.yaml)
 - Postman Collection: [docs/beamdrop-api.postman_collection.json](docs/beamdrop-api.postman_collection.json)
 - Postman Environment: [docs/beamdrop-api.postman_environment.json](docs/beamdrop-api.postman_environment.json)
 - Postman Guide: [docs/POSTMAN-GUIDE.md](docs/POSTMAN-GUIDE.md)
-- API Design: [docs/s3-api-design.md](docs/s3-api-design.md)
-- Security: [docs/SECURITY.md](docs/SECURITY.md)
 
 ## Storage Structure
 

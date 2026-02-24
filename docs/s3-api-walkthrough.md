@@ -219,12 +219,48 @@ The signature is an **HMAC-SHA256** hash of: `METHOD\nPATH\nTIMESTAMP`, signed w
 GET /api/v1/buckets/photos/pic.jpg?token=ABC&expires=2026-02-12T12:00:00Z&access_key=BDK_abc123
 ```
 
-Presigned URLs let you share a temporary download/upload link without revealing your API key. The middleware:
+Presigned URLs let you share a temporary download/upload link without revealing your API key. The URL itself contains all the authentication information — anyone with the link can access the file until it expires.
 
-1. Checks if the URL has expired
-2. Extracts the bucket/key from the path
-3. Looks up the API key
-4. Verifies the token using `crypto.VerifyPresignedToken()`
+**How the middleware verifies a presigned URL:**
+
+1. Checks if the URL has expired (`time.Now().After(expiresAt)` → reject if past)
+2. Extracts the bucket and key from the path
+3. Looks up the API key by `access_key` query parameter
+4. Recomputes the token: `HMAC-SHA256(secret_key, "METHOD\nBUCKET\nKEY\nUNIX_TIMESTAMP")`
+5. Compares the recomputed token against the provided `token` — constant-time comparison via `hmac.Equal()`
+
+**How to generate a presigned URL (client-side):**
+
+```
+Step 1: Decide when it expires → expiresAt = now + duration (as Unix timestamp)
+Step 2: Build the message    → "GET\nphotos\npic.jpg\n1707741600"
+Step 3: Compute the token    → Base64URL(HMAC-SHA256(secret_key, message))
+Step 4: Build the URL        → /api/v1/buckets/photos/pic.jpg?token=TOKEN&expires=ISO8601&access_key=BDK_xxx
+```
+
+**Expiration format:** The `expires` query parameter accepts both RFC 3339 (`2026-02-12T12:00:00Z`) and compact ISO (`20260212T120000Z`) formats, but the HMAC message always uses the **Unix timestamp** (integer seconds since epoch).
+
+**Important behaviors and limitations:**
+
+| Behavior | Detail |
+|----------|--------|
+| **Always expires** | There is no "permanent" presigned URL. The middleware always checks `time.Now().After(expiresAt)`. |
+| **Tied to API key** | If the API key is deleted, disabled, or rotated, all presigned URLs generated with that key stop working immediately. |
+| **Method-specific** | A token generated for `GET` will not work for `PUT` — the HTTP method is part of the signed message. |
+| **Key-specific** | A token for `photos/pic.jpg` will not work for `photos/other.jpg` — the bucket and key are part of the signed message. |
+| **Maximum expiry** | No server-side maximum. You can set `expiresAt` to year 2100, but the URL will break if the API key is rotated before then. |
+| **No revocation** | Individual presigned URLs cannot be revoked. To invalidate all URLs, delete or disable the API key. |
+
+**Practical expiry guidelines:**
+
+| Use case | Suggested expiry |
+|----------|------------------|
+| One-time download link (email, chat) | 1–24 hours |
+| Embedded in a web page (avatars, thumbnails) | 1–7 days |
+| Client portal / invoice download | 7–30 days |
+| Semi-permanent static asset | 1–10 years (works, but breaks on key rotation) |
+
+**For truly public / permanent files**, consider running Beamdrop without `-api-auth` (all reads are public), or serving files through your application as a proxy.
 
 #### What If Auth Is Disabled?
 
@@ -1340,13 +1376,31 @@ Server side:
 
 ### Presigned URL Tokens
 
-Similar concept, but the token includes the expiration time:
+Similar concept, but the token includes the expiration time instead of the request timestamp:
 
 ```go
-message = "GET\nphotos\npic.jpg\n1707741600"  // Unix timestamp
+message = "GET\nphotos\npic.jpg\n1707741600"  // Unix timestamp of expiration
 token   = HMAC-SHA256(secret_key, message)
 token   = base64url_encode(token)
 ```
+
+The four fields in the message are: **HTTP method**, **bucket name**, **object key**, and **expiration as Unix timestamp**. All four are separated by `\n`. Changing any field invalidates the token.
+
+**Key differences from request signatures:**
+
+| | Request Signature | Presigned URL Token |
+|---|---|---|
+| **Sent via** | `Authorization` header | `token` query parameter |
+| **Time field** | Current timestamp (15-min validity window) | Expiration timestamp (arbitrary future date) |
+| **Path field** | Full URL path (e.g. `/api/v1/buckets/photos/pic.jpg`) | Bucket + key separately (`photos` and `pic.jpg`) |
+| **Encoding** | Standard Base64 | URL-safe Base64 (no `+`, `/`, or `=` padding) |
+| **Use case** | Server-to-server API calls | Shareable links for end users |
+
+**Important limitations:**
+- Presigned URLs **always expire** — the server hard-checks `time.Now().After(expiresAt)`. There is no bypass.
+- If the API key is **deleted or disabled**, all presigned URLs generated with that key become invalid immediately.
+- Individual presigned URLs **cannot be revoked** without disabling the entire API key.
+- For truly permanent public access, run without `-api-auth` or proxy files through your application.
 
 ### Timestamp Validation
 
@@ -1641,7 +1695,7 @@ curl "http://localhost:7777/api/v1/buckets/photos?prefix=vacation/&delimiter=/"
 | **Access Key ID** | Public identifier for an API key (starts with `BDK_`). |
 | **Secret Key** | Private key used for signing requests (starts with `sk_`). Shown once. |
 | **HMAC-SHA256** | A cryptographic algorithm that proves you know a secret without revealing it. |
-| **Presigned URL** | A temporary URL with auth baked in, so anyone with the link can access the file. |
+| **Presigned URL** | A temporary URL with auth baked in, so anyone with the link can access the file. Always expires — there is no permanent presigned URL. Tied to the API key that created it. |
 | **Atomic Write** | A write strategy that prevents corrupted files by using temp file + rename. |
 | **File-Level Lock** | A per-object read/write lock that prevents concurrent writes to the same key. |
 | **Write Lock** | An exclusive lock — only one goroutine can hold it at a time. Used for uploads and deletes. |

@@ -3,8 +3,11 @@
 package reqctx
 
 import (
+	"bufio"
 	"context"
+	"fmt"
 	"log/slog"
+	"net"
 	"net/http"
 )
 
@@ -97,6 +100,9 @@ type responseWriterWrapper struct {
 }
 
 func (w *responseWriterWrapper) WriteHeader(status int) {
+	if w.written {
+		return // Prevent superfluous WriteHeader calls
+	}
 	w.status = status
 	w.written = true
 	w.ResponseWriter.WriteHeader(status)
@@ -110,9 +116,18 @@ func (w *responseWriterWrapper) Write(b []byte) (int, error) {
 	return w.ResponseWriter.Write(b)
 }
 
-// Flush implements http.Flusher if the underlying writer supports it
+// Flush implements http.Flusher if the underlying writer supports it.
 func (w *responseWriterWrapper) Flush() {
 	if flusher, ok := w.ResponseWriter.(http.Flusher); ok {
 		flusher.Flush()
 	}
+}
+
+// Hijack implements http.Hijacker so that WebSocket upgrades work
+// through the wrapper. Delegates to the underlying ResponseWriter.
+func (w *responseWriterWrapper) Hijack() (net.Conn, *bufio.ReadWriter, error) {
+	if hijacker, ok := w.ResponseWriter.(http.Hijacker); ok {
+		return hijacker.Hijack()
+	}
+	return nil, nil, fmt.Errorf("underlying ResponseWriter does not implement http.Hijacker")
 }

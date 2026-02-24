@@ -20,7 +20,7 @@ const (
 
 // Set via -ldflags at build time
 var (
-	VERSION   = "0.0.1"
+	VERSION   = "0.0.1" // All these are set during the build
 	Commit    = "unknown"
 	BuildDate = "unknown"
 )

@@ -18,6 +18,8 @@ var PublicRoutes = []string{
 	"/health/startup", // Startup probe
 	"/ready",          // Legacy readiness check
 	"/metrics",        // Prometheus metrics
+	"/api/v1/buckets", // S3-compatible API (has its own auth)
+	"/api/v1/keys",    // API key management (has its own auth)
 }
 
 // StaticPrefixes are static asset prefixes that don't require authentication
@@ -26,6 +28,7 @@ var StaticPrefixes = []string{
 	"/static/",
 	"/share/",             // Shareable link frontend pages (public SPA routes)
 	"/api/shares/access/", // Shareable link access API (has its own password protection)
+	"/api/v1/",            // S3-compatible API (has its own HMAC-SHA256 auth middleware)
 }
 
 // AuthMiddleware handles authentication for protected routes

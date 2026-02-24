@@ -41,6 +41,10 @@ func (s *Server) setupRoutes() {
 	fileHandler := handlers.NewFileHandler(s.sharedDir)
 	fileOpsHandler := handlers.NewFileOperationsHandler(s.sharedDir)
 
+	// Presigned URL downloads (public — no auth)
+	downloadHandler := handlers.NewDownloadHandler(s.sharedDir)
+	s.mux.Handle("/dl/", downloadHandler)
+
 	// File operations
 	s.mux.HandleFunc("/files", fileHandler.ListFiles)
 	s.mux.HandleFunc("/download", fileHandler.Download)
@@ -103,4 +107,13 @@ func (s *Server) setupAPIRoutes() {
 
 	// API key management endpoint (no auth required - managed via web UI with session auth)
 	s.mux.HandleFunc("/api/v1/keys", keysHandler.Handle)
+
+	// Presigned URL management
+	presignHandler := api.NewPresignHandler(s.sharedDir)
+	s.mux.HandleFunc("/api/v1/presign/", func(w http.ResponseWriter, r *http.Request) {
+		apiAuth.Middleware(http.HandlerFunc(presignHandler.Handle)).ServeHTTP(w, r)
+	})
+	s.mux.HandleFunc("/api/v1/presign", func(w http.ResponseWriter, r *http.Request) {
+		apiAuth.Middleware(http.HandlerFunc(presignHandler.Handle)).ServeHTTP(w, r)
+	})
 }

@@ -268,15 +268,16 @@ func (h *ShareableLinkHandler) Access(w http.ResponseWriter, r *http.Request) {
 	} else {
 		mode := r.URL.Query().Get("mode")
 
-		if mode == "download" {
+		switch mode {
+		case "download":
 			// Force download with attachment header
 			w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"", filepath.Base(link.Path)))
 			http.ServeFile(w, r, fullPath)
-		} else if mode == "inline" {
+		case "inline":
 			// Serve file inline for preview embedding
 			w.Header().Set("Content-Disposition", fmt.Sprintf("inline; filename=\"%s\"", filepath.Base(link.Path)))
 			http.ServeFile(w, r, fullPath)
-		} else {
+		default:
 			// Default: return file metadata as JSON for the preview page
 			contentType := detectContentType(fullPath)
 			w.Header().Set("Content-Type", "application/json")

@@ -207,7 +207,7 @@ func (h *ShareableLinkHandler) Access(w http.ResponseWriter, r *http.Request) {
 			// Return info that password is required
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusUnauthorized)
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			json.NewEncoder(w).Encode(map[string]any{
 				"requiresPassword": true,
 				"path":             link.Path,
 			})
@@ -260,7 +260,7 @@ func (h *ShareableLinkHandler) Access(w http.ResponseWriter, r *http.Request) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]interface{}{
+		json.NewEncoder(w).Encode(map[string]any{
 			"path":  link.Path,
 			"files": fileList,
 			"isDir": true,
@@ -281,7 +281,7 @@ func (h *ShareableLinkHandler) Access(w http.ResponseWriter, r *http.Request) {
 			// Default: return file metadata as JSON for the preview page
 			contentType := detectContentType(fullPath)
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			json.NewEncoder(w).Encode(map[string]any{
 				"path":        link.Path,
 				"name":        filepath.Base(link.Path),
 				"size":        FormatFileSize(fileInfo.Size()),

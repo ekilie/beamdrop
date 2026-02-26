@@ -46,9 +46,8 @@ func (h *BucketHandler) Handle(w http.ResponseWriter, r *http.Request) {
 			errors.MissingField("bucket").WriteHTTPResponse(w)
 			return
 		}
-		createBucketIfNotExist :=r.URL.Query().Get("createIfNotExist") == "true"
-		if createBucketIfNotExist {
-			h.createBucketIfNotExist(w, r, bucketName)
+		if r.URL.Query().Get("createIfNotExists") == "true" {
+			h.createBucketIfNotExists(w, r, bucketName)
 		} else {
 			h.createBucket(w, r, bucketName)
 		}
@@ -108,7 +107,7 @@ func (h *BucketHandler) createBucket(w http.ResponseWriter, r *http.Request, nam
 	}, http.StatusCreated)
 }
 
-func (h *BucketHandler) createBucketIfNotExist(w http.ResponseWriter, r *http.Request, name string) {
+func (h *BucketHandler) createBucketIfNotExists(w http.ResponseWriter, r *http.Request, name string) {
 	created, err := h.bucketManager.CreateBucketIfNotExists(name)
 	if err != nil {
 		switch err {
@@ -121,17 +120,21 @@ func (h *BucketHandler) createBucketIfNotExist(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	if !created {
-		errors.BucketExists(name).WriteHTTPResponse(w)
-		return
+	if created {
+		slog.Info("Bucket created", "bucket", name)
+		sendJSON(w, map[string]any{
+			"bucket":   name,
+			"created":  time.Now().UTC().Format(time.RFC3339),
+			"location": "/api/v1/buckets/" + name,
+		}, http.StatusCreated)
+	} else {
+		slog.Info("Bucket already exists", "bucket", name)
+		sendJSON(w, map[string]any{
+			"bucket":   name,
+			"exists":   true,
+			"location": "/api/v1/buckets/" + name,
+		}, http.StatusOK)
 	}
-
-	slog.Info("Bucket created", "bucket", name)
-	sendJSON(w, map[string]any{
-		"bucket":   name,
-		"created":  time.Now().UTC().Format(time.RFC3339),
-		"location": "/api/v1/buckets/" + name,
-	}, http.StatusCreated)
 }
 
 func (h *BucketHandler) deleteBucket(w http.ResponseWriter, r *http.Request, name string) {

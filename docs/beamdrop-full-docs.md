@@ -1683,6 +1683,12 @@ const createBucket = await s3Request("PUT", "/api/v1/buckets/my-bucket");
 console.log("Created bucket:", createBucket);
 // => { bucket: "my-bucket", created: "...", location: "/api/v1/buckets/my-bucket" }
 
+// Create a bucket if it doesn't exist (idempotent)
+const ensureBucket = await s3Request("PUT", "/api/v1/buckets/my-bucket?createIfNotExists=true");
+console.log("Ensure bucket:", ensureBucket);
+// => 201: { bucket: "my-bucket", created: "...", location: "..." } if new
+// => 200: { bucket: "my-bucket", exists: true, location: "..." } if already existed
+
 // List all buckets
 const buckets = await s3Request("GET", "/api/v1/buckets");
 console.log("Buckets:", buckets);
@@ -2304,6 +2310,7 @@ When rate limiting is enabled (`-rate-limit N`):
 | `DELETE` | `/api/v1/keys` | Session | Delete API key |
 | `GET` | `/api/v1/buckets` | API Key | List buckets |
 | `PUT` | `/api/v1/buckets/{name}` | API Key | Create bucket |
+| `PUT` | `/api/v1/buckets/{name}?createIfNotExists=true` | API Key | Create bucket (idempotent) |
 | `HEAD` | `/api/v1/buckets/{name}` | API Key | Check bucket |
 | `GET` | `/api/v1/buckets/{name}` | API Key | Bucket info / list objects |
 | `DELETE` | `/api/v1/buckets/{name}` | API Key | Delete bucket |

@@ -46,8 +46,12 @@ func (h *BucketHandler) Handle(w http.ResponseWriter, r *http.Request) {
 			errors.MissingField("bucket").WriteHTTPResponse(w)
 			return
 		}
-		// if r.Requ
-		h.createBucket(w, r, bucketName)
+		createBucketIfNotExist :=r.URL.Query().Get("createIfNotExist") == "true"
+		if createBucketIfNotExist {
+			h.createBucketIfNotExist(w, r, bucketName)
+		} else {
+			h.createBucket(w, r, bucketName)
+		}
 	case http.MethodDelete:
 		if bucketName == "" {
 			errors.MissingField("bucket").WriteHTTPResponse(w)

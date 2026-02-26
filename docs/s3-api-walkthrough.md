@@ -530,7 +530,7 @@ func (h *BucketHandler) Handle(w http.ResponseWriter, r *http.Request) {
 
     switch r.Method {
     case GET:    → listBuckets() or getBucketInfo()
-    case PUT:    → createBucket()
+    case PUT:    → createBucket() or createBucketIfNotExists() (with ?createIfNotExists=true)
     case DELETE: → deleteBucket()
     case HEAD:   → headBucket()
     }
@@ -543,6 +543,7 @@ func (h *BucketHandler) Handle(w http.ResponseWriter, r *http.Request) {
 |-----------|------|-----|--------------|
 | List all buckets | `GET` | `/api/v1/buckets` | Returns all bucket names + count |
 | Create bucket | `PUT` | `/api/v1/buckets/my-bucket` | Creates directory on disk |
+| Create bucket (idempotent) | `PUT` | `/api/v1/buckets/my-bucket?createIfNotExists=true` | Creates directory or returns 200 if exists |
 | Delete bucket | `DELETE` | `/api/v1/buckets/my-bucket` | Removes directory (must be empty) |
 | Check bucket exists | `HEAD` | `/api/v1/buckets/my-bucket` | Returns 200 or 404 (no body) |
 | Get bucket info | `GET` | `/api/v1/buckets/my-bucket` | Returns `{bucket, exists}` |
@@ -769,6 +770,7 @@ This prevents attackers from doing things like:
 | Method | What it does |
 |--------|-------------|
 | `CreateBucket(name)` | Validates name, checks if exists, creates directory |
+| `CreateBucketIfNotExists(name)` | Creates directory if absent, returns `(created bool, err)` |
 | `DeleteBucket(name)` | Validates name, checks if empty, removes directory |
 | `BucketExists(name)` | Validates name, checks if directory exists |
 | `ListBuckets()` | Reads all directories, returns `[]BucketInfo` |
@@ -1495,6 +1497,10 @@ case storage.ErrBucketExists:
 default:
     errors.InternalError("...").WithCause(err).WriteHTTPResponse(w)
 }
+
+// Idempotent variant (with ?createIfNotExists=true):
+created, err := h.bucketManager.CreateBucketIfNotExists(name)
+// created=true → 201, created=false → 200 (bucket already existed)
 ```
 
 Each error factory function (like `errors.BucketNotFound()`) creates a structured error with the right HTTP status code, error code, and human-readable message. `WriteHTTPResponse()` serializes it to JSON and sends it.
@@ -1774,6 +1780,7 @@ All endpoints are subject to per-IP rate limiting when enabled (see [Section 5](
 |--------|----------|-----------|-------------|
 | `GET` | `/api/v1/buckets` | General | List all buckets |
 | `PUT` | `/api/v1/buckets/{bucket}` | General | Create a bucket |
+| `PUT` | `/api/v1/buckets/{bucket}?createIfNotExists=true` | General | Create a bucket (idempotent) |
 | `GET` | `/api/v1/buckets/{bucket}` | General | Get bucket info / list objects |
 | `HEAD` | `/api/v1/buckets/{bucket}` | General | Check if bucket exists |
 | `DELETE` | `/api/v1/buckets/{bucket}` | General | Delete an empty bucket |

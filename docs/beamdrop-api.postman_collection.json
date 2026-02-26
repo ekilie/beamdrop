@@ -259,6 +259,60 @@
                     }
                 },
                 {
+                    "name": "Create Bucket If Not Exists",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status code is 200 or 201', function () {",
+                                    "    pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+                                    "});",
+                                    "",
+                                    "pm.test('Response contains bucket info', function () {",
+                                    "    const jsonData = pm.response.json();",
+                                    "    pm.expect(jsonData).to.have.property('bucket');",
+                                    "    pm.expect(jsonData).to.have.property('location');",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/buckets/{{bucket_name}}?createIfNotExists=true",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "buckets",
+                                "{{bucket_name}}"
+                            ],
+                            "query": [
+                                {
+                                    "key": "createIfNotExists",
+                                    "value": "true"
+                                }
+                            ]
+                        },
+                        "description": "Create a bucket if it doesn't already exist (idempotent).\n\nReturns 201 Created if the bucket was newly created, or 200 OK if it already existed.\nNever returns a 409 Conflict error.\n\nIdeal for deploy scripts and application bootstrap."
+                    }
+                },
+                {
                     "name": "List Buckets",
                     "event": [
                         {

@@ -429,6 +429,9 @@ paths:
         - Lowercase letters, numbers, and hyphens only
         - Must start with letter or number
         - Cannot end with hyphen
+
+        **Idempotent mode**: Add `?createIfNotExists=true` to make the request
+        idempotent. Returns 200 OK if the bucket already exists instead of 409.
       security:
         - BearerAuth: []
       parameters:
@@ -442,6 +445,15 @@ paths:
             pattern: "^[a-z0-9][a-z0-9-]*[a-z0-9]$"
           description: Bucket name
           example: my-bucket
+        - name: createIfNotExists
+          in: query
+          required: false
+          schema:
+            type: boolean
+            default: false
+          description: |
+            When true, returns 200 OK if the bucket already exists instead of
+            409 Conflict. Useful for deploy scripts and application bootstrap.
       requestBody:
         content:
           application/json:
@@ -455,6 +467,20 @@ paths:
                   type: integer
                   description: Maximum bucket size in bytes
       responses:
+        "200":
+          description: Bucket already exists (only when createIfNotExists=true)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  bucket:
+                    type: string
+                  exists:
+                    type: boolean
+                    example: true
+                  location:
+                    type: string
         "201":
           description: Bucket created
           content:
@@ -464,7 +490,7 @@ paths:
         "400":
           $ref: "#/components/responses/BadRequest"
         "409":
-          description: Bucket already exists
+          description: Bucket already exists (only when createIfNotExists is not set)
           content:
             application/json:
               schema:

@@ -112,6 +112,24 @@ class Beamdrop
     }
 
     /**
+     * Create a bucket if it doesn't already exist (idempotent).
+     *
+     * Returns 201 with bucket info if newly created, or 200 with
+     * `{"bucket": "...", "exists": true, "location": "..."}` if the
+     * bucket already existed. Never returns a 409 error.
+     *
+     * Ideal for deploy scripts and application bootstrap where you
+     * need to ensure buckets exist without catching 409 errors.
+     *
+     * @param  string $name  Bucket name (e.g. "avatars", "invoices").
+     * @return array{bucket: string, created?: string, exists?: bool, location: string}
+     */
+    public function createBucketIfNotExists(string $name): array
+    {
+        return $this->request('PUT', "/api/v1/buckets/{$name}?createIfNotExists=true");
+    }
+
+    /**
      * Delete an empty bucket.
      *
      * The bucket must contain no objects. Delete all objects first.

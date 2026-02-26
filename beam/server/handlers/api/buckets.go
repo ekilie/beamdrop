@@ -46,7 +46,11 @@ func (h *BucketHandler) Handle(w http.ResponseWriter, r *http.Request) {
 			errors.MissingField("bucket").WriteHTTPResponse(w)
 			return
 		}
-		h.createBucket(w, r, bucketName)
+		if r.URL.Query().Get("createIfNotExists") == "true" {
+			h.createBucketIfNotExists(w, r, bucketName)
+		} else {
+			h.createBucket(w, r, bucketName)
+		}
 	case http.MethodDelete:
 		if bucketName == "" {
 			errors.MissingField("bucket").WriteHTTPResponse(w)
@@ -101,6 +105,36 @@ func (h *BucketHandler) createBucket(w http.ResponseWriter, r *http.Request, nam
 		"created":  time.Now().UTC().Format(time.RFC3339),
 		"location": "/api/v1/buckets/" + name,
 	}, http.StatusCreated)
+}
+
+func (h *BucketHandler) createBucketIfNotExists(w http.ResponseWriter, r *http.Request, name string) {
+	created, err := h.bucketManager.CreateBucketIfNotExists(name)
+	if err != nil {
+		switch err {
+		case storage.ErrInvalidBucketName:
+			errors.InvalidBucketName("Invalid bucket name. Must be 3-63 lowercase alphanumeric characters, hyphens, or dots.").WriteHTTPResponse(w)
+		default:
+			slog.Error("Failed to create bucket", "bucket", name, "error", err)
+			errors.InternalError("Failed to create bucket").WithCause(err).WriteHTTPResponse(w)
+		}
+		return
+	}
+
+	if created {
+		slog.Info("Bucket created", "bucket", name)
+		sendJSON(w, map[string]any{
+			"bucket":   name,
+			"created":  time.Now().UTC().Format(time.RFC3339),
+			"location": "/api/v1/buckets/" + name,
+		}, http.StatusCreated)
+	} else {
+		slog.Info("Bucket already exists", "bucket", name)
+		sendJSON(w, map[string]any{
+			"bucket":   name,
+			"exists":   true,
+			"location": "/api/v1/buckets/" + name,
+		}, http.StatusOK)
+	}
 }
 
 func (h *BucketHandler) deleteBucket(w http.ResponseWriter, r *http.Request, name string) {

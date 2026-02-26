@@ -337,10 +337,11 @@ type BucketManager struct {
 }
 
 // Operations
-CreateBucket(name)    // Create directory: buckets/{name}/
-DeleteBucket(name)    // Delete if empty
-ListBuckets()         // Read buckets/ directory
-BucketExists(name)    // Check if directory exists
+CreateBucket(name)              // Create directory: buckets/{name}/
+CreateBucketIfNotExists(name)   // Create if absent, returns (created bool, err)
+DeleteBucket(name)              // Delete if empty
+ListBuckets()                   // Read buckets/ directory
+BucketExists(name)              // Check if directory exists
 ```
 
 **Key validations:**
@@ -601,6 +602,12 @@ var bucketCreations = prometheus.NewCounter(prometheus.CounterOpts{
 // Increment in handler
 func (h *BucketHandler) createBucket(...) {
     // ... create bucket ...
+    metrics.BucketCreations.Inc()
+}
+
+// Idempotent variant: PUT /api/v1/buckets/{name}?createIfNotExists=true
+func (h *BucketHandler) createBucketIfNotExists(...) {
+    // ... returns 201 if new, 200 if already exists ...
     metrics.BucketCreations.Inc()
 }
 ```

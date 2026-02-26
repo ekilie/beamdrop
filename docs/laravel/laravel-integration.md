@@ -498,6 +498,7 @@ All methods available on the `Beamdrop` service class:
 | Method | Description | Returns |
 |--------|-------------|---------|
 | `createBucket(string $name)` | Create a new bucket (directory) | `['bucket', 'created', 'location']` |
+| `createBucketIfNotExists(string $name)` | Create bucket if it doesn't exist (idempotent) | `['bucket', 'location', ...]` |
 | `deleteBucket(string $name)` | Delete an empty bucket | `true` |
 | `listBuckets()` | List all buckets | `['buckets' => [...], 'count' => n]` |
 | `bucketExists(string $name)` | Check if bucket exists | `bool` |
@@ -523,7 +524,7 @@ All methods available on the `Beamdrop` service class:
 | `401 Request timestamp is too old` | Clock skew > 15 minutes | Sync server clocks with NTP |
 | `403 Invalid signature` | Wrong secret key or encoding issue | Regenerate the API key; confirm `.env` has no trailing whitespace |
 | `404 Bucket not found` | Bucket doesn't exist | Call `$beamdrop->createBucket('my-bucket')` first |
-| `409 Bucket already exists` | Creating a bucket that exists | Safe to ignore — bucket is ready |
+| `409 Bucket already exists` | Creating a bucket that exists | Use `$beamdrop->createBucketIfNotExists()` to avoid this |
 | `423 Object locked` | Another upload to the same key in progress | Retry after a short delay |
 | `429 Too Many Requests` | Rate limit hit | Respect `Retry-After` header; increase `-rate-limit` on server |
 | `cURL error` | Beamdrop server unreachable | Check `BEAMDROP_URL`, firewall rules, and that the server is running |
@@ -551,19 +552,15 @@ buckets/
         └── {type}-{uuid}.csv
 ```
 
-Create all buckets on deploy (idempotent — errors on duplicates are safe to catch):
+Create all buckets on deploy (idempotent — no error if bucket already exists):
 
 ```php
 // In a seeder or deploy script
 $beamdrop = app(Beamdrop::class);
 
 foreach (['avatars', 'documents', 'invoices', 'exports'] as $bucket) {
-    try {
-        $beamdrop->createBucket($bucket);
-    } catch (BeamdropException $e) {
-        if ($e->getCode() !== 409) { // 409 = already exists, that's fine
-            throw $e;
-        }
-    }
+    $beamdrop->createBucketIfNotExists($bucket);
 }
 ```
+
+> **Tip:** `createBucketIfNotExists()` returns 201 if newly created, 200 if it already existed. No need to catch 409 errors.

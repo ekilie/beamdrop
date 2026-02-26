@@ -193,5 +193,3 @@ func (bm *BucketManager) GetBucketPath(name string) (string, error) {
 	}
 	return filepath.Join(bm.basePath, name), nil
 }
-
-

@@ -97,6 +97,27 @@ func (bm *BucketManager) CreateBucket(name string) error {
 	return os.MkdirAll(bucketPath, 0755)
 }
 
+// CreateBucketIfNotExists creates a new bucket directory if it doesn't already exist
+func (bm *BucketManager) CreateBucketIfNotExists(name string) (bool, error) {
+	if err := ValidateBucketName(name); err != nil {
+		return false, err
+	}
+
+	bucketPath := filepath.Join(bm.basePath, name)
+
+	// if bucket already exists
+	// we return true without error, since the bucket is already there
+	if _, err := os.Stat(bucketPath); err == nil {
+		return true, nil
+	}
+
+	if err := os.MkdirAll(bucketPath, 0755); err != nil {
+		return false, err
+	}
+
+	return true, nil
+}
+
 // DeleteBucket deletes a bucket if it's empty
 func (bm *BucketManager) DeleteBucket(name string) error {
 	if err := ValidateBucketName(name); err != nil {

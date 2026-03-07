@@ -2,6 +2,8 @@
 
 This document describes the security hardening features added to Beamdrop.
 
+> **See also:** [Security Threat Model](THREAT-MODEL.md) — assets, trust boundaries, threat actors, attack vectors, and incident response.
+
 ## CORS (Cross-Origin Resource Sharing)
 
 By default, CORS is **disabled** for maximum security. This is the recommended configuration for local file sharing as it prevents unauthorized cross-origin access.

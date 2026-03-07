@@ -1,9 +1,7 @@
 package config
 
 import (
-	"fmt"
 	"log"
-	"net"
 	"os"
 	"path/filepath"
 	"time"
@@ -60,7 +58,7 @@ type Config struct {
 
 type Flags struct {
 	SharedDir       string
-	QR            bool
+	QR              bool
 	Port            int
 	Help            bool
 	Password        string
@@ -82,27 +80,6 @@ func GetConfig() Config {
 	return Config{
 		PORT: PORT,
 	}
-}
-
-// FindAvailablePort tries to find an available port from the default ports list
-func FindAvailablePort() (int, error) {
-	for _, port := range DefaultPorts {
-		if IsPortAvailable(port) {
-			return port, nil
-		}
-	}
-	return 0, fmt.Errorf("no available ports found from the default list: %v", DefaultPorts)
-}
-
-// IsPortAvailable checks if a port is available for use
-func IsPortAvailable(port int) bool {
-	address := fmt.Sprintf(":%d", port)
-	listener, err := net.Listen("tcp", address)
-	if err != nil {
-		return false
-	}
-	defer listener.Close()
-	return true
 }
 
 func init() {

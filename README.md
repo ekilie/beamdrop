@@ -297,6 +297,10 @@ curl "http://localhost:8080/api/v1/buckets/my-bucket?list&prefix=path/" \
 
 ## Documentation
 
+### For Operators
+
+- **[Operations Runbook](docs/OPERATIONS-RUNBOOK.md)** - Production deployment, backup, monitoring, scaling, and troubleshooting
+
 ### For Developers
 
 - **[Developer Guide](docs/DEVELOPER-GUIDE.md)** - Comprehensive guide to the codebase structure and S3 API implementation

@@ -1,6 +1,6 @@
 # Beamdrop
 
-A lightweight, self-hosted file sharing server with S3-compatible API. Built with Go and React.
+A lightweight, self-hosted file storage server with S3-compatible API. Built with Go and React.
 
 ## Overview
 

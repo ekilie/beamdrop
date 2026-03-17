@@ -135,18 +135,18 @@ BEAMDROP_QR=false
 BEAMDROP_ALLOWED_ORIGINS=https://example.com
 ```
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `BEAMDROP_PORT` | `7777` | Port to listen on |
-| `BEAMDROP_PASSWORD` | *(none)* | Enable password authentication |
-| `BEAMDROP_LOG_LEVEL` | `info` | Log level: `debug`, `info`, `warn`, `error` |
-| `BEAMDROP_RATE_LIMIT` | `100` | Requests/min per IP (`0` = disabled) |
-| `BEAMDROP_API_AUTH` | *(off)* | Set to `true` to enable S3 API key auth |
-| `BEAMDROP_QR` | `false` | Set to `true` to print startup QR code |
-| `BEAMDROP_ALLOWED_ORIGINS` | *(none)* | Comma-separated CORS origins |
-| `BEAMDROP_DB_PATH` | *(none)* | Path to DB file or directory (directory auto-appends `beamdrop.db`) |
-| `BEAMDROP_TLS_CERT` | *(none)* | Path to TLS certificate (inside container) |
-| `BEAMDROP_TLS_KEY` | *(none)* | Path to TLS private key (inside container) |
+| Variable                   | Default  | Description                                                         |
+| -------------------------- | -------- | ------------------------------------------------------------------- |
+| `BEAMDROP_PORT`            | `7777`   | Port to listen on                                                   |
+| `BEAMDROP_PASSWORD`        | _(none)_ | Enable password authentication                                      |
+| `BEAMDROP_LOG_LEVEL`       | `info`   | Log level: `debug`, `info`, `warn`, `error`                         |
+| `BEAMDROP_RATE_LIMIT`      | `100`    | Requests/min per IP (`0` = disabled)                                |
+| `BEAMDROP_API_AUTH`        | _(off)_  | Set to `true` to enable S3 API key auth                             |
+| `BEAMDROP_QR`              | `false`  | Set to `true` to print startup QR code                              |
+| `BEAMDROP_ALLOWED_ORIGINS` | _(none)_ | Comma-separated CORS origins                                        |
+| `BEAMDROP_DB_PATH`         | _(none)_ | Path to DB file or directory (directory auto-appends `beamdrop.db`) |
+| `BEAMDROP_TLS_CERT`        | _(none)_ | Path to TLS certificate (inside container)                          |
+| `BEAMDROP_TLS_KEY`         | _(none)_ | Path to TLS private key (inside container)                          |
 
 **Development mode** (debug logging, rate limiting off):
 
@@ -178,20 +178,20 @@ A pre-built Grafana dashboard is available at [`docs/grafana-dashboard.json`](do
 
 **Exported metrics:**
 
-| Metric | Type | Description |
-|--------|------|-------------|
-| `beamdrop_requests_total` | counter | HTTP requests by method, path, status |
-| `beamdrop_request_duration_seconds` | histogram | Request latency (p50/p95/p99) |
-| `beamdrop_auth_failures_total` | counter | Auth failures by reason |
-| `beamdrop_uploads_total` | counter | Completed uploads |
-| `beamdrop_downloads_total` | counter | Completed downloads |
-| `beamdrop_upload_size_bytes` | histogram | Upload file sizes |
-| `beamdrop_storage_bytes` | gauge | Bytes used by stored files |
-| `beamdrop_objects_total` | gauge | Number of stored files |
-| `beamdrop_active_connections` | gauge | In-flight HTTP requests |
-| `beamdrop_storage_free_bytes` | gauge | Free disk space |
-| `beamdrop_storage_total_bytes` | gauge | Total disk capacity |
-| `beamdrop_goroutines_count` | gauge | Go goroutine count |
+| Metric                              | Type      | Description                           |
+| ----------------------------------- | --------- | ------------------------------------- |
+| `beamdrop_requests_total`           | counter   | HTTP requests by method, path, status |
+| `beamdrop_request_duration_seconds` | histogram | Request latency (p50/p95/p99)         |
+| `beamdrop_auth_failures_total`      | counter   | Auth failures by reason               |
+| `beamdrop_uploads_total`            | counter   | Completed uploads                     |
+| `beamdrop_downloads_total`          | counter   | Completed downloads                   |
+| `beamdrop_upload_size_bytes`        | histogram | Upload file sizes                     |
+| `beamdrop_storage_bytes`            | gauge     | Bytes used by stored files            |
+| `beamdrop_objects_total`            | gauge     | Number of stored files                |
+| `beamdrop_active_connections`       | gauge     | In-flight HTTP requests               |
+| `beamdrop_storage_free_bytes`       | gauge     | Free disk space                       |
+| `beamdrop_storage_total_bytes`      | gauge     | Total disk capacity                   |
+| `beamdrop_goroutines_count`         | gauge     | Go goroutine count                    |
 
 ## Quick Start
 
@@ -225,32 +225,34 @@ beamdrop -dir /path/to/share -api-auth -tls-cert cert.pem -tls-key key.pem
 
 ### Command Line Flags
 
-| Flag | Description | Default |
-|------|-------------|---------|
-| `-dir` | Directory to share | Current directory |
-| `-port` | Server port | Auto-detect |
-| `-p` | Password for web authentication | None |
-| `-api-auth` | Enable API key authentication | false |
-| `-tls-cert` | Path to TLS certificate | None |
-| `-tls-key` | Path to TLS private key | None |
-| `-allowed-origins` | CORS allowed origins (comma-separated) | None |
-| `-db-path` | Path to database file or directory (directory auto-appends `beamdrop.db`) | `~/.beamdrop/beamdrop.db` |
-| `-rate-limit` | Rate limit in requests/min per IP (0 = disabled) | 100 |
-| `-log-level` | Log level: debug, info, warn, error | info |
-| `-qr` | Enable QR code display | false |
-| `-v` | Show version | - |
-| `-h` | Show help | - |
+| Flag               | Description                                                               | Default                   |
+| ------------------ | ------------------------------------------------------------------------- | ------------------------- |
+| `-dir`             | Directory to share                                                        | Current directory         |
+| `-port`            | Server port                                                               | Auto-detect               |
+| `-p`               | Password for web authentication                                           | None                      |
+| `-api-auth`        | Enable API key authentication                                             | false                     |
+| `-tls-cert`        | Path to TLS certificate                                                   | None                      |
+| `-tls-key`         | Path to TLS private key                                                   | None                      |
+| `-allowed-origins` | CORS allowed origins (comma-separated)                                    | None                      |
+| `-db-path`         | Path to database file or directory (directory auto-appends `beamdrop.db`) | `~/.beamdrop/beamdrop.db` |
+| `-rate-limit`      | Rate limit in requests/min per IP (0 = disabled)                          | 100                       |
+| `-log-level`       | Log level: debug, info, warn, error                                       | info                      |
+| `-qr`              | Enable QR code display                                                    | false                     |
+| `-v`               | Show version                                                              | -                         |
+| `-h`               | Show help                                                                 | -                         |
 
 ## API Usage
 
 ### Creating an API Key
 
 Via the web interface:
+
 1. Navigate to API Keys in the sidebar
 2. Click "Create New Key"
 3. Save the secret key (shown only once)
 
 Via API:
+
 ```bash
 curl -X POST http://localhost:8080/api/v1/keys \
   -H "Content-Type: application/json" \
@@ -425,4 +427,3 @@ beamdrop/
 ## License
 
 [GNU Affero General Public License v3.0](LICENSE)
-

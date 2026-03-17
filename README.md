@@ -6,6 +6,10 @@ A lightweight, self-hosted file storage server with S3-compatible API. Built wit
 
 Beamdrop provides both a web interface for interactive file management and a programmatic API for application integration. Use it as a personal file server, artifact storage for CI/CD pipelines, or a development S3 alternative.
 
+## Architecture
+
+![Beamdrop System Architecture](docs/beamdrop-arch.png)
+
 ## Features
 
 - Web-based file browser with modern UI

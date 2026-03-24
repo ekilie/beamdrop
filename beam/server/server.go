@@ -138,7 +138,7 @@ func (s *Server) Start() error {
 		slog.Info("CORS is disabled (most secure for local file sharing)")
 	}
 
-	slog.Info("Server started", "url", url, "shared_dir", s.sharedDir)
+	slog.Info("Server started ", "======url", url, "shared_dir", s.sharedDir)
 
 	// Mark startup complete so /health/startup returns 200
 	handlers.MarkStartupReady()

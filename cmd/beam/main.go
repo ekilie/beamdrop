@@ -95,6 +95,16 @@ func main() {
 	// Since the flag is a non-boolean value
 	port := flag.Int("port", 0, "Set the port that beamdrop will run on")
 	flag.Parse()
+	
+	if *versionFlag {
+		styles.InfoStyle.Println("Beamdrop Version:", config.VERSION)
+		return
+	}
+
+	if *help {
+		PrintHelp()
+		return
+	}
 
 	fmt.Println(static.BeamdropAscii)
 
@@ -111,11 +121,6 @@ func main() {
 	envInt("port", "BEAMDROP_PORT", port)
 	envInt("rate-limit", "BEAMDROP_RATE_LIMIT", rateLimit)
 	envDuration("shutdown-timeout", "BEAMDROP_SHUTDOWN_TIMEOUT", shutdownTimeout)
-
-	if *versionFlag {
-		styles.InfoStyle.Println("Beamdrop Version:", config.VERSION)
-		return
-	}
 
 	// Initialize structured logger before anything else.
 	// Terminal gets colored human-readable output; JSON logs go to <sharedDir>/.beamdrop/beamdrop.log
@@ -153,10 +158,6 @@ func main() {
 	}
 	if *sharedDir == "" {
 		slog.Error("Shared directory is required")
-		return
-	}
-	if *help {
-		PrintHelp()
 		return
 	}
 

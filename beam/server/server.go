@@ -20,6 +20,7 @@ import (
 	"github.com/ekilie/beamdrop/pkg/qr"
 	"github.com/ekilie/beamdrop/pkg/reqctx"
 	"github.com/ekilie/beamdrop/pkg/storage"
+	"github.com/ekilie/beamdrop/pkg/styles"
 )
 
 type Server struct {
@@ -138,7 +139,8 @@ func (s *Server) Start() error {
 		slog.Info("CORS is disabled (most secure for local file sharing)")
 	}
 
-	slog.Info("Server started ", "======url", url, "shared_dir", s.sharedDir)
+	slog.Info("Server started ", "shared_dir", s.sharedDir)
+	styles.InfoStyle.Println("Server started at " + url)
 
 	// Mark startup complete so /health/startup returns 200
 	handlers.MarkStartupReady()

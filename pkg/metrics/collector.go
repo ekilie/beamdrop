@@ -38,9 +38,7 @@ func NewCollector(sharedDir string, interval time.Duration) *Collector {
 
 // Start begins the periodic collection loop.
 func (c *Collector) Start() {
-	c.wg.Add(1)
-	go func() {
-		defer c.wg.Done()
+	c.wg.Go(func() {
 		// Collect once immediately on startup
 		c.collect()
 
@@ -55,7 +53,7 @@ func (c *Collector) Start() {
 				return
 			}
 		}
-	}()
+	})
 	slog.Info("Metrics collector started", "interval", c.interval)
 }
 

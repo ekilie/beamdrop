@@ -67,33 +67,33 @@ func (s *Server) setupRoutes() {
 	s.mux.HandleFunc("/api/shares/access/", shareLinkHandler.Access) // Public access API endpoint
 
 	// S3-like API endpoints
-	s.setupAPIRoutes()
+	s.setupS3APIRoutes()
 }
 
-// setupAPIRoutes configures the S3-like API endpoints
-func (s *Server) setupAPIRoutes() {
+// setupS3APIRoutes configures the S3-like API endpoints
+func (s *Server) setupS3APIRoutes() {
 	bucketHandler := api.NewBucketHandler(s.sharedDir)
 	objectHandler := api.NewObjectHandler(s.sharedDir)
 	keysHandler := api.NewKeysHandler()
 
 	// API auth middleware (disabled by default for now - enable with -api-auth flag)
-	apiAuth := api.NewAPIAuthMiddleware(s.flags.APIAuth)
+	apiAuth := api.NewAPIAuthMiddleware(s.flags.APIAuth) //TODO: FIXME: api-auth should enabled by default
 
 	// API v1 routes - handle bucket and object operations
 	s.mux.HandleFunc("/api/v1/buckets/", func(w http.ResponseWriter, r *http.Request) {
 		// Apply API auth middleware
 		apiAuth.Middleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			// Route to appropriate handler based on path
+			// We route to appropriate handler based on path
 			path := strings.TrimPrefix(r.URL.Path, "/api/v1/buckets/")
 			parts := strings.SplitN(path, "/", 2)
 
-			// If there's an object key, use object handler
+			// If there's an object key, we use object handler
 			if len(parts) > 1 && parts[1] != "" {
 				objectHandler.Handle(w, r)
 				return
 			}
 
-			// Otherwise use bucket handler
+			// Otherwise we use bucket handler
 			bucketHandler.Handle(w, r)
 		})).ServeHTTP(w, r)
 	})
@@ -110,6 +110,9 @@ func (s *Server) setupAPIRoutes() {
 
 	// Presigned URL management
 	presignHandler := api.NewPresignHandler(s.sharedDir)
+
+	// We support both /api/v1/presign and /api/v1/presign/ for convenience 
+	// (some clients may add trailing slash)
 	s.mux.HandleFunc("/api/v1/presign/", func(w http.ResponseWriter, r *http.Request) {
 		apiAuth.Middleware(http.HandlerFunc(presignHandler.Handle)).ServeHTTP(w, r)
 	})

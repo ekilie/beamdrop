@@ -1,6 +1,6 @@
 # Beamdrop — Complete Documentation
 
-> A lightweight, self-hosted file sharing server with S3-compatible API. Built with Go and React.
+> Turn any VPS or server into a private, self-hosted Google Drive + S3 in seconds. Built with Go and React.
 
 ---
 

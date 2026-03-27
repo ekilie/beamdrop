@@ -5,7 +5,7 @@ import (
 )
 
 func Help() string {
-	return `beamdrop - A simple file sharing tool with S3-like API
+	return `beamdrop - Self-hosted file storage with web UI and S3-compatible API
 
 Usage:
   beam [options]

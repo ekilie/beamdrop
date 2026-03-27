@@ -1,25 +1,36 @@
 # Beamdrop
 
-A lightweight, self-hosted file storage server with S3-compatible API. Built with Go and React.
+**Turn any VPS or server into a private, self-hosted Google Drive + S3 in seconds.**
+
+Developers and teams can upload, manage, and share files via a web UI or an S3-compatible API—no cloud vendor needed, no complex setup.
 
 ## Overview
 
-Beamdrop provides both a web interface for interactive file management and a programmatic API for application integration. Use it as a personal file server, artifact storage for CI/CD pipelines, or a development S3 alternative.
+Beamdrop is a single-binary file storage server built with Go and React. Drop it on any machine, point it at a directory, and you instantly get a web-based file manager with sharing, real-time stats, and a full S3-compatible API. Use it as a personal cloud drive, artifact storage for CI/CD pipelines, a self-hosted alternative to Google Drive, or a drop-in S3 replacement for development and production.
 
 ## Architecture
 
 ![Beamdrop System Architecture](docs/beamdrop-arch.png)
 
+## Why Beamdrop?
+
+| Need | Beamdrop |
+|------|----------|
+| Self-hosted Google Drive | Web UI with file browser, sharing, and search |
+| S3 alternative | Full S3-compatible API with buckets, objects, and presigned URLs |
+| CI/CD artifact store | Single binary, runs anywhere, API-driven |
+| Quick file sharing | One command, optional password, shareable links |
+| Zero vendor lock-in | Your server, your data, AGPL-licensed |
+
 ## Features
 
-- Web-based file browser with modern UI
-- File upload and download
-- File operations: move, copy, rename, create directories
-- File search functionality
-- Real-time statistics via WebSocket
-- Password authentication support
-- QR code generation for easy access
-- **Shareable Links**: Generate unique links to share files/folders with optional password protection and expiry
+- **Web-based file manager** — modern React UI with drag-and-drop upload, search, and file operations (move, copy, rename, mkdir)
+- **S3-compatible API** — buckets, objects, presigned URLs, HMAC-SHA256 auth
+- **Shareable links** — generate unique URLs with optional password protection and expiry
+- **Real-time stats** — live storage metrics via WebSocket
+- **Single binary** — zero dependencies, runs on Linux, macOS, and Windows
+- **Docker-ready** — ~39 MB image, non-root, health checks included
+- QR code generation for easy mobile access
 - Cross-platform support
 - **Security features**:
   - HTTPS/TLS support for encrypted connections

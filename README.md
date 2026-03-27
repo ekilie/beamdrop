@@ -1,37 +1,66 @@
-# Beamdrop
+# BeamDrop
 
-**Turn any VPS or server into a private, self-hosted Google Drive + S3 in seconds.**
+**Your private Google Drive + S3, ready in 10 seconds.**
 
-Developers and teams can upload, manage, and share files via a web UI or an S3-compatible API no cloud vendor needed, no complex setup.
+Turn any server or VPS into secure, self-hosted file storage with:
+
+- Web UI for humans
+- S3-compatible API for apps
+- Shareable links & real-time stats
+
+No cloud vendor. No complex setup. One command to start.
 
 ![BeamDrop Preview](docs/beamdrop.jpeg)
 
-## Overview
+## Quick Start
 
-Beamdrop is a single-binary file storage server built with Go and React. Drop it on any machine, point it at a directory, and you instantly get a web-based file manager with sharing, real-time stats, and a full S3-compatible API. Use it as a personal cloud drive, artifact storage for CI/CD pipelines, a self-hosted alternative to Google Drive, or a drop-in S3 replacement for development and production.
+```bash
+# Share current directory instantly
+beamdrop
+
+# Access via browser: http://localhost:7777
+# Scan QR code from your phone to upload files
+```
+
+```bash
+# Share a specific directory with password protection
+beamdrop -dir /path/to/share -p mysecretpassword
+
+# Enable S3-compatible API
+beamdrop -dir /path/to/share -api-auth
+
+# With HTTPS
+beamdrop -dir /path/to/share -api-auth -tls-cert cert.pem -tls-key key.pem
+```
+
+## Why BeamDrop?
+
+- **Tired of paying for cloud storage?** Run your own S3-compatible server.
+- **Need easy file sharing?** Drag, drop, share links — optionally password-protected.
+- **Want something developers love?** Works with existing S3 libraries & APIs.
+- **Need a single tool for teams?** Web UI + API + real-time stats in one binary.
+- **Worried about security & vendor lock-in?** Your server, your data, full control.
+
+## Key Features
+
+- **Web UI + File Browser:** Drag, drop, rename, move, and organize files.
+- **S3-Compatible API:** Works with existing AWS SDKs and scripts.
+- **Shareable Links:** Optional password and expiry.
+- **Single Binary:** Runs anywhere, zero dependencies.
+- **Secure & Production-Ready:** TLS, rate limiting, structured logging.
 
 ## Architecture
 
 ![Beamdrop System Architecture](docs/beamdrop-arch.png)
 
-## Why Beamdrop?
+## All Features
 
-| Need                     | Beamdrop                                                         |
-| ------------------------ | ---------------------------------------------------------------- |
-| Self-hosted Google Drive | Web UI with file browser, sharing, and search                    |
-| S3 alternative           | Full S3-compatible API with buckets, objects, and presigned URLs |
-| CI/CD artifact store     | Single binary, runs anywhere, API-driven                         |
-| Quick file sharing       | One command, optional password, shareable links                  |
-| Zero vendor lock-in      | Your server, your data, AGPL-licensed                            |
-
-## Features
-
-- **Web-based file manager** modern React UI with drag-and-drop upload, search, and file operations (move, copy, rename, mkdir)
-- **S3-compatible API** buckets, objects, presigned URLs, HMAC-SHA256 auth
-- **Shareable links** generate unique URLs with optional password protection and expiry
-- **Real-time stats** live storage metrics via WebSocket
-- **Single binary** zero dependencies, runs on Linux, macOS, and Windows
-- **Docker-ready** ~39 MB image, non-root, health checks included
+- **Web-based file manager** — modern React UI with drag-and-drop upload, search, and file operations (move, copy, rename, mkdir)
+- **S3-compatible API** — buckets, objects, presigned URLs, HMAC-SHA256 auth
+- **Shareable links** — generate unique URLs with optional password protection and expiry
+- **Real-time stats** — live storage metrics via WebSocket
+- **Single binary** — zero dependencies, runs on Linux, macOS, and Windows
+- **Docker-ready** — ~39 MB image, non-root, health checks included
 - QR code generation for easy mobile access
 - Cross-platform support
 - **Security features**:
@@ -205,34 +234,6 @@ A pre-built Grafana dashboard is available at [`docs/grafana-dashboard.json`](do
 | `beamdrop_storage_free_bytes`       | gauge     | Free disk space                       |
 | `beamdrop_storage_total_bytes`      | gauge     | Total disk capacity                   |
 | `beamdrop_goroutines_count`         | gauge     | Go goroutine count                    |
-
-## Quick Start
-
-### Basic Usage
-
-```bash
-# Share current directory
-beamdrop
-
-# Share specific directory
-beamdrop -dir /path/to/share
-
-# With password protection
-beamdrop -dir /path/to/share -p mysecretpassword
-
-# With custom port
-beamdrop -dir /path/to/share -port 9000
-```
-
-### With S3-Compatible API
-
-```bash
-# Enable API authentication
-beamdrop -dir /path/to/share -api-auth
-
-# With HTTPS
-beamdrop -dir /path/to/share -api-auth -tls-cert cert.pem -tls-key key.pem
-```
 
 ## Configuration
 

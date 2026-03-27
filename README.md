@@ -14,13 +14,13 @@ Beamdrop is a single-binary file storage server built with Go and React. Drop it
 
 ## Why Beamdrop?
 
-| Need | Beamdrop |
-|------|----------|
-| Self-hosted Google Drive | Web UI with file browser, sharing, and search |
-| S3 alternative | Full S3-compatible API with buckets, objects, and presigned URLs |
-| CI/CD artifact store | Single binary, runs anywhere, API-driven |
-| Quick file sharing | One command, optional password, shareable links |
-| Zero vendor lock-in | Your server, your data, AGPL-licensed |
+| Need                     | Beamdrop                                                         |
+| ------------------------ | ---------------------------------------------------------------- |
+| Self-hosted Google Drive | Web UI with file browser, sharing, and search                    |
+| S3 alternative           | Full S3-compatible API with buckets, objects, and presigned URLs |
+| CI/CD artifact store     | Single binary, runs anywhere, API-driven                         |
+| Quick file sharing       | One command, optional password, shareable links                  |
+| Zero vendor lock-in      | Your server, your data, AGPL-licensed                            |
 
 ## Features
 

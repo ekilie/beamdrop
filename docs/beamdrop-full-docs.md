@@ -107,37 +107,37 @@ docker compose up -d
 
 ### Command Line Flags
 
-| Flag | Description | Default |
-|------|-------------|---------|
-| `-dir` | Directory to share | `.` (current) |
-| `-port` | Server port | Auto-detect (prefers 7777) |
-| `-p` | Password for web authentication | None (disabled) |
-| `-api-auth` | Enable API key authentication for S3 API | `false` |
-| `-tls-cert` | Path to TLS certificate file | None |
-| `-tls-key` | Path to TLS private key file | None |
-| `-allowed-origins` | Comma-separated CORS origins | None (CORS disabled) |
-| `-db-path` | Path to database file or directory (directory auto-appends `beamdrop.db`) | `~/.beamdrop/beamdrop.db` |
-| `-rate-limit` | Requests/min per IP (0 = disabled) | `100` |
-| `-log-level` | `debug`, `info`, `warn`, `error` | `info` |
-| `-qr` | Enable QR code display | `false` |
-| `-shutdown-timeout` | Graceful shutdown timeout | `30s` |
-| `-v` | Show version | — |
-| `-h` | Show help | — |
+| Flag                | Description                                                               | Default                    |
+| ------------------- | ------------------------------------------------------------------------- | -------------------------- |
+| `-dir`              | Directory to share                                                        | `.` (current)              |
+| `-port`             | Server port                                                               | Auto-detect (prefers 7777) |
+| `-p`                | Password for web authentication                                           | None (disabled)            |
+| `-api-auth`         | Enable API key authentication for S3 API                                  | `false`                    |
+| `-tls-cert`         | Path to TLS certificate file                                              | None                       |
+| `-tls-key`          | Path to TLS private key file                                              | None                       |
+| `-allowed-origins`  | Comma-separated CORS origins                                              | None (CORS disabled)       |
+| `-db-path`          | Path to database file or directory (directory auto-appends `beamdrop.db`) | `~/.beamdrop/beamdrop.db`  |
+| `-rate-limit`       | Requests/min per IP (0 = disabled)                                        | `100`                      |
+| `-log-level`        | `debug`, `info`, `warn`, `error`                                          | `info`                     |
+| `-qr`               | Enable QR code display                                                    | `false`                    |
+| `-shutdown-timeout` | Graceful shutdown timeout                                                 | `30s`                      |
+| `-v`                | Show version                                                              | —                          |
+| `-h`                | Show help                                                                 | —                          |
 
 ### Environment Variables (Docker)
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `BEAMDROP_PORT` | `7777` | Server port |
-| `BEAMDROP_PASSWORD` | — | Enable password auth |
-| `BEAMDROP_LOG_LEVEL` | `info` | Log level |
-| `BEAMDROP_RATE_LIMIT` | `100` | Requests/min per IP |
-| `BEAMDROP_API_AUTH` | `false` | Enable S3 API key auth |
-| `BEAMDROP_QR` | `false` | Enable QR code display |
-| `BEAMDROP_ALLOWED_ORIGINS` | — | CORS origins |
-| `BEAMDROP_DB_PATH` | — | Path to database file or directory (directory auto-appends `beamdrop.db`) |
-| `BEAMDROP_TLS_CERT` | — | TLS certificate path |
-| `BEAMDROP_TLS_KEY` | — | TLS private key path |
+| Variable                   | Default | Description                                                               |
+| -------------------------- | ------- | ------------------------------------------------------------------------- |
+| `BEAMDROP_PORT`            | `7777`  | Server port                                                               |
+| `BEAMDROP_PASSWORD`        | —       | Enable password auth                                                      |
+| `BEAMDROP_LOG_LEVEL`       | `info`  | Log level                                                                 |
+| `BEAMDROP_RATE_LIMIT`      | `100`   | Requests/min per IP                                                       |
+| `BEAMDROP_API_AUTH`        | `false` | Enable S3 API key auth                                                    |
+| `BEAMDROP_QR`              | `false` | Enable QR code display                                                    |
+| `BEAMDROP_ALLOWED_ORIGINS` | —       | CORS origins                                                              |
+| `BEAMDROP_DB_PATH`         | —       | Path to database file or directory (directory auto-appends `beamdrop.db`) |
+| `BEAMDROP_TLS_CERT`        | —       | TLS certificate path                                                      |
+| `BEAMDROP_TLS_KEY`         | —       | TLS private key path                                                      |
 
 ### Quick Start Examples
 
@@ -174,6 +174,7 @@ Beamdrop has two independent auth systems:
 When started with `-p <password>`, all routes except health probes, login, and static assets require authentication.
 
 **Public routes (always accessible):**
+
 - `/` — Landing page
 - `/auth/login`, `/auth/status`
 - `/health/*`, `/ready`, `/metrics`
@@ -219,6 +220,7 @@ GET /files?path=<relative_path>
 | `path` | No | Relative path within the shared directory. Defaults to root. |
 
 **Response:**
+
 ```json
 [
   {
@@ -259,6 +261,7 @@ Content-Type: multipart/form-data
 | `file` | File | The file to upload (max 100 MB) |
 
 **Response:**
+
 ```json
 {
   "message": "Uploaded",
@@ -267,6 +270,7 @@ Content-Type: multipart/form-data
 ```
 
 **Errors:**
+
 - `413` — File too large (> 100 MB)
 - `415` — MIME type not allowed
 
@@ -297,6 +301,7 @@ Content-Type: application/json
 ```
 
 **Body:**
+
 ```json
 {
   "dirPath": "path/to/new-directory"
@@ -304,6 +309,7 @@ Content-Type: application/json
 ```
 
 **Response:**
+
 ```json
 {
   "message": "Directory created successfully",
@@ -321,6 +327,7 @@ Content-Type: application/json
 ```
 
 **Body:**
+
 ```json
 {
   "sourcePath": "old/location/file.txt",
@@ -329,6 +336,7 @@ Content-Type: application/json
 ```
 
 **Response:**
+
 ```json
 {
   "message": "File moved successfully",
@@ -347,6 +355,7 @@ Content-Type: application/json
 ```
 
 **Body:**
+
 ```json
 {
   "sourcePath": "original/file.txt",
@@ -355,6 +364,7 @@ Content-Type: application/json
 ```
 
 **Response:**
+
 ```json
 {
   "message": "File copied successfully",
@@ -373,6 +383,7 @@ Content-Type: application/json
 ```
 
 **Body:**
+
 ```json
 {
   "oldPath": "documents/report.txt",
@@ -381,6 +392,7 @@ Content-Type: application/json
 ```
 
 **Response:**
+
 ```json
 {
   "message": "Renamed successfully",
@@ -401,6 +413,7 @@ Content-Type: application/json
 ```
 
 **Body:**
+
 ```json
 {
   "sourcePath": "file-to-delete.txt"
@@ -408,6 +421,7 @@ Content-Type: application/json
 ```
 
 **Response:**
+
 ```json
 {
   "message": "File moved to trash successfully",
@@ -428,6 +442,7 @@ Content-Type: application/json
 ```
 
 **Body:**
+
 ```json
 {
   "filePath": "notes/readme.txt",
@@ -436,6 +451,7 @@ Content-Type: application/json
 ```
 
 **Response:**
+
 ```json
 {
   "message": "File written successfully",
@@ -460,6 +476,7 @@ GET /search?q=<query>&path=<optional_path>
 | `path` | No | Restrict search to a subdirectory |
 
 **Response:**
+
 ```json
 {
   "query": "report",
@@ -490,6 +507,7 @@ Content-Type: application/json
 ```
 
 **Body:**
+
 ```json
 {
   "filePath": "documents/important.pdf"
@@ -497,6 +515,7 @@ Content-Type: application/json
 ```
 
 **Response (starred):**
+
 ```json
 {
   "message": "File starred",
@@ -506,6 +525,7 @@ Content-Type: application/json
 ```
 
 **Response (unstarred):**
+
 ```json
 {
   "message": "File unstarred",
@@ -525,6 +545,7 @@ GET /starred
 ```
 
 **Response:**
+
 ```json
 {
   "starred": [
@@ -554,6 +575,7 @@ Content-Type: application/json
 ```
 
 **Body:**
+
 ```json
 {
   "name": "My CI Pipeline",
@@ -563,14 +585,15 @@ Content-Type: application/json
 }
 ```
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `name` | string | Yes | Human-readable name |
-| `permissions` | string | No | Comma-separated permissions |
-| `bucketScope` | string | No | Restrict key to a specific bucket |
-| `expiresIn` | number | No | Expiry in seconds (null = never) |
+| Field         | Type   | Required | Description                       |
+| ------------- | ------ | -------- | --------------------------------- |
+| `name`        | string | Yes      | Human-readable name               |
+| `permissions` | string | No       | Comma-separated permissions       |
+| `bucketScope` | string | No       | Restrict key to a specific bucket |
+| `expiresIn`   | number | No       | Expiry in seconds (null = never)  |
 
 **Response (201):**
+
 ```json
 {
   "id": 1,
@@ -594,6 +617,7 @@ GET /api/v1/keys
 ```
 
 **Response:**
+
 ```json
 {
   "keys": [
@@ -634,6 +658,7 @@ GET /api/v1/buckets
 ```
 
 **Response:**
+
 ```json
 {
   "buckets": [
@@ -653,12 +678,14 @@ PUT /api/v1/buckets/{bucket-name}
 ```
 
 **Bucket naming rules (S3-compatible):**
+
 - 3–63 characters
 - Lowercase letters, numbers, hyphens, dots
 - Must start and end with a letter or number
 - Cannot be an IP address format
 
 **Response (201):**
+
 ```json
 {
   "bucket": "my-bucket",
@@ -682,6 +709,7 @@ GET /api/v1/buckets/{bucket-name}
 ```
 
 **Response:**
+
 ```json
 {
   "bucket": "my-bucket",
@@ -698,6 +726,7 @@ DELETE /api/v1/buckets/{bucket-name}
 Bucket must be empty. **Response:** `204 No Content`
 
 **Errors:**
+
 - `409 BUCKET_NOT_EMPTY` — Bucket still has objects
 
 ---
@@ -714,6 +743,7 @@ Content-Type: <mime-type>
 ```
 
 **Response:**
+
 ```json
 {
   "bucket": "my-bucket",
@@ -745,6 +775,7 @@ GET /api/v1/buckets/{bucket}/{key}
 ```
 
 **Response Headers:**
+
 - `Content-Length` — File size in bytes
 - `Content-Type` — Detected MIME type
 - `Last-Modified` — Last modification time
@@ -782,6 +813,7 @@ GET /api/v1/buckets/{bucket}?prefix=<prefix>&delimiter=<delimiter>&max-keys=<n>
 | `max-keys` | `1000` | Maximum number of objects to return (max 1000) |
 
 **Response:**
+
 ```json
 {
   "bucket": "my-bucket",
@@ -797,9 +829,7 @@ GET /api/v1/buckets/{bucket}?prefix=<prefix>&delimiter=<delimiter>&max-keys=<n>
       "etag": "d41d8cd98f00b204e9800998ecf8427e"
     }
   ],
-  "commonPrefixes": [
-    "images/thumbnails/"
-  ]
+  "commonPrefixes": ["images/thumbnails/"]
 }
 ```
 
@@ -810,6 +840,7 @@ GET /api/v1/buckets/{bucket}?prefix=<prefix>&delimiter=<delimiter>&max-keys=<n>
 Access objects without full HMAC auth by generating a presigned URL with a time-limited token. The URL is self-contained — anyone with the link can access the file until it expires. No API key is required on the client side.
 
 **URL Format:**
+
 ```
 GET /api/v1/buckets/{bucket}/{key}?token=<token>&expires=<timestamp>&access_key=<access_key_id>
 ```
@@ -823,20 +854,20 @@ message = "<METHOD>\n<BUCKET>\n<KEY>\n<UNIX_TIMESTAMP>"
 token = Base64URL(HMAC-SHA256(secret_key, message))
 ```
 
-| Field | Example | Description |
-|-------|---------|-------------|
-| `METHOD` | `GET` | HTTP method the URL is valid for |
-| `BUCKET` | `photos` | Bucket name (not the full path) |
-| `KEY` | `vacation/beach.jpg` | Object key within the bucket |
-| `UNIX_TIMESTAMP` | `1707741600` | Expiration time as Unix seconds |
+| Field            | Example              | Description                      |
+| ---------------- | -------------------- | -------------------------------- |
+| `METHOD`         | `GET`                | HTTP method the URL is valid for |
+| `BUCKET`         | `photos`             | Bucket name (not the full path)  |
+| `KEY`            | `vacation/beach.jpg` | Object key within the bucket     |
+| `UNIX_TIMESTAMP` | `1707741600`         | Expiration time as Unix seconds  |
 
 #### Query Parameters
 
-| Parameter | Example | Description |
-|-----------|---------|-------------|
-| `token` | `aB3d...` | Base64URL-encoded HMAC-SHA256 token |
-| `expires` | `2026-02-12T12:00:00Z` | When the link expires (RFC 3339 or compact ISO `20260212T120000Z`) |
-| `access_key` | `BDK_abc123` | Access Key ID used to generate the token |
+| Parameter    | Example                | Description                                                        |
+| ------------ | ---------------------- | ------------------------------------------------------------------ |
+| `token`      | `aB3d...`              | Base64URL-encoded HMAC-SHA256 token                                |
+| `expires`    | `2026-02-12T12:00:00Z` | When the link expires (RFC 3339 or compact ISO `20260212T120000Z`) |
+| `access_key` | `BDK_abc123`           | Access Key ID used to generate the token                           |
 
 #### Example: Generate a presigned URL with cURL
 
@@ -868,12 +899,12 @@ curl "http://localhost:8090/api/v1/buckets/${BUCKET}/${KEY}?token=${TOKEN}&expir
 
 #### Suggested Expiry Durations
 
-| Use case | Duration |
-|----------|----------|
-| One-time download link (email, chat) | 1–24 hours |
-| Embedded in a web page (avatars) | 1–7 days |
-| Client portal / invoice download | 7–30 days |
-| Semi-permanent asset | 1–10 years (breaks on key rotation) |
+| Use case                             | Duration                            |
+| ------------------------------------ | ----------------------------------- |
+| One-time download link (email, chat) | 1–24 hours                          |
+| Embedded in a web page (avatars)     | 1–7 days                            |
+| Client portal / invoice download     | 7–30 days                           |
+| Semi-permanent asset                 | 1–10 years (breaks on key rotation) |
 
 #### Alternatives for Permanent Public Access
 
@@ -891,14 +922,14 @@ In addition to client-side HMAC presigned URLs (above), Beamdrop supports a **se
 
 #### Why Use Pretty URLs?
 
-| Feature | Client-Side (HMAC) | Server-Side (Pretty) |
-|---------|-------------------|---------------------|
-| URL format | `/api/v1/buckets/…?token=…&expires=…&access_key=…` | `/dl/{token}` |
-| Generated by | Client (no server call) | Server (`POST /api/v1/presign`) |
-| Max downloads | No | Yes |
-| Individually revocable | No | Yes |
-| Download tracking | No | Yes |
-| Survives API key rotation | No | Yes |
+| Feature                   | Client-Side (HMAC)                                 | Server-Side (Pretty)            |
+| ------------------------- | -------------------------------------------------- | ------------------------------- |
+| URL format                | `/api/v1/buckets/…?token=…&expires=…&access_key=…` | `/dl/{token}`                   |
+| Generated by              | Client (no server call)                            | Server (`POST /api/v1/presign`) |
+| Max downloads             | No                                                 | Yes                             |
+| Individually revocable    | No                                                 | Yes                             |
+| Download tracking         | No                                                 | Yes                             |
+| Survives API key rotation | No                                                 | Yes                             |
 
 #### Create a Pretty Presigned URL
 
@@ -916,6 +947,7 @@ curl -X POST https://server/api/v1/presign \
 ```
 
 Response:
+
 ```json
 {
   "token": "a1b2c3d4e5f6789a0b1c2d3e4f5a6b7c",
@@ -965,6 +997,7 @@ Content-Type: application/json
 ```
 
 **Body:**
+
 ```json
 {
   "path": "documents/report.pdf",
@@ -973,13 +1006,14 @@ Content-Type: application/json
 }
 ```
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `path` | string | Yes | Path to the file or folder |
-| `password` | string | No | Password-protect the link |
-| `expiresIn` | number | No | Expiry in seconds |
+| Field       | Type   | Required | Description                |
+| ----------- | ------ | -------- | -------------------------- |
+| `path`      | string | Yes      | Path to the file or folder |
+| `password`  | string | No       | Password-protect the link  |
+| `expiresIn` | number | No       | Expiry in seconds          |
 
 **Response (201):**
+
 ```json
 {
   "token": "abc123def456",
@@ -997,6 +1031,7 @@ GET /api/shares/list
 ```
 
 **Response:**
+
 ```json
 [
   {
@@ -1018,6 +1053,7 @@ DELETE /api/shares/delete?token=abc123def456
 ```
 
 **Response:**
+
 ```json
 {
   "message": "Shareable link deleted successfully"
@@ -1033,6 +1069,7 @@ GET /api/shares/access/{token}
 ```
 
 **If password-protected (no password provided):**
+
 ```json
 {
   "requiresPassword": true,
@@ -1041,10 +1078,13 @@ GET /api/shares/access/{token}
 ```
 
 **Provide password via POST or query parameter:**
+
 ```
 GET /api/shares/access/{token}?password=my-password
 ```
+
 or
+
 ```
 POST /api/shares/access/{token}
 Content-Type: application/json
@@ -1053,6 +1093,7 @@ Content-Type: application/json
 ```
 
 **File response (metadata):**
+
 ```json
 {
   "path": "documents/report.pdf",
@@ -1066,6 +1107,7 @@ Content-Type: application/json
 ```
 
 **Directory response:**
+
 ```json
 {
   "path": "documents",
@@ -1075,11 +1117,13 @@ Content-Type: application/json
 ```
 
 **Download mode:**
+
 ```
 GET /api/shares/access/{token}?mode=download
 ```
 
 **Inline preview mode:**
+
 ```
 GET /api/shares/access/{token}?mode=inline
 ```
@@ -1092,15 +1136,16 @@ GET /api/shares/access/{token}?mode=inline
 
 Kubernetes-compatible health probes with component-level status.
 
-| Endpoint | Purpose | Checks |
-|----------|---------|--------|
-| `GET /health` | Full health overview | Process, startup, database, storage, runtime |
-| `GET /health/live` | Liveness probe | Process is running (no I/O) |
-| `GET /health/ready` | Readiness probe | Database + storage accessible |
-| `GET /health/startup` | Startup probe | Server initialization complete |
-| `GET /ready` | Legacy readiness alias | Same as `/health/ready` |
+| Endpoint              | Purpose                | Checks                                       |
+| --------------------- | ---------------------- | -------------------------------------------- |
+| `GET /health`         | Full health overview   | Process, startup, database, storage, runtime |
+| `GET /health/live`    | Liveness probe         | Process is running (no I/O)                  |
+| `GET /health/ready`   | Readiness probe        | Database + storage accessible                |
+| `GET /health/startup` | Startup probe          | Server initialization complete               |
+| `GET /ready`          | Legacy readiness alias | Same as `/health/ready`                      |
 
 **Response Example:**
+
 ```json
 {
   "status": "healthy",
@@ -1126,6 +1171,7 @@ GET /stats
 ```
 
 **Response:**
+
 ```json
 {
   "downloads": 42,
@@ -1144,6 +1190,7 @@ ws://localhost:7777/ws/stats
 ```
 
 **Message format:**
+
 ```json
 {
   "downloads": 42,
@@ -1175,6 +1222,7 @@ GET /api/logs?limit=200&offset=0&level=error&search=upload
 | `search` | — | Case-insensitive message search |
 
 **Response:**
+
 ```json
 {
   "logs": [
@@ -1200,20 +1248,20 @@ GET /metrics
 
 Returns metrics in Prometheus text format. Key metrics:
 
-| Metric | Type | Description |
-|--------|------|-------------|
-| `beamdrop_requests_total` | counter | HTTP requests by method, path, status |
-| `beamdrop_request_duration_seconds` | histogram | Request latency (p50/p95/p99) |
-| `beamdrop_auth_failures_total` | counter | Auth failures by reason |
-| `beamdrop_uploads_total` | counter | Completed uploads |
-| `beamdrop_downloads_total` | counter | Completed downloads |
-| `beamdrop_upload_size_bytes` | histogram | Upload file sizes |
-| `beamdrop_storage_bytes` | gauge | Bytes used by stored files |
-| `beamdrop_objects_total` | gauge | Number of stored files |
-| `beamdrop_active_connections` | gauge | In-flight HTTP requests |
-| `beamdrop_storage_free_bytes` | gauge | Free disk space |
-| `beamdrop_storage_total_bytes` | gauge | Total disk capacity |
-| `beamdrop_goroutines_count` | gauge | Go goroutine count |
+| Metric                              | Type      | Description                           |
+| ----------------------------------- | --------- | ------------------------------------- |
+| `beamdrop_requests_total`           | counter   | HTTP requests by method, path, status |
+| `beamdrop_request_duration_seconds` | histogram | Request latency (p50/p95/p99)         |
+| `beamdrop_auth_failures_total`      | counter   | Auth failures by reason               |
+| `beamdrop_uploads_total`            | counter   | Completed uploads                     |
+| `beamdrop_downloads_total`          | counter   | Completed downloads                   |
+| `beamdrop_upload_size_bytes`        | histogram | Upload file sizes                     |
+| `beamdrop_storage_bytes`            | gauge     | Bytes used by stored files            |
+| `beamdrop_objects_total`            | gauge     | Number of stored files                |
+| `beamdrop_active_connections`       | gauge     | In-flight HTTP requests               |
+| `beamdrop_storage_free_bytes`       | gauge     | Free disk space                       |
+| `beamdrop_storage_total_bytes`      | gauge     | Total disk capacity                   |
+| `beamdrop_goroutines_count`         | gauge     | Go goroutine count                    |
 
 A pre-built Grafana dashboard is at `docs/grafana-dashboard.json`.
 
@@ -1240,7 +1288,7 @@ async function request(
     headers?: Record<string, string>;
     token?: string;
     formData?: FormData;
-  } = {}
+  } = {},
 ): Promise<any> {
   const headers: Record<string, string> = {
     ...options.headers,
@@ -1330,7 +1378,7 @@ console.log("Documents:", subFiles);
 ```ts
 async function uploadFile(
   filePath: string,
-  content: Blob | Buffer
+  content: Blob | Buffer,
 ): Promise<any> {
   const formData = new FormData();
   formData.append("file", new Blob([content]), filePath);
@@ -1343,7 +1391,7 @@ async function uploadFile(
 
 const uploadResult = await uploadFile(
   "hello.txt",
-  Buffer.from("Hello from Beamdrop!")
+  Buffer.from("Hello from Beamdrop!"),
 );
 console.log("Upload:", uploadResult);
 // => { message: "Uploaded", file: "hello.txt" }
@@ -1353,9 +1401,13 @@ console.log("Upload:", uploadResult);
 
 ```ts
 async function downloadFile(filename: string): Promise<string> {
-  const res = await request("GET", `/download?file=${encodeURIComponent(filename)}`, {
-    token: authToken,
-  });
+  const res = await request(
+    "GET",
+    `/download?file=${encodeURIComponent(filename)}`,
+    {
+      token: authToken,
+    },
+  );
   if (res instanceof Response) {
     return res.text();
   }
@@ -1394,7 +1446,7 @@ async function writeFile(filePath: string, content: string): Promise<any> {
 
 const writeResult = await writeFile(
   "projects/my-app/README.md",
-  "# My App\n\nBuilt with Beamdrop!"
+  "# My App\n\nBuilt with Beamdrop!",
 );
 console.log("Write:", writeResult);
 // => { message: "File written successfully", filePath: "projects/my-app/README.md" }
@@ -1403,10 +1455,7 @@ console.log("Write:", writeResult);
 ### Step 8 — Copy a File
 
 ```ts
-async function copyFile(
-  sourcePath: string,
-  targetPath: string
-): Promise<any> {
+async function copyFile(sourcePath: string, targetPath: string): Promise<any> {
   return request("POST", "/copy", {
     body: { sourcePath, targetPath },
     token: authToken,
@@ -1421,10 +1470,7 @@ console.log("Copy:", copyResult);
 ### Step 9 — Rename a File
 
 ```ts
-async function renameFile(
-  oldPath: string,
-  newName: string
-): Promise<any> {
+async function renameFile(oldPath: string, newName: string): Promise<any> {
   return request("POST", "/rename", {
     body: { oldPath, newName },
     token: authToken,
@@ -1439,10 +1485,7 @@ console.log("Rename:", renameResult);
 ### Step 10 — Move a File
 
 ```ts
-async function moveFile(
-  sourcePath: string,
-  targetPath: string
-): Promise<any> {
+async function moveFile(sourcePath: string, targetPath: string): Promise<any> {
   return request("POST", "/move", {
     body: { sourcePath, targetPath },
     token: authToken,
@@ -1451,7 +1494,7 @@ async function moveFile(
 
 const moveResult = await moveFile(
   "hello-copy.txt",
-  "projects/my-app/hello-copy.txt"
+  "projects/my-app/hello-copy.txt",
 );
 console.log("Move:", moveResult);
 // => { message: "File moved successfully", from: "hello-copy.txt", to: "projects/my-app/hello-copy.txt" }
@@ -1460,10 +1503,7 @@ console.log("Move:", moveResult);
 ### Step 11 — Search Files
 
 ```ts
-async function searchFiles(
-  query: string,
-  path: string = ""
-): Promise<any> {
+async function searchFiles(query: string, path: string = ""): Promise<any> {
   const params = new URLSearchParams({ q: query });
   if (path) params.set("path", path);
   return request("GET", `/search?${params}`, {
@@ -1525,7 +1565,7 @@ console.log("Trash:", trashResult);
 ```ts
 async function createShareLink(
   path: string,
-  options: { password?: string; expiresIn?: number } = {}
+  options: { password?: string; expiresIn?: number } = {},
 ): Promise<any> {
   return request("POST", "/api/shares", {
     body: { path, ...options },
@@ -1556,7 +1596,7 @@ console.log("Active share links:", shareLinks.length);
 // Access without auth — this is a public endpoint
 async function accessShareLink(
   shareToken: string,
-  password?: string
+  password?: string,
 ): Promise<any> {
   if (password) {
     return request("POST", `/api/shares/access/${shareToken}`, {
@@ -1594,7 +1634,7 @@ async function createAPIKey(
     permissions?: string;
     bucketScope?: string;
     expiresIn?: number;
-  } = {}
+  } = {},
 ): Promise<any> {
   return request("POST", "/api/v1/keys", {
     body: { name, ...options },
@@ -1620,7 +1660,7 @@ function generateSignature(
   secretKey: string,
   method: string,
   path: string,
-  timestamp: string
+  timestamp: string,
 ): string {
   const message = `${method}\n${path}\n${timestamp}`;
   const hmac = crypto.createHmac("sha256", secretKey);
@@ -1633,10 +1673,10 @@ function generatePresignedToken(
   method: string,
   bucket: string,
   key: string,
-  expiresAt: Date
+  expiresAt: Date,
 ): string {
   const message = `${method}\n${bucket}\n${key}\n${Math.floor(
-    expiresAt.getTime() / 1000
+    expiresAt.getTime() / 1000,
   )}`;
   const hmac = crypto.createHmac("sha256", secretKey);
   hmac.update(message);
@@ -1646,7 +1686,7 @@ function generatePresignedToken(
 async function s3Request(
   method: string,
   path: string,
-  options: { body?: any; stream?: ReadableStream | Buffer } = {}
+  options: { body?: any; stream?: ReadableStream | Buffer } = {},
 ): Promise<any> {
   const timestamp = new Date().toISOString();
   const signature = generateSignature(SECRET_KEY, method, path, timestamp);
@@ -1684,7 +1724,10 @@ console.log("Created bucket:", createBucket);
 // => { bucket: "my-bucket", created: "...", location: "/api/v1/buckets/my-bucket" }
 
 // Create a bucket if it doesn't exist (idempotent)
-const ensureBucket = await s3Request("PUT", "/api/v1/buckets/my-bucket?createIfNotExists=true");
+const ensureBucket = await s3Request(
+  "PUT",
+  "/api/v1/buckets/my-bucket?createIfNotExists=true",
+);
 console.log("Ensure bucket:", ensureBucket);
 // => 201: { bucket: "my-bucket", created: "...", location: "..." } if new
 // => 200: { bucket: "my-bucket", exists: true, location: "..." } if already existed
@@ -1696,7 +1739,12 @@ console.log("Buckets:", buckets);
 
 // Check if bucket exists (HEAD)
 const timestamp = new Date().toISOString();
-const sig = generateSignature(SECRET_KEY, "HEAD", "/api/v1/buckets/my-bucket", timestamp);
+const sig = generateSignature(
+  SECRET_KEY,
+  "HEAD",
+  "/api/v1/buckets/my-bucket",
+  timestamp,
+);
 const headRes = await fetch(`${BASE_URL}/api/v1/buckets/my-bucket`, {
   method: "HEAD",
   headers: {
@@ -1716,7 +1764,7 @@ const putObject = await s3Request(
   "/api/v1/buckets/my-bucket/configs/app.json",
   {
     stream: Buffer.from(JSON.stringify({ version: "1.0", debug: false })),
-  }
+  },
 );
 console.log("PUT object:", putObject);
 // => { bucket: "my-bucket", key: "configs/app.json", etag: "...", size: 38 }
@@ -1727,7 +1775,7 @@ const putTextFile = await s3Request(
   "/api/v1/buckets/my-bucket/docs/readme.txt",
   {
     stream: Buffer.from("Welcome to my bucket!"),
-  }
+  },
 );
 console.log("PUT text file:", putTextFile);
 
@@ -1736,7 +1784,7 @@ async function uploadToS3Multipart(
   bucket: string,
   key: string,
   content: Buffer,
-  filename: string
+  filename: string,
 ): Promise<any> {
   const timestamp = new Date().toISOString();
   const path = `/api/v1/buckets/${bucket}/${key}`;
@@ -1761,7 +1809,7 @@ const multipartResult = await uploadToS3Multipart(
   "my-bucket",
   "uploads/data.csv",
   Buffer.from("name,age\nAlice,30\nBob,25"),
-  "data.csv"
+  "data.csv",
 );
 console.log("Multipart upload:", multipartResult);
 ```
@@ -1769,14 +1817,8 @@ console.log("Multipart upload:", multipartResult);
 ### Step 21 — Download Objects
 
 ```ts
-async function downloadObject(
-  bucket: string,
-  key: string
-): Promise<string> {
-  const res = await s3Request(
-    "GET",
-    `/api/v1/buckets/${bucket}/${key}`
-  );
+async function downloadObject(bucket: string, key: string): Promise<string> {
+  const res = await s3Request("GET", `/api/v1/buckets/${bucket}/${key}`);
   if (res instanceof Response) {
     return res.text();
   }
@@ -1798,14 +1840,14 @@ console.log("All objects:", allObjects);
 // List with prefix filter
 const configObjects = await s3Request(
   "GET",
-  "/api/v1/buckets/my-bucket?prefix=configs/"
+  "/api/v1/buckets/my-bucket?prefix=configs/",
 );
 console.log("Config objects:", configObjects);
 
 // List virtual directories using delimiter
 const virtualDirs = await s3Request(
   "GET",
-  "/api/v1/buckets/my-bucket?delimiter=/"
+  "/api/v1/buckets/my-bucket?delimiter=/",
 );
 console.log("Top-level keys:", virtualDirs.contents);
 console.log("Virtual directories:", virtualDirs.commonPrefixes);
@@ -1814,7 +1856,7 @@ console.log("Virtual directories:", virtualDirs.commonPrefixes);
 // Paginate results
 const pagedObjects = await s3Request(
   "GET",
-  "/api/v1/buckets/my-bucket?max-keys=2"
+  "/api/v1/buckets/my-bucket?max-keys=2",
 );
 console.log("Truncated:", pagedObjects.isTruncated);
 ```
@@ -1824,7 +1866,7 @@ console.log("Truncated:", pagedObjects.isTruncated);
 ```ts
 async function headObject(
   bucket: string,
-  key: string
+  key: string,
 ): Promise<Record<string, string>> {
   const timestamp = new Date().toISOString();
   const path = `/api/v1/buckets/${bucket}/${key}`;
@@ -1862,7 +1904,7 @@ Beamdrop supports two methods for presigned URLs. You can use either or both.
 function generatePresignedUrl(
   bucket: string,
   key: string,
-  expiresInSeconds: number
+  expiresInSeconds: number,
 ): string {
   const expiresAt = new Date(Date.now() + expiresInSeconds * 1000);
   const token = generatePresignedToken(
@@ -1870,7 +1912,7 @@ function generatePresignedUrl(
     "GET",
     bucket,
     key,
-    expiresAt
+    expiresAt,
   );
   const expiresFormatted = expiresAt
     .toISOString()
@@ -1925,9 +1967,12 @@ Both methods produce URLs that anyone can download from without authentication. 
 // Delete a single object
 const deleteResult = await s3Request(
   "DELETE",
-  "/api/v1/buckets/my-bucket/uploads/data.csv"
+  "/api/v1/buckets/my-bucket/uploads/data.csv",
 );
-console.log("Deleted object:", deleteResult === null ? "success" : deleteResult);
+console.log(
+  "Deleted object:",
+  deleteResult === null ? "success" : deleteResult,
+);
 ```
 
 ### Step 26 — Delete Bucket
@@ -1938,7 +1983,10 @@ await s3Request("DELETE", "/api/v1/buckets/my-bucket/configs/app.json");
 await s3Request("DELETE", "/api/v1/buckets/my-bucket/docs/readme.txt");
 
 const deleteBucket = await s3Request("DELETE", "/api/v1/buckets/my-bucket");
-console.log("Deleted bucket:", deleteBucket === null ? "success" : deleteBucket);
+console.log(
+  "Deleted bucket:",
+  deleteBucket === null ? "success" : deleteBucket,
+);
 ```
 
 ### Step 27 — List & Delete API Keys
@@ -1998,12 +2046,14 @@ console.log("  Uptime since:", stats.startTime);
 ### Step 30 — Retrieve Logs
 
 ```ts
-async function getLogs(options: {
-  limit?: number;
-  offset?: number;
-  level?: string;
-  search?: string;
-} = {}): Promise<any> {
+async function getLogs(
+  options: {
+    limit?: number;
+    offset?: number;
+    level?: string;
+    search?: string;
+  } = {},
+): Promise<any> {
   const params = new URLSearchParams();
   if (options.limit) params.set("limit", String(options.limit));
   if (options.offset) params.set("offset", String(options.offset));
@@ -2087,72 +2137,72 @@ All API errors follow a structured JSON format:
 
 ### Categories
 
-| Category | Description |
-|----------|-------------|
-| `VALIDATION` | Input validation errors |
-| `STORAGE` | Storage/filesystem errors |
-| `AUTH` | Authentication/authorization |
-| `NOT_FOUND` | Resource not found |
-| `CONFLICT` | Resource conflict |
-| `RATE_LIMIT` | Rate limiting |
-| `INTERNAL` | Internal server errors |
-| `UNAVAILABLE` | Service unavailable |
+| Category      | Description                  |
+| ------------- | ---------------------------- |
+| `VALIDATION`  | Input validation errors      |
+| `STORAGE`     | Storage/filesystem errors    |
+| `AUTH`        | Authentication/authorization |
+| `NOT_FOUND`   | Resource not found           |
+| `CONFLICT`    | Resource conflict            |
+| `RATE_LIMIT`  | Rate limiting                |
+| `INTERNAL`    | Internal server errors       |
+| `UNAVAILABLE` | Service unavailable          |
 
 ### Validation Codes
 
-| Code | HTTP | Description |
-|------|------|-------------|
-| `INVALID_REQUEST` | 400 | Malformed request body or parameters |
-| `INVALID_BUCKET_NAME` | 400 | Bucket name doesn't meet naming rules |
-| `INVALID_OBJECT_KEY` | 400 | Invalid object key (empty, traversal, too long) |
-| `INVALID_PATH` | 400 | Path traversal attempt or invalid path |
-| `INVALID_MIME_TYPE` | 415 | File MIME type not in allowed list |
-| `FILE_TOO_LARGE` | 413 | File exceeds 100 MB limit |
-| `MISSING_FIELD` | 400 | Required field missing |
+| Code                  | HTTP | Description                                     |
+| --------------------- | ---- | ----------------------------------------------- |
+| `INVALID_REQUEST`     | 400  | Malformed request body or parameters            |
+| `INVALID_BUCKET_NAME` | 400  | Bucket name doesn't meet naming rules           |
+| `INVALID_OBJECT_KEY`  | 400  | Invalid object key (empty, traversal, too long) |
+| `INVALID_PATH`        | 400  | Path traversal attempt or invalid path          |
+| `INVALID_MIME_TYPE`   | 415  | File MIME type not in allowed list              |
+| `FILE_TOO_LARGE`      | 413  | File exceeds 100 MB limit                       |
+| `MISSING_FIELD`       | 400  | Required field missing                          |
 
 ### Storage Codes
 
-| Code | HTTP | Description |
-|------|------|-------------|
-| `OBJECT_LOCKED` | 423 | Object is locked by another operation |
-| `WRITE_FAILED` | 500 | Failed to write file |
-| `READ_FAILED` | 500 | Failed to read file |
-| `DELETE_FAILED` | 500 | Failed to delete file |
-| `IO_ERROR` | 500 | General filesystem I/O error |
+| Code            | HTTP | Description                           |
+| --------------- | ---- | ------------------------------------- |
+| `OBJECT_LOCKED` | 423  | Object is locked by another operation |
+| `WRITE_FAILED`  | 500  | Failed to write file                  |
+| `READ_FAILED`   | 500  | Failed to read file                   |
+| `DELETE_FAILED` | 500  | Failed to delete file                 |
+| `IO_ERROR`      | 500  | General filesystem I/O error          |
 
 ### Auth Codes
 
-| Code | HTTP | Description |
-|------|------|-------------|
-| `UNAUTHORIZED` | 401 | Missing or invalid auth credentials |
-| `FORBIDDEN` | 403 | Invalid signature or insufficient permissions |
-| `INVALID_TOKEN` | 401 | JWT token is invalid |
-| `TOKEN_EXPIRED` | 401 | JWT or timestamp expired |
-| `INVALID_API_KEY` | 401 | API key not found or disabled |
-| `INVALID_PASSWORD` | 401 | Wrong password |
+| Code               | HTTP | Description                                   |
+| ------------------ | ---- | --------------------------------------------- |
+| `UNAUTHORIZED`     | 401  | Missing or invalid auth credentials           |
+| `FORBIDDEN`        | 403  | Invalid signature or insufficient permissions |
+| `INVALID_TOKEN`    | 401  | JWT token is invalid                          |
+| `TOKEN_EXPIRED`    | 401  | JWT or timestamp expired                      |
+| `INVALID_API_KEY`  | 401  | API key not found or disabled                 |
+| `INVALID_PASSWORD` | 401  | Wrong password                                |
 
 ### Not Found Codes
 
-| Code | HTTP | Description |
-|------|------|-------------|
-| `BUCKET_NOT_FOUND` | 404 | Bucket doesn't exist |
-| `OBJECT_NOT_FOUND` | 404 | Object doesn't exist |
-| `FILE_NOT_FOUND` | 404 | File doesn't exist |
+| Code               | HTTP | Description          |
+| ------------------ | ---- | -------------------- |
+| `BUCKET_NOT_FOUND` | 404  | Bucket doesn't exist |
+| `OBJECT_NOT_FOUND` | 404  | Object doesn't exist |
+| `FILE_NOT_FOUND`   | 404  | File doesn't exist   |
 
 ### Conflict Codes
 
-| Code | HTTP | Description |
-|------|------|-------------|
-| `BUCKET_EXISTS` | 409 | Bucket already exists |
-| `FILE_EXISTS` | 409 | File already exists |
-| `BUCKET_NOT_EMPTY` | 409 | Cannot delete non-empty bucket |
+| Code               | HTTP | Description                    |
+| ------------------ | ---- | ------------------------------ |
+| `BUCKET_EXISTS`    | 409  | Bucket already exists          |
+| `FILE_EXISTS`      | 409  | File already exists            |
+| `BUCKET_NOT_EMPTY` | 409  | Cannot delete non-empty bucket |
 
 ### Rate Limit Codes
 
-| Code | HTTP | Description |
-|------|------|-------------|
-| `RATE_LIMIT_EXCEEDED` | 429 | Per-IP rate limit exceeded |
-| `TOO_MANY_REQUESTS` | 429 | Too many requests |
+| Code                  | HTTP | Description                |
+| --------------------- | ---- | -------------------------- |
+| `RATE_LIMIT_EXCEEDED` | 429  | Per-IP rate limit exceeded |
+| `TOO_MANY_REQUESTS`   | 429  | Too many requests          |
 
 ---
 
@@ -2218,7 +2268,8 @@ services:
       BEAMDROP_TLS_CERT: ${BEAMDROP_TLS_CERT:-}
       BEAMDROP_TLS_KEY: ${BEAMDROP_TLS_KEY:-}
     healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://localhost:7777/health/live"]
+      test:
+        ["CMD", "wget", "-q", "--spider", "http://localhost:7777/health/live"]
       interval: 30s
       timeout: 5s
       retries: 3
@@ -2274,60 +2325,60 @@ Import the Grafana dashboard from `docs/grafana-dashboard.json`.
 
 When rate limiting is enabled (`-rate-limit N`):
 
-| Tier | Rate | Routes |
-|------|------|--------|
-| General | N req/min | All endpoints |
-| Auth | N/20 req/min (min 1) | `/auth/login` |
-| Upload | N/10 req/min (min 1) | `/upload` |
+| Tier    | Rate                 | Routes        |
+| ------- | -------------------- | ------------- |
+| General | N req/min            | All endpoints |
+| Auth    | N/20 req/min (min 1) | `/auth/login` |
+| Upload  | N/10 req/min (min 1) | `/upload`     |
 
 ---
 
 ## API Endpoint Summary
 
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| `GET` | `/auth/status` | No | Check auth status |
-| `POST` | `/auth/login` | No | Login with password |
-| `POST` | `/auth/logout` | Yes | Logout (clear session) |
-| `GET` | `/files` | Yes | List files |
-| `POST` | `/upload` | Yes | Upload file |
-| `GET` | `/download` | Yes | Download file |
-| `POST` | `/mkdir` | Yes | Create directory |
-| `POST` | `/move` | Yes | Move file |
-| `POST` | `/copy` | Yes | Copy file |
-| `POST` | `/rename` | Yes | Rename file |
-| `POST` | `/trash` | Yes | Trash file |
-| `POST` | `/write` | Yes | Write file content |
-| `GET` | `/search` | Yes | Search files |
-| `POST` | `/star` | Yes | Toggle star |
-| `GET` | `/starred` | Yes | List starred files |
-| `POST` | `/api/shares` | Yes | Create shareable link |
-| `GET` | `/api/shares/list` | Yes | List shareable links |
-| `DELETE` | `/api/shares/delete` | Yes | Delete shareable link |
-| `GET/POST` | `/api/shares/access/{token}` | No | Access shared content |
-| `GET` | `/api/v1/keys` | Session | List API keys |
-| `POST` | `/api/v1/keys` | Session | Create API key |
-| `DELETE` | `/api/v1/keys` | Session | Delete API key |
-| `GET` | `/api/v1/buckets` | API Key | List buckets |
-| `PUT` | `/api/v1/buckets/{name}` | API Key | Create bucket |
-| `PUT` | `/api/v1/buckets/{name}?createIfNotExists=true` | API Key | Create bucket (idempotent) |
-| `HEAD` | `/api/v1/buckets/{name}` | API Key | Check bucket |
-| `GET` | `/api/v1/buckets/{name}` | API Key | Bucket info / list objects |
-| `DELETE` | `/api/v1/buckets/{name}` | API Key | Delete bucket |
-| `PUT` | `/api/v1/buckets/{b}/{key}` | API Key | Upload object (raw) |
-| `POST` | `/api/v1/buckets/{b}/{key}` | API Key | Upload object (multipart) |
-| `GET` | `/api/v1/buckets/{b}/{key}` | API Key | Download object |
-| `HEAD` | `/api/v1/buckets/{b}/{key}` | API Key | Object metadata |
-| `DELETE` | `/api/v1/buckets/{b}/{key}` | API Key | Delete object |
-| `GET` | `/stats` | Yes | Server statistics |
-| `GET` | `/api/logs` | Yes | Server logs |
-| `GET` | `/health` | No | Health overview |
-| `GET` | `/health/live` | No | Liveness probe |
-| `GET` | `/health/ready` | No | Readiness probe |
-| `GET` | `/health/startup` | No | Startup probe |
-| `GET` | `/metrics` | No | Prometheus metrics |
-| `WS` | `/ws/stats` | No | Real-time stats |
+| Method     | Endpoint                                        | Auth    | Description                |
+| ---------- | ----------------------------------------------- | ------- | -------------------------- |
+| `GET`      | `/auth/status`                                  | No      | Check auth status          |
+| `POST`     | `/auth/login`                                   | No      | Login with password        |
+| `POST`     | `/auth/logout`                                  | Yes     | Logout (clear session)     |
+| `GET`      | `/files`                                        | Yes     | List files                 |
+| `POST`     | `/upload`                                       | Yes     | Upload file                |
+| `GET`      | `/download`                                     | Yes     | Download file              |
+| `POST`     | `/mkdir`                                        | Yes     | Create directory           |
+| `POST`     | `/move`                                         | Yes     | Move file                  |
+| `POST`     | `/copy`                                         | Yes     | Copy file                  |
+| `POST`     | `/rename`                                       | Yes     | Rename file                |
+| `POST`     | `/trash`                                        | Yes     | Trash file                 |
+| `POST`     | `/write`                                        | Yes     | Write file content         |
+| `GET`      | `/search`                                       | Yes     | Search files               |
+| `POST`     | `/star`                                         | Yes     | Toggle star                |
+| `GET`      | `/starred`                                      | Yes     | List starred files         |
+| `POST`     | `/api/shares`                                   | Yes     | Create shareable link      |
+| `GET`      | `/api/shares/list`                              | Yes     | List shareable links       |
+| `DELETE`   | `/api/shares/delete`                            | Yes     | Delete shareable link      |
+| `GET/POST` | `/api/shares/access/{token}`                    | No      | Access shared content      |
+| `GET`      | `/api/v1/keys`                                  | Session | List API keys              |
+| `POST`     | `/api/v1/keys`                                  | Session | Create API key             |
+| `DELETE`   | `/api/v1/keys`                                  | Session | Delete API key             |
+| `GET`      | `/api/v1/buckets`                               | API Key | List buckets               |
+| `PUT`      | `/api/v1/buckets/{name}`                        | API Key | Create bucket              |
+| `PUT`      | `/api/v1/buckets/{name}?createIfNotExists=true` | API Key | Create bucket (idempotent) |
+| `HEAD`     | `/api/v1/buckets/{name}`                        | API Key | Check bucket               |
+| `GET`      | `/api/v1/buckets/{name}`                        | API Key | Bucket info / list objects |
+| `DELETE`   | `/api/v1/buckets/{name}`                        | API Key | Delete bucket              |
+| `PUT`      | `/api/v1/buckets/{b}/{key}`                     | API Key | Upload object (raw)        |
+| `POST`     | `/api/v1/buckets/{b}/{key}`                     | API Key | Upload object (multipart)  |
+| `GET`      | `/api/v1/buckets/{b}/{key}`                     | API Key | Download object            |
+| `HEAD`     | `/api/v1/buckets/{b}/{key}`                     | API Key | Object metadata            |
+| `DELETE`   | `/api/v1/buckets/{b}/{key}`                     | API Key | Delete object              |
+| `GET`      | `/stats`                                        | Yes     | Server statistics          |
+| `GET`      | `/api/logs`                                     | Yes     | Server logs                |
+| `GET`      | `/health`                                       | No      | Health overview            |
+| `GET`      | `/health/live`                                  | No      | Liveness probe             |
+| `GET`      | `/health/ready`                                 | No      | Readiness probe            |
+| `GET`      | `/health/startup`                               | No      | Startup probe              |
+| `GET`      | `/metrics`                                      | No      | Prometheus metrics         |
+| `WS`       | `/ws/stats`                                     | No      | Real-time stats            |
 
 ---
 
-*Beamdrop is licensed under the [GNU Affero General Public License v3.0](../LICENSE).*
+_Beamdrop is licensed under the [GNU Affero General Public License v3.0](../LICENSE)._

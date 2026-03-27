@@ -4,6 +4,8 @@
 
 Developers and teams can upload, manage, and share files via a web UI or an S3-compatible API—no cloud vendor needed, no complex setup.
 
+![BeamDrop Preview](docs/beamdrop.jpeg)
+
 ## Overview
 
 Beamdrop is a single-binary file storage server built with Go and React. Drop it on any machine, point it at a directory, and you instantly get a web-based file manager with sharing, real-time stats, and a full S3-compatible API. Use it as a personal cloud drive, artifact storage for CI/CD pipelines, a self-hosted alternative to Google Drive, or a drop-in S3 replacement for development and production.

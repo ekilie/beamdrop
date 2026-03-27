@@ -1,4 +1,4 @@
-# Beamdrop — Complete Documentation
+# Beamdrop Complete Documentation
 
 > Turn any VPS or server into a private, self-hosted Google Drive + S3 in seconds. Built with Go and React.
 
@@ -53,13 +53,13 @@
 
 Beamdrop is a self-hosted file sharing server that provides:
 
-- **Web UI** — A modern React-based file browser for interactive management
-- **File Management API** — REST endpoints for uploading, downloading, moving, copying, renaming, and searching files
-- **S3-Compatible API** — Bucket/object storage with HMAC-SHA256 signed authentication
-- **Shareable Links** — Generate unique URLs to share files with optional password protection and expiry
-- **Real-time Stats** — WebSocket-powered live dashboard
-- **Health Probes** — Kubernetes-compatible liveness, readiness, and startup probes
-- **Prometheus Metrics** — Full observability with request counters, latency histograms, and storage gauges
+- **Web UI** A modern React-based file browser for interactive management
+- **File Management API** REST endpoints for uploading, downloading, moving, copying, renaming, and searching files
+- **S3-Compatible API** Bucket/object storage with HMAC-SHA256 signed authentication
+- **Shareable Links** Generate unique URLs to share files with optional password protection and expiry
+- **Real-time Stats** WebSocket-powered live dashboard
+- **Health Probes** Kubernetes-compatible liveness, readiness, and startup probes
+- **Prometheus Metrics** Full observability with request counters, latency histograms, and storage gauges
 
 ---
 
@@ -121,23 +121,23 @@ docker compose up -d
 | `-log-level`        | `debug`, `info`, `warn`, `error`                                          | `info`                     |
 | `-qr`               | Enable QR code display                                                    | `false`                    |
 | `-shutdown-timeout` | Graceful shutdown timeout                                                 | `30s`                      |
-| `-v`                | Show version                                                              | —                          |
-| `-h`                | Show help                                                                 | —                          |
+| `-v`                | Show version                                                              |                            |
+| `-h`                | Show help                                                                 |                            |
 
 ### Environment Variables (Docker)
 
 | Variable                   | Default | Description                                                               |
 | -------------------------- | ------- | ------------------------------------------------------------------------- |
 | `BEAMDROP_PORT`            | `7777`  | Server port                                                               |
-| `BEAMDROP_PASSWORD`        | —       | Enable password auth                                                      |
+| `BEAMDROP_PASSWORD`        |         | Enable password auth                                                      |
 | `BEAMDROP_LOG_LEVEL`       | `info`  | Log level                                                                 |
 | `BEAMDROP_RATE_LIMIT`      | `100`   | Requests/min per IP                                                       |
 | `BEAMDROP_API_AUTH`        | `false` | Enable S3 API key auth                                                    |
 | `BEAMDROP_QR`              | `false` | Enable QR code display                                                    |
-| `BEAMDROP_ALLOWED_ORIGINS` | —       | CORS origins                                                              |
-| `BEAMDROP_DB_PATH`         | —       | Path to database file or directory (directory auto-appends `beamdrop.db`) |
-| `BEAMDROP_TLS_CERT`        | —       | TLS certificate path                                                      |
-| `BEAMDROP_TLS_KEY`         | —       | TLS private key path                                                      |
+| `BEAMDROP_ALLOWED_ORIGINS` |         | CORS origins                                                              |
+| `BEAMDROP_DB_PATH`         |         | Path to database file or directory (directory auto-appends `beamdrop.db`) |
+| `BEAMDROP_TLS_CERT`        |         | TLS certificate path                                                      |
+| `BEAMDROP_TLS_KEY`         |         | TLS private key path                                                      |
 
 ### Quick Start Examples
 
@@ -166,8 +166,8 @@ beamdrop -dir /data -p secret -api-auth -tls-cert cert.pem -tls-key key.pem -rat
 
 Beamdrop has two independent auth systems:
 
-1. **Password Auth** — Protects the web UI and file management endpoints. Uses JWT tokens stored in cookies.
-2. **API Key Auth** — Protects the S3-compatible API (`/api/v1/buckets/*`). Uses HMAC-SHA256 signed requests.
+1. **Password Auth** Protects the web UI and file management endpoints. Uses JWT tokens stored in cookies.
+2. **API Key Auth** Protects the S3-compatible API (`/api/v1/buckets/*`). Uses HMAC-SHA256 signed requests.
 
 ### Password Auth (Web UI)
 
@@ -175,12 +175,12 @@ When started with `-p <password>`, all routes except health probes, login, and s
 
 **Public routes (always accessible):**
 
-- `/` — Landing page
+- `/` Landing page
 - `/auth/login`, `/auth/status`
 - `/health/*`, `/ready`, `/metrics`
 - `/assets/*`, `/static/*`
-- `/share/*` — Shareable link pages
-- `/api/shares/access/*` — Shareable link API (has own password protection)
+- `/share/*` Shareable link pages
+- `/api/shares/access/*` Shareable link API (has own password protection)
 
 ### API Key Auth (S3 API)
 
@@ -271,8 +271,8 @@ Content-Type: multipart/form-data
 
 **Errors:**
 
-- `413` — File too large (> 100 MB)
-- `415` — MIME type not allowed
+- `413` File too large (> 100 MB)
+- `415` MIME type not allowed
 
 ---
 
@@ -727,7 +727,7 @@ Bucket must be empty. **Response:** `204 No Content`
 
 **Errors:**
 
-- `409 BUCKET_NOT_EMPTY` — Bucket still has objects
+- `409 BUCKET_NOT_EMPTY` Bucket still has objects
 
 ---
 
@@ -776,10 +776,10 @@ GET /api/v1/buckets/{bucket}/{key}
 
 **Response Headers:**
 
-- `Content-Length` — File size in bytes
-- `Content-Type` — Detected MIME type
-- `Last-Modified` — Last modification time
-- `ETag` — MD5 hash of content
+- `Content-Length` File size in bytes
+- `Content-Type` Detected MIME type
+- `Last-Modified` Last modification time
+- `ETag` MD5 hash of content
 
 Supports HTTP Range requests for partial content downloads.
 
@@ -808,8 +808,8 @@ GET /api/v1/buckets/{bucket}?prefix=<prefix>&delimiter=<delimiter>&max-keys=<n>
 **Query Parameters:**
 | Parameter | Default | Description |
 |-----------|---------|-------------|
-| `prefix` | — | Filter objects by key prefix |
-| `delimiter` | — | Group keys by delimiter (e.g., `/` for virtual directories) |
+| `prefix` | | Filter objects by key prefix |
+| `delimiter` | | Group keys by delimiter (e.g., `/` for virtual directories) |
 | `max-keys` | `1000` | Maximum number of objects to return (max 1000) |
 
 **Response:**
@@ -837,7 +837,7 @@ GET /api/v1/buckets/{bucket}?prefix=<prefix>&delimiter=<delimiter>&max-keys=<n>
 
 ### Presigned URLs
 
-Access objects without full HMAC auth by generating a presigned URL with a time-limited token. The URL is self-contained — anyone with the link can access the file until it expires. No API key is required on the client side.
+Access objects without full HMAC auth by generating a presigned URL with a time-limited token. The URL is self-contained anyone with the link can access the file until it expires. No API key is required on the client side.
 
 **URL Format:**
 
@@ -890,12 +890,12 @@ curl "http://localhost:8090/api/v1/buckets/${BUCKET}/${KEY}?token=${TOKEN}&expir
 
 #### Important Behaviors & Limitations
 
-- **Always expires** — there is no "permanent" presigned URL. The server always checks `time.Now().After(expiresAt)`.
-- **Tied to API key** — deleting, disabling, or rotating the API key invalidates all presigned URLs generated with it.
-- **Method-specific** — a token generated for `GET` will not work for `PUT`. The HTTP method is part of the signature.
-- **Key-specific** — a token for `photos/pic.jpg` cannot be reused for `photos/other.jpg`.
-- **No maximum expiry** — you can set expiry far in the future (e.g. 10 years), but it breaks on key rotation.
-- **No individual revocation** — to invalidate a leaked URL, either delete the object or disable the entire API key.
+- **Always expires** there is no "permanent" presigned URL. The server always checks `time.Now().After(expiresAt)`.
+- **Tied to API key** deleting, disabling, or rotating the API key invalidates all presigned URLs generated with it.
+- **Method-specific** a token generated for `GET` will not work for `PUT`. The HTTP method is part of the signature.
+- **Key-specific** a token for `photos/pic.jpg` cannot be reused for `photos/other.jpg`.
+- **No maximum expiry** you can set expiry far in the future (e.g. 10 years), but it breaks on key rotation.
+- **No individual revocation** to invalidate a leaked URL, either delete the object or disable the entire API key.
 
 #### Suggested Expiry Durations
 
@@ -910,9 +910,9 @@ curl "http://localhost:8090/api/v1/buckets/${BUCKET}/${KEY}?token=${TOKEN}&expir
 
 If you need files to be permanently accessible without signing:
 
-1. **Run without `-api-auth`** — all S3 API reads are public
-2. **Proxy through your app** — your backend authenticates to Beamdrop and streams the file to end users
-3. **Use shareable links** — the `/api/shares` feature provides token-based sharing with optional password protection and expiry
+1. **Run without `-api-auth`** all S3 API reads are public
+2. **Proxy through your app** your backend authenticates to Beamdrop and streams the file to end users
+3. **Use shareable links** the `/api/shares` feature provides token-based sharing with optional password protection and expiry
 
 ---
 
@@ -961,7 +961,7 @@ Response:
 }
 ```
 
-#### Download (Public — No Auth)
+#### Download (Public No Auth)
 
 ```bash
 curl https://server/dl/a1b2c3d4e5f6789a0b1c2d3e4f5a6b7c -o beach.jpg
@@ -1062,7 +1062,7 @@ DELETE /api/shares/delete?token=abc123def456
 
 ### Access Link
 
-Public endpoint — no authentication required (but may require link password).
+Public endpoint no authentication required (but may require link password).
 
 ```
 GET /api/shares/access/{token}
@@ -1218,8 +1218,8 @@ GET /api/logs?limit=200&offset=0&level=error&search=upload
 |-----------|---------|-------------|
 | `limit` | `200` | Max entries (max 5000) |
 | `offset` | `0` | Entries to skip (for pagination) |
-| `level` | — | Filter by log level |
-| `search` | — | Case-insensitive message search |
+| `level` | | Filter by log level |
+| `search` | | Case-insensitive message search |
 
 **Response:**
 
@@ -1269,7 +1269,7 @@ A pre-built Grafana dashboard is at `docs/grafana-dashboard.json`.
 
 ## Full Usage Flow (TypeScript)
 
-Below is a complete TypeScript example demonstrating **every feature** of the Beamdrop API — from authentication through file management, S3 buckets/objects, shareable links, and monitoring.
+Below is a complete TypeScript example demonstrating **every feature** of the Beamdrop API from authentication through file management, S3 buckets/objects, shareable links, and monitoring.
 
 ### Setup
 
@@ -1301,7 +1301,7 @@ async function request(
   let body: any;
   if (options.formData) {
     body = options.formData;
-    // Don't set Content-Type for FormData — the runtime sets the boundary
+    // Don't set Content-Type for FormData   the runtime sets the boundary
   } else if (options.body) {
     headers["Content-Type"] = "application/json";
     body = JSON.stringify(options.body);
@@ -1317,7 +1317,7 @@ async function request(
 }
 ```
 
-### Step 1 — Check Auth Status
+### Step 1 Check Auth Status
 
 ```ts
 // Check if password authentication is enabled and whether we're authenticated
@@ -1333,7 +1333,7 @@ console.log("Auth enabled:", authStatus.authEnabled);
 console.log("Authenticated:", authStatus.authenticated);
 ```
 
-### Step 2 — Login (If Password Auth Enabled)
+### Step 2 Login (If Password Auth Enabled)
 
 ```ts
 async function login(password: string): Promise<{
@@ -1355,7 +1355,7 @@ if (authStatus.authEnabled && !authStatus.authenticated) {
 }
 ```
 
-### Step 3 — List Files
+### Step 3 List Files
 
 ```ts
 // List files at the root directory
@@ -1373,7 +1373,7 @@ const subFiles = await listFiles("documents");
 console.log("Documents:", subFiles);
 ```
 
-### Step 4 — Upload a File
+### Step 4 Upload a File
 
 ```ts
 async function uploadFile(
@@ -1397,7 +1397,7 @@ console.log("Upload:", uploadResult);
 // => { message: "Uploaded", file: "hello.txt" }
 ```
 
-### Step 5 — Download a File
+### Step 5 Download a File
 
 ```ts
 async function downloadFile(filename: string): Promise<string> {
@@ -1419,7 +1419,7 @@ console.log("Downloaded content:", content);
 // => "Hello from Beamdrop!"
 ```
 
-### Step 6 — Create a Directory
+### Step 6 Create a Directory
 
 ```ts
 async function mkdir(dirPath: string): Promise<any> {
@@ -1434,7 +1434,7 @@ console.log("Mkdir:", mkdirResult);
 // => { message: "Directory created successfully", path: "projects/my-app" }
 ```
 
-### Step 7 — Write a File (Inline Content)
+### Step 7 Write a File (Inline Content)
 
 ```ts
 async function writeFile(filePath: string, content: string): Promise<any> {
@@ -1452,7 +1452,7 @@ console.log("Write:", writeResult);
 // => { message: "File written successfully", filePath: "projects/my-app/README.md" }
 ```
 
-### Step 8 — Copy a File
+### Step 8 Copy a File
 
 ```ts
 async function copyFile(sourcePath: string, targetPath: string): Promise<any> {
@@ -1467,7 +1467,7 @@ console.log("Copy:", copyResult);
 // => { message: "File copied successfully", from: "hello.txt", to: "hello-backup.txt" }
 ```
 
-### Step 9 — Rename a File
+### Step 9 Rename a File
 
 ```ts
 async function renameFile(oldPath: string, newName: string): Promise<any> {
@@ -1482,7 +1482,7 @@ console.log("Rename:", renameResult);
 // => { message: "Renamed successfully", oldPath: "hello-backup.txt", newPath: "hello-copy.txt" }
 ```
 
-### Step 10 — Move a File
+### Step 10 Move a File
 
 ```ts
 async function moveFile(sourcePath: string, targetPath: string): Promise<any> {
@@ -1500,7 +1500,7 @@ console.log("Move:", moveResult);
 // => { message: "File moved successfully", from: "hello-copy.txt", to: "projects/my-app/hello-copy.txt" }
 ```
 
-### Step 11 — Search Files
+### Step 11 Search Files
 
 ```ts
 async function searchFiles(query: string, path: string = ""): Promise<any> {
@@ -1516,7 +1516,7 @@ console.log("Search results:", searchResult.count, "files found");
 searchResult.results.forEach((f: any) => console.log(" -", f.path));
 ```
 
-### Step 12 — Star & Unstar Files
+### Step 12 Star & Unstar Files
 
 ```ts
 async function toggleStar(filePath: string): Promise<any> {
@@ -1545,7 +1545,7 @@ console.log("Unstar:", unstarResult);
 // => { message: "File unstarred", filePath: "hello.txt", starred: "false" }
 ```
 
-### Step 13 — Trash a File
+### Step 13 Trash a File
 
 ```ts
 async function trashFile(sourcePath: string): Promise<any> {
@@ -1560,7 +1560,7 @@ console.log("Trash:", trashResult);
 // => { message: "File moved to trash successfully", from: "hello.txt", to: ".beamdrop_trash/hello.txt" }
 ```
 
-### Step 14 — Create Shareable Links
+### Step 14 Create Shareable Links
 
 ```ts
 async function createShareLink(
@@ -1590,10 +1590,10 @@ const shareLinks = await listShareLinks();
 console.log("Active share links:", shareLinks.length);
 ```
 
-### Step 15 — Access a Shareable Link (Public)
+### Step 15 Access a Shareable Link (Public)
 
 ```ts
-// Access without auth — this is a public endpoint
+// Access without auth   this is a public endpoint
 async function accessShareLink(
   shareToken: string,
   password?: string,
@@ -1612,7 +1612,7 @@ console.log("Shared file:", shareAccess);
 // => { path: "projects/my-app/README.md", name: "README.md", size: "36 B", ... }
 ```
 
-### Step 16 — Delete a Shareable Link
+### Step 16 Delete a Shareable Link
 
 ```ts
 async function deleteShareLink(shareToken: string): Promise<any> {
@@ -1625,7 +1625,7 @@ const deleteShareResult = await deleteShareLink(shareResult.token);
 console.log("Deleted share:", deleteShareResult);
 ```
 
-### Step 17 — Create an API Key (S3 API)
+### Step 17 Create an API Key (S3 API)
 
 ```ts
 async function createAPIKey(
@@ -1653,7 +1653,7 @@ const ACCESS_KEY_ID: string = apiKey.accessKeyId;
 const SECRET_KEY: string = apiKey.secretKey;
 ```
 
-### Step 18 — HMAC Signature Helper
+### Step 18 HMAC Signature Helper
 
 ```ts
 function generateSignature(
@@ -1715,7 +1715,7 @@ async function s3Request(
 }
 ```
 
-### Step 19 — Create & Manage Buckets
+### Step 19 Create & Manage Buckets
 
 ```ts
 // Create a bucket
@@ -1755,7 +1755,7 @@ const headRes = await fetch(`${BASE_URL}/api/v1/buckets/my-bucket`, {
 console.log("Bucket exists:", headRes.status === 200);
 ```
 
-### Step 20 — Upload Objects to Buckets
+### Step 20 Upload Objects to Buckets
 
 ```ts
 // Upload with raw body (PUT)
@@ -1769,7 +1769,7 @@ const putObject = await s3Request(
 console.log("PUT object:", putObject);
 // => { bucket: "my-bucket", key: "configs/app.json", etag: "...", size: 38 }
 
-// Upload with raw body — text file
+// Upload with raw body   text file
 const putTextFile = await s3Request(
   "PUT",
   "/api/v1/buckets/my-bucket/docs/readme.txt",
@@ -1814,7 +1814,7 @@ const multipartResult = await uploadToS3Multipart(
 console.log("Multipart upload:", multipartResult);
 ```
 
-### Step 21 — Download Objects
+### Step 21 Download Objects
 
 ```ts
 async function downloadObject(bucket: string, key: string): Promise<string> {
@@ -1830,7 +1830,7 @@ console.log("Object content:", objectContent);
 // => "Welcome to my bucket!"
 ```
 
-### Step 22 — List Objects with Prefix & Delimiter
+### Step 22 List Objects with Prefix & Delimiter
 
 ```ts
 // List all objects
@@ -1861,7 +1861,7 @@ const pagedObjects = await s3Request(
 console.log("Truncated:", pagedObjects.isTruncated);
 ```
 
-### Step 23 — Object Metadata (HEAD)
+### Step 23 Object Metadata (HEAD)
 
 ```ts
 async function headObject(
@@ -1894,7 +1894,7 @@ console.log("Object metadata:", metadata);
 // => { contentLength: "38", contentType: "application/json", ... }
 ```
 
-### Step 24 — Generate Presigned URL
+### Step 24 Generate Presigned URL
 
 Beamdrop supports two methods for presigned URLs. You can use either or both.
 
@@ -1961,7 +1961,7 @@ console.log("Active URLs:", allUrls.count);
 
 Both methods produce URLs that anyone can download from without authentication. Use client-side for quick ephemeral links; use server-side for clean URLs with download tracking and revocation.
 
-### Step 25 — Delete Objects
+### Step 25 Delete Objects
 
 ```ts
 // Delete a single object
@@ -1975,7 +1975,7 @@ console.log(
 );
 ```
 
-### Step 26 — Delete Bucket
+### Step 26 Delete Bucket
 
 ```ts
 // Must delete all objects first, then delete the empty bucket
@@ -1989,7 +1989,7 @@ console.log(
 );
 ```
 
-### Step 27 — List & Delete API Keys
+### Step 27 List & Delete API Keys
 
 ```ts
 // List all API keys
@@ -2011,7 +2011,7 @@ await deleteAPIKey(ACCESS_KEY_ID);
 console.log("API key deleted");
 ```
 
-### Step 28 — Health Checks
+### Step 28 Health Checks
 
 ```ts
 // Full health overview
@@ -2019,7 +2019,7 @@ const health = await request("GET", "/health");
 console.log("Health:", health.status);
 console.log("Components:", health.components);
 
-// Liveness probe (cheapest — no I/O)
+// Liveness probe (cheapest   no I/O)
 const live = await request("GET", "/health/live");
 console.log("Live:", live.status);
 
@@ -2032,7 +2032,7 @@ const startup = await request("GET", "/health/startup");
 console.log("Startup:", startup.status);
 ```
 
-### Step 29 — Server Stats
+### Step 29 Server Stats
 
 ```ts
 const stats = await request("GET", "/stats", { token: authToken });
@@ -2043,7 +2043,7 @@ console.log("  Requests:", stats.requests);
 console.log("  Uptime since:", stats.startTime);
 ```
 
-### Step 30 — Retrieve Logs
+### Step 30 Retrieve Logs
 
 ```ts
 async function getLogs(
@@ -2072,7 +2072,7 @@ const uploadLogs = await getLogs({ search: "upload", limit: 50 });
 console.log("Upload logs:", uploadLogs.returned);
 ```
 
-### Step 31 — WebSocket Real-Time Stats
+### Step 31 WebSocket Real-Time Stats
 
 ```ts
 function connectStatsWebSocket(): void {
@@ -2109,7 +2109,7 @@ function connectStatsWebSocket(): void {
 connectStatsWebSocket();
 ```
 
-### Step 32 — Logout
+### Step 32 Logout
 
 ```ts
 async function logout(): Promise<any> {

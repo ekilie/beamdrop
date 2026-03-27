@@ -3,6 +3,7 @@
 ## Overview
 
 Transform beamdrop into a lightweight, self-hosted S3-compatible file storage server. This enables programmatic file uploads/downloads via API, making it useful for:
+
 - Application file storage backend
 - CI/CD artifact storage
 - Backup destination
@@ -11,6 +12,7 @@ Transform beamdrop into a lightweight, self-hosted S3-compatible file storage se
 ## Core Concepts
 
 ### Storage Hierarchy
+
 ```
 shared_directory/
 ├── .beamdrop_data/          # Internal data (existing trash, db, etc.)
@@ -26,18 +28,20 @@ shared_directory/
 ```
 
 ### Terminology Mapping
-| S3 Term | Beamdrop Term | Implementation |
-|---------|---------------|----------------|
-| Bucket | Bucket | Directory under `buckets/` |
-| Object | Object/File | File within bucket directory |
-| Key | Object Key | Relative file path within bucket |
-| Prefix | Prefix | Directory path within bucket |
+
+| S3 Term | Beamdrop Term | Implementation                   |
+| ------- | ------------- | -------------------------------- |
+| Bucket  | Bucket        | Directory under `buckets/`       |
+| Object  | Object/File   | File within bucket directory     |
+| Key     | Object Key    | Relative file path within bucket |
+| Prefix  | Prefix        | Directory path within bucket     |
 
 ---
 
 ## Authentication & Authorization
 
 ### API Keys
+
 ```go
 // pkg/db/api_keys.go
 type APIKey struct {
@@ -62,6 +66,7 @@ type Permission struct {
 ### Authentication Methods
 
 #### 1. Header-Based (Recommended)
+
 ```http
 GET /api/v1/buckets/my-bucket/file.txt HTTP/1.1
 Authorization: Bearer <access_key_id>:<signature>
@@ -69,6 +74,7 @@ X-Beamdrop-Date: 2026-02-09T12:00:00Z
 ```
 
 #### 2. Query String (Presigned URLs)
+
 ```
 /api/v1/buckets/my-bucket/file.txt?token=BASE64URL_TOKEN&expires=2026-02-09T13:00:00Z&access_key=BDK_xxx
 ```
@@ -78,6 +84,7 @@ Presigned URLs embed authentication into the URL itself. The `token` is generate
 Alternatively, you can use the server-side presigned URL registry to create short `/dl/{token}` URLs. See [Server-Side Pretty Presigned URLs](#server-side-pretty-presigned-urls-url-registry).
 
 ### Signature Generation (Simplified HMAC)
+
 ```go
 // Client-side signature generation
 func GenerateSignature(secretKey, method, path, timestamp string) string {
@@ -93,6 +100,7 @@ func GenerateSignature(secretKey, method, path, timestamp string) string {
 ## API Endpoints
 
 ### Base URL
+
 ```
 /api/v1/
 ```
@@ -100,6 +108,7 @@ func GenerateSignature(secretKey, method, path, timestamp string) string {
 ### Bucket Operations
 
 #### Create Bucket
+
 ```http
 PUT /api/v1/buckets/{bucket-name}
 Authorization: Bearer <credentials>
@@ -112,42 +121,47 @@ Content-Type: application/json
 ```
 
 **Response:**
+
 ```json
 {
-    "bucket": "my-bucket",
-    "created": "2026-02-09T12:00:00Z",
-    "location": "/api/v1/buckets/my-bucket"
+  "bucket": "my-bucket",
+  "created": "2026-02-09T12:00:00Z",
+  "location": "/api/v1/buckets/my-bucket"
 }
 ```
 
 #### List Buckets
+
 ```http
 GET /api/v1/buckets
 Authorization: Bearer <credentials>
 ```
 
 **Response:**
+
 ```json
 {
-    "buckets": [
-        {
-            "name": "my-bucket",
-            "createdAt": "2026-02-09T12:00:00Z",
-            "objectCount": 42,
-            "totalSize": "1.2 GB"
-        }
-    ],
-    "count": 1
+  "buckets": [
+    {
+      "name": "my-bucket",
+      "createdAt": "2026-02-09T12:00:00Z",
+      "objectCount": 42,
+      "totalSize": "1.2 GB"
+    }
+  ],
+  "count": 1
 }
 ```
 
 #### Delete Bucket
+
 ```http
 DELETE /api/v1/buckets/{bucket-name}
 Authorization: Bearer <credentials>
 ```
 
 #### Get Bucket Info
+
 ```http
 HEAD /api/v1/buckets/{bucket-name}
 Authorization: Bearer <credentials>
@@ -158,6 +172,7 @@ Authorization: Bearer <credentials>
 ### Object Operations
 
 #### Upload Object (PUT)
+
 ```http
 PUT /api/v1/buckets/{bucket}/{key}
 Authorization: Bearer <credentials>
@@ -169,17 +184,19 @@ X-Beamdrop-Meta-Custom: value
 ```
 
 **Response:**
+
 ```json
 {
-    "bucket": "my-bucket",
-    "key": "images/photo.jpg",
-    "etag": "d41d8cd98f00b204e9800998ecf8427e",
-    "size": 1048576,
-    "url": "/api/v1/buckets/my-bucket/images/photo.jpg"
+  "bucket": "my-bucket",
+  "key": "images/photo.jpg",
+  "etag": "d41d8cd98f00b204e9800998ecf8427e",
+  "size": 1048576,
+  "url": "/api/v1/buckets/my-bucket/images/photo.jpg"
 }
 ```
 
 #### Upload Object (Multipart Form)
+
 ```http
 POST /api/v1/buckets/{bucket}/{key}
 Authorization: Bearer <credentials>
@@ -189,6 +206,7 @@ file=@photo.jpg
 ```
 
 #### Download Object
+
 ```http
 GET /api/v1/buckets/{bucket}/{key}
 Authorization: Bearer <credentials>
@@ -196,18 +214,21 @@ Range: bytes=0-1023  # Optional: partial download
 ```
 
 #### Delete Object
+
 ```http
 DELETE /api/v1/buckets/{bucket}/{key}
 Authorization: Bearer <credentials>
 ```
 
 #### Get Object Metadata
+
 ```http
 HEAD /api/v1/buckets/{bucket}/{key}
 Authorization: Bearer <credentials>
 ```
 
 **Response Headers:**
+
 ```
 Content-Length: 1048576
 Content-Type: image/jpeg
@@ -217,30 +238,30 @@ X-Beamdrop-Meta-Custom: value
 ```
 
 #### List Objects
+
 ```http
 GET /api/v1/buckets/{bucket}?prefix=images/&delimiter=/&max-keys=100&continuation-token=xxx
 Authorization: Bearer <credentials>
 ```
 
 **Response:**
+
 ```json
 {
-    "bucket": "my-bucket",
-    "prefix": "images/",
-    "delimiter": "/",
-    "maxKeys": 100,
-    "isTruncated": false,
-    "contents": [
-        {
-            "key": "images/photo1.jpg",
-            "size": 1048576,
-            "lastModified": "2026-02-09T12:00:00Z",
-            "etag": "d41d8cd98f00b204e9800998ecf8427e"
-        }
-    ],
-    "commonPrefixes": [
-        {"prefix": "images/thumbnails/"}
-    ]
+  "bucket": "my-bucket",
+  "prefix": "images/",
+  "delimiter": "/",
+  "maxKeys": 100,
+  "isTruncated": false,
+  "contents": [
+    {
+      "key": "images/photo1.jpg",
+      "size": 1048576,
+      "lastModified": "2026-02-09T12:00:00Z",
+      "etag": "d41d8cd98f00b204e9800998ecf8427e"
+    }
+  ],
+  "commonPrefixes": [{ "prefix": "images/thumbnails/" }]
 }
 ```
 
@@ -248,7 +269,7 @@ Authorization: Bearer <credentials>
 
 ### Presigned URLs
 
-Presigned URLs let you share a time-limited, self-contained download (or upload) link. The URL embeds all authentication info — the recipient does not need an API key.
+Presigned URLs let you share a time-limited, self-contained download (or upload) link. The URL embeds all authentication info the recipient does not need an API key.
 
 **Presigned URLs are generated client-side**, not via a server endpoint. The server only verifies them on access.
 
@@ -264,6 +285,7 @@ Step 4: Build the URL          → /api/v1/buckets/{bucket}/{key}?token=TOKEN&ex
 #### Token Generation (All Languages)
 
 **Go:**
+
 ```go
 message := fmt.Sprintf("%s\n%s\n%s\n%d", method, bucket, key, expiresAt.Unix())
 h := hmac.New(sha256.New, []byte(secretKey))
@@ -272,6 +294,7 @@ token := base64.URLEncoding.EncodeToString(h.Sum(nil))
 ```
 
 **Python:**
+
 ```python
 import hmac, hashlib, base64
 message = f"{method}\n{bucket}\n{key}\n{int(expires_at.timestamp())}"
@@ -281,6 +304,7 @@ token = base64.urlsafe_b64encode(
 ```
 
 **PHP:**
+
 ```php
 $message = implode("\n", [$method, $bucket, $key, (string) $expiresAtUnix]);
 $token = rtrim(strtr(base64_encode(
@@ -289,14 +313,18 @@ $token = rtrim(strtr(base64_encode(
 ```
 
 **JavaScript / Node.js:**
+
 ```javascript
-const crypto = require('crypto');
-const message = [method, bucket, key, Math.floor(expiresAt / 1000)].join('\n');
-const token = crypto.createHmac('sha256', secretKey)
-  .update(message).digest('base64url');
+const crypto = require("crypto");
+const message = [method, bucket, key, Math.floor(expiresAt / 1000)].join("\n");
+const token = crypto
+  .createHmac("sha256", secretKey)
+  .update(message)
+  .digest("base64url");
 ```
 
 **cURL (bash):**
+
 ```bash
 EXPIRES_UNIX=$(date -d '+1 hour' +%s)
 MESSAGE="GET\n${BUCKET}\n${KEY}\n${EXPIRES_UNIX}"
@@ -306,15 +334,15 @@ curl "http://server:8090/api/v1/buckets/${BUCKET}/${KEY}?token=${TOKEN}&expires=
 
 #### Query Parameters
 
-| Parameter | Required | Description |
-|-----------|----------|-------------|
-| `token` | Yes | Base64URL-encoded HMAC-SHA256 token |
-| `expires` | Yes | Expiration timestamp — RFC 3339 (`2026-02-09T13:00:00Z`) or compact ISO (`20260209T130000Z`) |
-| `access_key` | Yes | Access Key ID (`BDK_xxx`) used to generate the token |
+| Parameter    | Required | Description                                                                                |
+| ------------ | -------- | ------------------------------------------------------------------------------------------ |
+| `token`      | Yes      | Base64URL-encoded HMAC-SHA256 token                                                        |
+| `expires`    | Yes      | Expiration timestamp RFC 3339 (`2026-02-09T13:00:00Z`) or compact ISO (`20260209T130000Z`) |
+| `access_key` | Yes      | Access Key ID (`BDK_xxx`) used to generate the token                                       |
 
 #### Server Verification Flow
 
-1. Check `expires` — if `time.Now()` is past the timestamp, reject with 403
+1. Check `expires` if `time.Now()` is past the timestamp, reject with 403
 2. Extract bucket and key from the URL path
 3. Look up the API key by `access_key`
 4. Recompute the token using the stored secret key
@@ -322,29 +350,29 @@ curl "http://server:8090/api/v1/buckets/${BUCKET}/${KEY}?token=${TOKEN}&expires=
 
 #### Important Behaviors & Limitations
 
-| Behavior | Detail |
-|----------|--------|
-| **Always expires** | There is no "permanent" presigned URL. The server always checks `time.Now().After(expiresAt)`. |
-| **Tied to API key** | Deleting, disabling, or rotating the API key invalidates all presigned URLs generated with it. |
-| **Method-specific** | A token for `GET` will not work for `PUT` — the method is part of the signed message. |
-| **Key-specific** | A token for `photos/pic.jpg` will not work for `photos/other.jpg`. |
-| **No maximum expiry** | You can set expiry to year 2100, but URLs break on key rotation. |
-| **No individual revocation** | To revoke a URL, delete the object or disable the API key. |
+| Behavior                     | Detail                                                                                         |
+| ---------------------------- | ---------------------------------------------------------------------------------------------- |
+| **Always expires**           | There is no "permanent" presigned URL. The server always checks `time.Now().After(expiresAt)`. |
+| **Tied to API key**          | Deleting, disabling, or rotating the API key invalidates all presigned URLs generated with it. |
+| **Method-specific**          | A token for `GET` will not work for `PUT` the method is part of the signed message.            |
+| **Key-specific**             | A token for `photos/pic.jpg` will not work for `photos/other.jpg`.                             |
+| **No maximum expiry**        | You can set expiry to year 2100, but URLs break on key rotation.                               |
+| **No individual revocation** | To revoke a URL, delete the object or disable the API key.                                     |
 
 #### Suggested Expiry Durations
 
-| Use case | Duration |
-|----------|----------|
-| One-time download link (email, chat) | 1–24 hours |
-| Embedded in web page (avatars) | 1–7 days |
-| Client portal / invoice download | 7–30 days |
-| Semi-permanent asset | 1–10 years (fragile — breaks on key rotation) |
+| Use case                             | Duration                                    |
+| ------------------------------------ | ------------------------------------------- |
+| One-time download link (email, chat) | 1–24 hours                                  |
+| Embedded in web page (avatars)       | 1–7 days                                    |
+| Client portal / invoice download     | 7–30 days                                   |
+| Semi-permanent asset                 | 1–10 years (fragile breaks on key rotation) |
 
 #### Alternatives to Presigned URLs for Permanent Access
 
-- **Disable `-api-auth`** — all reads are public, no signing needed
-- **Proxy through your app** — your backend fetches from Beamdrop and streams to the client
-- **Use shareable links** — Beamdrop's `/api/shares` feature provides token-based sharing with optional password protection
+- **Disable `-api-auth`** all reads are public, no signing needed
+- **Proxy through your app** your backend fetches from Beamdrop and streams to the client
+- **Use shareable links** Beamdrop's `/api/shares` feature provides token-based sharing with optional password protection
 
 ---
 
@@ -360,19 +388,19 @@ Client-side HMAC presigned URLs work but produce long URLs with token, expires, 
 - Individually revocable (`DELETE /api/v1/presign/{token}`)
 - Trackable (server counts downloads)
 - Support max download limits
-- **Not tied to any API key** — they survive key rotation
+- **Not tied to any API key** they survive key rotation
 
 Both methods can be used together in the same application.
 
 #### API Endpoints
 
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| `POST` | `/api/v1/presign` | HMAC | Create a pretty presigned URL |
-| `GET` | `/api/v1/presign` | HMAC | List all pretty presigned URLs |
-| `GET` | `/api/v1/presign/{token}` | HMAC | Get details of a specific URL |
-| `DELETE` | `/api/v1/presign/{token}` | HMAC | Revoke a pretty presigned URL |
-| `GET` | `/dl/{token}` | None | Download a file (public) |
+| Method   | Endpoint                  | Auth | Description                    |
+| -------- | ------------------------- | ---- | ------------------------------ |
+| `POST`   | `/api/v1/presign`         | HMAC | Create a pretty presigned URL  |
+| `GET`    | `/api/v1/presign`         | HMAC | List all pretty presigned URLs |
+| `GET`    | `/api/v1/presign/{token}` | HMAC | Get details of a specific URL  |
+| `DELETE` | `/api/v1/presign/{token}` | HMAC | Revoke a pretty presigned URL  |
+| `GET`    | `/dl/{token}`             | None | Download a file (public)       |
 
 #### Create Request
 
@@ -389,13 +417,13 @@ Content-Type: application/json
 }
 ```
 
-| Field | Required | Description |
-|-------|----------|-------------|
-| `bucket` | Yes | Bucket name |
-| `key` | Yes | Object key |
-| `method` | No | `GET` (default) or `PUT` |
-| `expiresIn` | No | Seconds until expiry (null = no expiry) |
-| `maxDownloads` | No | Max download count (null = unlimited) |
+| Field          | Required | Description                             |
+| -------------- | -------- | --------------------------------------- |
+| `bucket`       | Yes      | Bucket name                             |
+| `key`          | Yes      | Object key                              |
+| `method`       | No       | `GET` (default) or `PUT`                |
+| `expiresIn`    | No       | Seconds until expiry (null = no expiry) |
+| `maxDownloads` | No       | Max download count (null = unlimited)   |
 
 #### Create Response
 
@@ -414,21 +442,22 @@ Content-Type: application/json
 
 #### Comparison: Client-Side vs Server-Side Presigned URLs
 
-| Feature | Client-Side (HMAC) | Server-Side (Pretty) |
-|---------|-------------------|---------------------|
-| URL format | `/api/v1/buckets/…?token=…&expires=…&access_key=…` | `/dl/{token}` |
-| Generated by | Client (no server call) | Server (`POST /api/v1/presign`) |
-| Max downloads | No | Yes |
-| Individually revocable | No | Yes |
-| Download tracking | No | Yes |
-| Survives API key rotation | No | Yes |
-| Works without registry feature | Yes | No |
+| Feature                        | Client-Side (HMAC)                                 | Server-Side (Pretty)            |
+| ------------------------------ | -------------------------------------------------- | ------------------------------- |
+| URL format                     | `/api/v1/buckets/…?token=…&expires=…&access_key=…` | `/dl/{token}`                   |
+| Generated by                   | Client (no server call)                            | Server (`POST /api/v1/presign`) |
+| Max downloads                  | No                                                 | Yes                             |
+| Individually revocable         | No                                                 | Yes                             |
+| Download tracking              | No                                                 | Yes                             |
+| Survives API key rotation      | No                                                 | Yes                             |
+| Works without registry feature | Yes                                                | No                              |
 
 ---
 
 ### API Key Management
 
 #### Create API Key
+
 ```http
 POST /api/v1/keys
 Authorization: Bearer <admin-credentials>
@@ -445,22 +474,25 @@ Content-Type: application/json
 ```
 
 **Response:**
+
 ```json
 {
-    "name": "CI Pipeline",
-    "accessKeyId": "BDK_a1b2c3d4e5f6g7h8",
-    "secretKey": "sk_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
-    "warning": "Save the secret key now. It cannot be retrieved later."
+  "name": "CI Pipeline",
+  "accessKeyId": "BDK_a1b2c3d4e5f6g7h8",
+  "secretKey": "sk_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+  "warning": "Save the secret key now. It cannot be retrieved later."
 }
 ```
 
 #### List API Keys
+
 ```http
 GET /api/v1/keys
 Authorization: Bearer <admin-credentials>
 ```
 
 #### Revoke API Key
+
 ```http
 DELETE /api/v1/keys/{access_key_id}
 Authorization: Bearer <admin-credentials>
@@ -471,6 +503,7 @@ Authorization: Bearer <admin-credentials>
 ## Implementation Structure
 
 ### Directory Layout
+
 ```
 beam/server/
 ├── handlers/
@@ -524,7 +557,7 @@ type ObjectMeta struct {
     VersionID   string    `gorm:"size:64"`            // For versioning
     IsDeleted   bool      `gorm:"default:false"`      // Soft delete for versioning
     CreatedAt   time.Time
-    
+
     // Composite unique index
     // UNIQUE(bucket_id, key, version_id)
 }
@@ -535,6 +568,7 @@ type ObjectMeta struct {
 ## Implementation Phases
 
 ### Phase 1: Core API (MVP)
+
 1. **API Key Management**
    - Create/list/revoke keys via CLI flag or config
    - Simple auth middleware
@@ -551,6 +585,7 @@ type ObjectMeta struct {
    - List objects
 
 ### Phase 2: Enhanced Features
+
 1. **Presigned URLs**
    - Client-side HMAC presigned URLs (time-limited signed query params)
    - Server-side pretty presigned URLs (`POST /api/v1/presign` → `/dl/{token}`)
@@ -561,10 +596,11 @@ type ObjectMeta struct {
    - Action-based permissions
 
 3. **Object Metadata**
-   - Custom headers (X-Beamdrop-Meta-*)
+   - Custom headers (X-Beamdrop-Meta-\*)
    - Content-Type handling
 
 ### Phase 3: Advanced Features
+
 1. **Multipart Uploads**
    - Initiate/upload parts/complete
    - For files > 100MB
@@ -594,13 +630,14 @@ beam -dir /data -api-enabled -api-port 9000
 ```
 
 ### Config File (Optional)
+
 ```yaml
 # ~/.beamdrop/config.yaml
 api:
   enabled: true
-  port: 9000  # Optional separate port
+  port: 9000 # Optional separate port
   maxUploadSize: 5GB
-  
+
   # Initial admin key (created on first run)
   adminKey:
     name: "Admin"
@@ -612,6 +649,7 @@ api:
 ## Client Usage Examples
 
 ### cURL
+
 ```bash
 # Upload file
 curl -X PUT \
@@ -636,41 +674,42 @@ curl "http://192.168.1.100:8080/dl/a1b2c3d4e5f6789a..."
 ```
 
 ### JavaScript/TypeScript
+
 ```typescript
-import { BeamdropClient } from 'beamdrop-sdk'; // Future SDK
+import { BeamdropClient } from "beamdrop-sdk"; // Future SDK
 
 const client = new BeamdropClient({
-  endpoint: 'http://192.168.1.100:8080',
-  accessKeyId: 'BDK_xxx',
-  secretKey: 'sk_xxx',
+  endpoint: "http://192.168.1.100:8080",
+  accessKeyId: "BDK_xxx",
+  secretKey: "sk_xxx",
 });
 
 // Upload
 await client.putObject({
-  bucket: 'uploads',
-  key: 'images/photo.jpg',
+  bucket: "uploads",
+  key: "images/photo.jpg",
   body: fileBuffer,
-  contentType: 'image/jpeg',
+  contentType: "image/jpeg",
 });
 
 // Download
 const data = await client.getObject({
-  bucket: 'uploads',
-  key: 'images/photo.jpg',
+  bucket: "uploads",
+  key: "images/photo.jpg",
 });
 
 // Presigned URL for frontend upload (client-side HMAC)
 const { url } = await client.getSignedUrl({
-  bucket: 'uploads',
-  key: 'user-uploads/avatar.png',
-  method: 'PUT',
+  bucket: "uploads",
+  key: "user-uploads/avatar.png",
+  method: "PUT",
   expiresIn: 3600,
 });
 
 // Pretty presigned URL (server-side registry)
 const { url: prettyUrl } = await client.createPresignedUrl({
-  bucket: 'uploads',
-  key: 'user-uploads/avatar.png',
+  bucket: "uploads",
+  key: "user-uploads/avatar.png",
   expiresIn: 3600,
   maxDownloads: 50,
 });
@@ -678,6 +717,7 @@ const { url: prettyUrl } = await client.createPresignedUrl({
 ```
 
 ### Python
+
 ```python
 import requests
 import hmac
@@ -688,13 +728,13 @@ from datetime import datetime
 def upload_file(endpoint, access_key, secret_key, bucket, key, file_path):
     url = f"{endpoint}/api/v1/buckets/{bucket}/{key}"
     timestamp = datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')
-    
+
     # Generate signature
     message = f"PUT\n/api/v1/buckets/{bucket}/{key}\n{timestamp}"
     signature = base64.b64encode(
         hmac.new(secret_key.encode(), message.encode(), hashlib.sha256).digest()
     ).decode()
-    
+
     with open(file_path, 'rb') as f:
         response = requests.put(
             url,
@@ -714,27 +754,28 @@ def upload_file(endpoint, access_key, secret_key, bucket, key, file_path):
 
 ```json
 {
-    "error": {
-        "code": "BucketNotFound",
-        "message": "The specified bucket does not exist",
-        "resource": "my-bucket",
-        "requestId": "req_abc123"
-    }
+  "error": {
+    "code": "BucketNotFound",
+    "message": "The specified bucket does not exist",
+    "resource": "my-bucket",
+    "requestId": "req_abc123"
+  }
 }
 ```
 
 ### Error Codes
-| Code | HTTP Status | Description |
-|------|-------------|-------------|
-| `AccessDenied` | 403 | Invalid credentials or insufficient permissions |
-| `BucketAlreadyExists` | 409 | Bucket name is taken |
-| `BucketNotEmpty` | 409 | Cannot delete non-empty bucket |
-| `BucketNotFound` | 404 | Bucket doesn't exist |
-| `InvalidBucketName` | 400 | Invalid bucket name format |
-| `InvalidRequest` | 400 | Malformed request |
-| `KeyNotFound` | 404 | Object doesn't exist |
-| `SignatureExpired` | 401 | Request timestamp too old |
-| `SignatureMismatch` | 401 | Invalid signature |
+
+| Code                  | HTTP Status | Description                                     |
+| --------------------- | ----------- | ----------------------------------------------- |
+| `AccessDenied`        | 403         | Invalid credentials or insufficient permissions |
+| `BucketAlreadyExists` | 409         | Bucket name is taken                            |
+| `BucketNotEmpty`      | 409         | Cannot delete non-empty bucket                  |
+| `BucketNotFound`      | 404         | Bucket doesn't exist                            |
+| `InvalidBucketName`   | 400         | Invalid bucket name format                      |
+| `InvalidRequest`      | 400         | Malformed request                               |
+| `KeyNotFound`         | 404         | Object doesn't exist                            |
+| `SignatureExpired`    | 401         | Request timestamp too old                       |
+| `SignatureMismatch`   | 401         | Invalid signature                               |
 
 ---
 
@@ -752,6 +793,7 @@ def upload_file(endpoint, access_key, secret_key, bucket, key, file_path):
 ## Compatibility Notes
 
 This is a **simplified** S3-like API, not full AWS S3 compatibility. Key differences:
+
 - Simplified signature scheme (not AWS Signature V4)
 - No IAM policies (simple permission model)
 - No bucket policies or ACLs

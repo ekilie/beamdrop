@@ -18,7 +18,7 @@ type SagaStep struct {
 // in reverse order (the "saga pattern").
 //
 // Use this when you need to coordinate changes across different systems that
-// don't share a single transaction boundary — for example, writing a DB record
+// don't share a single transaction boundary   for example, writing a DB record
 // AND a file to disk.
 type Saga struct {
 	mu    sync.Mutex

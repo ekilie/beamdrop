@@ -1,4 +1,4 @@
-# Caddyfile — Reverse proxy with automatic HTTPS for BeamDrop
+# Caddyfile   Reverse proxy with automatic HTTPS for BeamDrop
 #
 # Usage:
 #   1. Set BEAMDROP_DOMAIN in your .env or shell:

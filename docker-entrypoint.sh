@@ -1,10 +1,10 @@
 #!/bin/sh
-# docker-entrypoint.sh — Translates BEAMDROP_* environment variables into
+# docker-entrypoint.sh   Translates BEAMDROP_* environment variables into
 # CLI flags so that docker-compose.yml can configure BeamDrop purely through
 # the `environment:` block.
 #
 # Any explicit arguments passed to the container (via `command:`) take
-# precedence — this script only adds flags that are not already present.
+# precedence   this script only adds flags that are not already present.
 
 set -e
 
@@ -19,7 +19,7 @@ args="--dir ${BEAMDROP_DIR:-/data}"
 [ -n "$BEAMDROP_TLS_CERT" ]        && args="$args --tls-cert $BEAMDROP_TLS_CERT"
 [ -n "$BEAMDROP_TLS_KEY" ]         && args="$args --tls-key $BEAMDROP_TLS_KEY"
 
-# Boolean flags — only add when explicitly set to a truthy value
+# Boolean flags   only add when explicitly set to a truthy value
 case "${BEAMDROP_API_AUTH:-}" in
     1|[Tt][Rr][Uu][Ee]|[Yy][Ee][Ss]|[Oo][Nn]) args="$args --api-auth" ;;
 esac

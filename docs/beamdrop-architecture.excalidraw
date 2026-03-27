@@ -29,13 +29,13 @@
       "updated": 1710700000000,
       "link": null,
       "locked": false,
-      "text": "Beamdrop — System Architecture",
+      "text": "Beamdrop   System Architecture",
       "fontSize": 28,
       "fontFamily": 1,
       "textAlign": "center",
       "verticalAlign": "top",
       "containerId": null,
-      "originalText": "Beamdrop — System Architecture",
+      "originalText": "Beamdrop   System Architecture",
       "lineHeight": 1.25
     },
 
@@ -365,13 +365,13 @@
       "updated": 1710700000000,
       "link": null,
       "locked": false,
-      "text": "Reverse Proxy (Caddy / Nginx)\nTLS Termination — Optional",
+      "text": "Reverse Proxy (Caddy / Nginx)\nTLS Termination   Optional",
       "fontSize": 16,
       "fontFamily": 1,
       "textAlign": "center",
       "verticalAlign": "middle",
       "containerId": "rect_proxy",
-      "originalText": "Reverse Proxy (Caddy / Nginx)\nTLS Termination — Optional",
+      "originalText": "Reverse Proxy (Caddy / Nginx)\nTLS Termination   Optional",
       "lineHeight": 1.25
     },
 

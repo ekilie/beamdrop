@@ -2,7 +2,7 @@
 
 This document describes the security hardening features added to Beamdrop.
 
-> **See also:** [Security Threat Model](THREAT-MODEL.md) — assets, trust boundaries, threat actors, attack vectors, and incident response.
+> **See also:** [Security Threat Model](THREAT-MODEL.md) assets, trust boundaries, threat actors, attack vectors, and incident response.
 
 ## CORS (Cross-Origin Resource Sharing)
 
@@ -17,6 +17,7 @@ To enable CORS for specific origins, use the `-allowed-origins` flag:
 ```
 
 When CORS is enabled:
+
 - Only specified origins can make cross-origin requests
 - Preflight (OPTIONS) requests are properly handled
 - Credentials (cookies, auth headers) are allowed
@@ -28,6 +29,7 @@ When CORS is enabled:
   - `Access-Control-Max-Age`: 86400 (24 hours)
 
 When CORS is disabled:
+
 - No CORS headers are sent
 - Preflight requests are rejected with 403 Forbidden
 - Only same-origin requests work
@@ -52,6 +54,7 @@ openssl req -x509 -newkey rsa:4096 -keyout key.pem -out cert.pem -days 365 -node
 ```
 
 When TLS is enabled:
+
 - Server runs on HTTPS instead of HTTP
 - HSTS (HTTP Strict Transport Security) header is added
 - QR code shows HTTPS URL
@@ -61,18 +64,24 @@ When TLS is enabled:
 The following security headers are automatically added to all responses:
 
 ### X-Frame-Options: DENY
+
 Prevents the page from being embedded in iframes, protecting against clickjacking attacks.
 
 ### X-Content-Type-Options: nosniff
+
 Prevents browsers from MIME-sniffing the content type, reducing XSS risks.
 
 ### Referrer-Policy: strict-origin-when-cross-origin
+
 Controls how much referrer information is sent with requests:
+
 - Same origin: full URL
 - Cross-origin: only the origin (no path)
 
 ### Content-Security-Policy
+
 Restricts resource loading to prevent XSS and data injection attacks:
+
 - `default-src 'self'`: Only load resources from same origin
 - `script-src 'self' 'unsafe-inline' 'unsafe-eval'`: Allow scripts from same origin and inline scripts
 - `style-src 'self' 'unsafe-inline'`: Allow styles from same origin and inline styles
@@ -81,7 +90,9 @@ Restricts resource loading to prevent XSS and data injection attacks:
 - `connect-src 'self' ws: wss:`: Allow connections to same origin and WebSocket
 
 ### Strict-Transport-Security (HTTPS only)
+
 When TLS is enabled, HSTS header is added:
+
 - `max-age=31536000`: Force HTTPS for 1 year
 - `includeSubDomains`: Apply to all subdomains
 
@@ -102,11 +113,11 @@ Beamdrop includes built-in per-IP rate limiting to protect against brute-force a
 
 Rate limiting uses a **token-bucket algorithm** with three endpoint tiers, each enforced independently per client IP:
 
-| Tier | Endpoints | Default Rate | Purpose |
-|------|-----------|-------------|---------|
-| **General** | All other endpoints | 100 req/min | Prevents general abuse |
-| **Auth** | `/auth/login` | 5 req/min | Prevents brute-force password attacks |
-| **Upload** | `/upload`, S3 PUT object | 10 req/min | Prevents upload flooding |
+| Tier        | Endpoints                | Default Rate | Purpose                               |
+| ----------- | ------------------------ | ------------ | ------------------------------------- |
+| **General** | All other endpoints      | 100 req/min  | Prevents general abuse                |
+| **Auth**    | `/auth/login`            | 5 req/min    | Prevents brute-force password attacks |
+| **Upload**  | `/upload`, S3 PUT object | 10 req/min   | Prevents upload flooding              |
 
 Auth and upload tier rates are derived from the general rate (5% and 10% respectively, minimum 1).
 
@@ -133,6 +144,7 @@ When a client exceeds the rate limit, the server responds with:
 - JSON body with error code `RATE_LIMIT_EXCEEDED`
 
 Example response:
+
 ```json
 {
   "error": {
@@ -146,6 +158,7 @@ Example response:
 ### IP Detection
 
 The rate limiter identifies clients by IP address, checking in order:
+
 1. `X-Forwarded-For` header (first IP in the chain)
 2. `X-Real-IP` header
 3. Connection remote address
@@ -153,7 +166,7 @@ The rate limiter identifies clients by IP address, checking in order:
 ### Internals
 
 - Stale client entries (unseen for 10+ minutes) are automatically evicted every 5 minutes
-- Each IP gets independent buckets for each tier — hitting the auth limit does not affect general requests
+- Each IP gets independent buckets for each tier hitting the auth limit does not affect general requests
 - Tokens refill continuously (not in fixed windows), providing smooth rate enforcement
 
 ## Structured Logging
@@ -161,7 +174,9 @@ The rate limiter identifies clients by IP address, checking in order:
 Beamdrop uses Go's `log/slog` for structured logging with dual output:
 
 ### Terminal Output
+
 Human-readable, colored output showing timestamp, level, and message with key-value pairs:
+
 ```
 11:03:13.973 INFO  Starting beamdrop application
 11:03:13.973 INFO  Starting server shared_dir=/tmp/share
@@ -170,9 +185,16 @@ Human-readable, colored output showing timestamp, level, and message with key-va
 ```
 
 ### File Output
+
 Structured JSON logs are written to `<dir>/.beamdrop/beamdrop.log` with full source locations:
+
 ```json
-{"time":"2026-02-16T11:03:13.973+03:00","level":"INFO","source":{"function":"main.main","file":"cmd/beam/main.go","line":65},"msg":"Starting beamdrop application"}
+{
+  "time": "2026-02-16T11:03:13.973+03:00",
+  "level": "INFO",
+  "source": { "function": "main.main", "file": "cmd/beam/main.go", "line": 65 },
+  "msg": "Starting beamdrop application"
+}
 ```
 
 ### Configuration
@@ -218,21 +240,23 @@ beamdrop -dir /path/to/share -log-level debug
 3. **Use strong passwords** with the `-p` flag for authentication
 4. **Restrict allowed origins** to only trusted domains when enabling CORS
 5. **Use valid TLS certificates** in production (e.g., from Let's Encrypt)
-6. **Keep rate limiting enabled** — the default of 100 req/min is suitable for most use cases
-7. **Monitor logs** — check `<dir>/.beamdrop/beamdrop.log` for rate limit warnings and suspicious activity
+6. **Keep rate limiting enabled** the default of 100 req/min is suitable for most use cases
+7. **Monitor logs** check `<dir>/.beamdrop/beamdrop.log` for rate limit warnings and suspicious activity
 8. **Keep the software updated** to get the latest security patches
-9. **Use short-lived presigned URLs** — prefer 1–24 hour expiry for download links; never rely on very long expiry times as they break on API key rotation. For individually revocable links, use the server-side pretty presigned URL registry (`POST /api/v1/presign`)
-10. **Rotate API keys periodically** — create a new key, update your application, then delete the old key; be aware this invalidates all client-side HMAC presigned URLs generated with the old key (server-side pretty URLs are not affected by key rotation)
-11. **Prefer server-side pretty presigned URLs for sensitive content** — they support download limits, individual revocation, and download tracking, giving you more control than client-side HMAC URLs
+9. **Use short-lived presigned URLs** prefer 1–24 hour expiry for download links; never rely on very long expiry times as they break on API key rotation. For individually revocable links, use the server-side pretty presigned URL registry (`POST /api/v1/presign`)
+10. **Rotate API keys periodically** create a new key, update your application, then delete the old key; be aware this invalidates all client-side HMAC presigned URLs generated with the old key (server-side pretty URLs are not affected by key rotation)
+11. **Prefer server-side pretty presigned URLs for sensitive content** they support download limits, individual revocation, and download tracking, giving you more control than client-side HMAC URLs
 
 ## Examples
 
 ### Secure local sharing (recommended)
+
 ```bash
 ./beamdrop -dir=/path/to/share -p="strong-password"
 ```
 
 ### With HTTPS and specific CORS origins
+
 ```bash
 ./beamdrop -dir=/path/to/share \
   -tls-cert=/etc/beamdrop/cert.pem \
@@ -242,6 +266,7 @@ beamdrop -dir /path/to/share -log-level debug
 ```
 
 ### Development with HTTPS
+
 ```bash
 # Generate self-signed cert first
 openssl req -x509 -newkey rsa:4096 -keyout key.pem -out cert.pem -days 365 -nodes

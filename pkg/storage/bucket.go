@@ -106,7 +106,7 @@ func (bm *BucketManager) CreateBucketIfNotExists(name string) (created bool, err
 
 	bucketPath := filepath.Join(bm.basePath, name)
 
-	// Bucket already exists — not an error, just report it wasn't created
+	// Bucket already exists   not an error, just report it wasn't created
 	if info, err := os.Stat(bucketPath); err == nil && info.IsDir() {
 		return false, nil
 	}

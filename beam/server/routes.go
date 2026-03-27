@@ -41,7 +41,7 @@ func (s *Server) setupRoutes() {
 	fileHandler := handlers.NewFileHandler(s.sharedDir)
 	fileOpsHandler := handlers.NewFileOperationsHandler(s.sharedDir)
 
-	// Presigned URL downloads (public — no auth)
+	// Presigned URL downloads (public   no auth)
 	downloadHandler := handlers.NewDownloadHandler(s.sharedDir)
 	s.mux.Handle("/dl/", downloadHandler)
 
@@ -111,7 +111,7 @@ func (s *Server) setupS3APIRoutes() {
 	// Presigned URL management
 	presignHandler := api.NewPresignHandler(s.sharedDir)
 
-	// We support both /api/v1/presign and /api/v1/presign/ for convenience 
+	// We support both /api/v1/presign and /api/v1/presign/ for convenience
 	// (some clients may add trailing slash)
 	s.mux.HandleFunc("/api/v1/presign/", func(w http.ResponseWriter, r *http.Request) {
 		apiAuth.Middleware(http.HandlerFunc(presignHandler.Handle)).ServeHTTP(w, r)

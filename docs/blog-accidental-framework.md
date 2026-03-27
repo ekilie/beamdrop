@@ -1,6 +1,6 @@
 # I Think I Accidentally Built a Full-Stack Framework?
 
-*Look, I just wanted to share some files.*
+_Look, I just wanted to share some files._
 
 ## The Innocent Beginning
 
@@ -10,7 +10,7 @@ It started, as these things always do, with a simple problem: I needed to share 
 
 ## What Is BeamDrop, Actually?
 
-[BeamDrop](https://github.com/ekilie/beamdrop) is a self-hosted file sharing server. You run one command, and boom — you've got a beautiful web interface for uploading, downloading, moving, copying, renaming, and searching files. It's like Dropbox, if Dropbox was a single binary and didn't sell your data to train AI models. *(No offense, Dropbox. Actually, some offense.)*
+[BeamDrop](https://github.com/ekilie/beamdrop) is a self-hosted file sharing server. You run one command, and boom you've got a beautiful web interface for uploading, downloading, moving, copying, renaming, and searching files. It's like Dropbox, if Dropbox was a single binary and didn't sell your data to train AI models. _(No offense, Dropbox. Actually, some offense.)_
 
 Here's the pitch: `beamdrop -dir /path/to/stuff -p mysecretpassword` and you're live. QR code on the terminal so your phone can connect. Password protection. Shareable links with expiry. WebSocket-powered real-time stats. An S3-compatible API so your CI/CD pipeline can talk to it.
 
@@ -19,23 +19,28 @@ One binary. No Docker required. No Node.js runtime. No "please install these 47 
 ## How We Got Here
 
 ### Stage 1: The Go Server (Day 1)
+
 "I'll embed the frontend right into the Go binary using `embed.FS`. Single binary deployment. I'm a genius."
 
 ### Stage 2: The React Frontend (Week 1)
+
 "It needs a UI. I'll use React. And Vite. And TypeScript. And Tailwind. And shadcn/ui. For a file server. This is totally proportional."
 
 ### Stage 3: The Database (Week 2)
+
 "I need shareable links, so I need a database. SQLite is fine. I'll use GORM. Oh wait, the SQLite driver needs CGO and that breaks cross-compilation. Let me swap to a pure-Go SQLite implementation so the binary stays fully static. This is still a simple file server."
 
 ### Stage 4: The S3 API (Week 3)
+
 "What if it also spoke S3? Like, the actual S3 API. With buckets and objects and presigned URLs. For a file server that I built because I wanted to share a PDF with my phone."
 
 ### Stage 5: The Realization (Now)
+
 I stared at my codebase. A Go backend with embedded frontend assets. React with client-side routing. SPA fallback handling. SQLite with migrations. WebSocket connections. JWT authentication. API key management. CORS middleware. Security headers. TLS support. Cross-platform builds.
 
-*I built a framework.*
+_I built a framework._
 
-I didn't mean to. I was just solving problems one at a time. "Oh, the frontend routes break on refresh because Go doesn't know about React Router" — so I added SPA fallback. "Oh, `CGO_ENABLED=0` breaks SQLite" — so I swapped to a pure-Go driver. "Oh, I need auth" — JWT and password hashing. Each fix was reasonable in isolation. Together, they formed a full-stack application framework that compiles to a zero-dependency binary.
+I didn't mean to. I was just solving problems one at a time. "Oh, the frontend routes break on refresh because Go doesn't know about React Router" so I added SPA fallback. "Oh, `CGO_ENABLED=0` breaks SQLite" so I swapped to a pure-Go driver. "Oh, I need auth" JWT and password hashing. Each fix was reasonable in isolation. Together, they formed a full-stack application framework that compiles to a zero-dependency binary.
 
 ## The Architecture (That I Definitely Planned From The Start)
 
@@ -67,7 +72,7 @@ I didn't mean to. I was just solving problems one at a time. "Oh, the frontend r
 └──────────────────────────────┘
 ```
 
-*"Yes, this was the plan all along."* — Me, lying.
+_"Yes, this was the plan all along."_ Me, lying.
 
 ## Things I Learned Along The Way
 
@@ -86,6 +91,7 @@ BeamDrop uses no web framework. No Gin, no Echo, no Fiber. Just `net/http` and a
 ## Is It Actually a Framework Though?
 
 Look, if it has:
+
 - A backend server with routing and middleware ✅
 - An embedded frontend with client-side routing ✅
 - A database with ORM and migrations ✅
@@ -114,4 +120,4 @@ That's it. One binary. Full-stack. No regrets. Okay, some regrets. But the QR co
 
 ---
 
-*BeamDrop is open source at [github.com/ekilie/beamdrop](https://github.com/ekilie/beamdrop). Star it if you've ever accidentally over-engineered something. So, star it.*
+_BeamDrop is open source at [github.com/ekilie/beamdrop](https://github.com/ekilie/beamdrop). Star it if you've ever accidentally over-engineered something. So, star it._

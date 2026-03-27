@@ -701,10 +701,10 @@ paths:
         ```
 
         **Limitations (client-side HMAC method):**
-        - Presigned URLs **always expire** — the server checks the `expires` timestamp on every request.
+        - Presigned URLs **always expire**   the server checks the `expires` timestamp on every request.
         - If the API key is deleted or disabled, all HMAC presigned URLs created with it become invalid.
         - Individual HMAC URLs cannot be revoked without disabling the API key.
-        - The token is method-specific — a GET token does not work for PUT.
+        - The token is method-specific   a GET token does not work for PUT.
 
         **Advantages (server-side pretty method):**
         - Short, clean URLs.
@@ -1080,7 +1080,7 @@ paths:
       summary: Download via pretty presigned URL
       description: |
         Download a file using a server-side pretty presigned URL token.
-        This endpoint is public — no authentication required.
+        This endpoint is public   no authentication required.
         The server checks expiry and download limits before serving the file.
       parameters:
         - name: token

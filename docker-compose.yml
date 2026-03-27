@@ -1,4 +1,4 @@
-# docker-compose.yml — Single-command deployment for BeamDrop
+# docker-compose.yml   Single-command deployment for BeamDrop
 #
 # Usage:
 #   docker compose up -d              # start in background

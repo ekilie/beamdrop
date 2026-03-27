@@ -147,7 +147,7 @@ func TestLockManager_Timeout(t *testing.T) {
 	}
 	defer unlock()
 
-	// Try to acquire another write lock — should timeout
+	// Try to acquire another write lock   should timeout
 	_, err = lm.Lock("bucket", "key")
 	if err == nil {
 		t.Fatal("expected timeout error")
@@ -168,7 +168,7 @@ func TestLockManager_ReadTimeout(t *testing.T) {
 	}
 	defer unlock()
 
-	// Try to read lock — should timeout since write is held
+	// Try to read lock   should timeout since write is held
 	_, err = lm.RLock("bucket", "key")
 	if err == nil {
 		t.Fatal("expected timeout error")
@@ -257,7 +257,7 @@ func TestLockManager_ConcurrentWritesSameKey(t *testing.T) {
 				t.Errorf("unexpected error: %v", err)
 				return
 			}
-			// Non-atomic increment — without locking this would race
+			// Non-atomic increment   without locking this would race
 			val := counter
 			time.Sleep(time.Microsecond) // force context switch
 			counter = val + 1

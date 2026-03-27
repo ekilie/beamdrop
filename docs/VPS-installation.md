@@ -6,16 +6,16 @@ A lightweight, self-hosted file sharing server with S3-compatible API, designed 
 
 ## Prerequisites
 
-* Linux VPS (Ubuntu/Debian recommended)
-* User with `sudo` privileges
-* `curl` or `wget`
-* `tar`
-* Nginx installed (optional, for reverse proxy & HTTPS)
-* Ports: 7777 (Beamdrop) and 80/443 (optional for Nginx) 
+- Linux VPS (Ubuntu/Debian recommended)
+- User with `sudo` privileges
+- `curl` or `wget`
+- `tar`
+- Nginx installed (optional, for reverse proxy & HTTPS)
+- Ports: 7777 (Beamdrop) and 80/443 (optional for Nginx)
 
 ---
 
-## Step 1 — Download Beamdrop
+## Step 1 Download Beamdrop
 
 Determine your VPS architecture:
 
@@ -23,8 +23,8 @@ Determine your VPS architecture:
 uname -m
 ```
 
-* `x86_64` → AMD64
-* `aarch64` → ARM64
+- `x86_64` → AMD64
+- `aarch64` → ARM64
 
 Download the corresponding release from GitHub:
 
@@ -51,7 +51,7 @@ chmod +x /usr/local/bin/beamdrop
 
 ---
 
-## Step 2 — Run Beamdrop (Temporary)
+## Step 2 Run Beamdrop (Temporary)
 
 Test Beamdrop:
 
@@ -69,7 +69,7 @@ This confirms Beamdrop runs before setting up systemd.
 
 ---
 
-## Step 3 — Create a Systemd Service
+## Step 3 Create a Systemd Service
 
 Create service file:
 
@@ -128,7 +128,7 @@ journalctl -u beamdrop -f
 
 ---
 
-## Step 4 — Set Up Nginx Reverse Proxy (Optional)
+## Step 4 Set Up Nginx Reverse Proxy (Optional)
 
 This allows HTTPS and a proper domain instead of exposing port 7777.
 
@@ -168,21 +168,21 @@ Optional: Use **Let's Encrypt** or Forge’s SSL to enable HTTPS.
 
 ---
 
-## Step 5 — Security Considerations
+## Step 5 Security Considerations
 
-* Disable public access to port 7777 if using Nginx:
+- Disable public access to port 7777 if using Nginx:
 
 ```bash
 sudo ufw delete allow 7777
 ```
 
-* Keep strong password for web UI (`-p` flag)
-* Enable API key authentication: `--api-auth` or `BEAMDROP_API_AUTH=true`
-* Consider rate limiting with `--rate-limit` or `BEAMDROP_RATE_LIMIT`
+- Keep strong password for web UI (`-p` flag)
+- Enable API key authentication: `--api-auth` or `BEAMDROP_API_AUTH=true`
+- Consider rate limiting with `--rate-limit` or `BEAMDROP_RATE_LIMIT`
 
 ---
 
-## Step 6 — Optional Environment Variables
+## Step 6 Optional Environment Variables
 
 You can set environment variables in systemd service for additional config:
 
@@ -195,7 +195,7 @@ You can set environment variables in systemd service for additional config:
 
 ---
 
-## Step 7 — Quick Commands
+## Step 7 Quick Commands
 
 ```bash
 # Start service

@@ -81,7 +81,7 @@ curl http://localhost:7777/health/live
 
 ### 1.3 Pre-Built Binary on Linux VPS
 
-**Step 1 — Determine architecture:**
+**Step 1 Determine architecture:**
 
 ```bash
 uname -m
@@ -89,7 +89,7 @@ uname -m
 # aarch64 → ARM64
 ```
 
-**Step 2 — Download and install:**
+**Step 2 Download and install:**
 
 ```bash
 # AMD64
@@ -105,7 +105,7 @@ rm beamdrop.tar.gz
 beamdrop -v   # verify
 ```
 
-**Step 3 — Create a dedicated service user and data directory:**
+**Step 3 Create a dedicated service user and data directory:**
 
 ```bash
 sudo useradd --system --no-create-home --shell /usr/sbin/nologin beamdrop
@@ -113,7 +113,7 @@ sudo mkdir -p /var/lib/beamdrop
 sudo chown beamdrop:beamdrop /var/lib/beamdrop
 ```
 
-**Step 4 — Create the systemd unit:**
+**Step 4 Create the systemd unit:**
 
 ```bash
 sudo tee /etc/systemd/system/beamdrop.service > /dev/null <<'EOF'
@@ -133,7 +133,7 @@ ExecStart=/usr/local/bin/beamdrop \
   -log-level info \
   -rate-limit 100
 
-# Environment overrides — keep secrets here, not in command flags
+# Environment overrides   keep secrets here, not in command flags
 EnvironmentFile=-/etc/beamdrop/beamdrop.env
 
 Restart=on-failure
@@ -151,7 +151,7 @@ WantedBy=multi-user.target
 EOF
 ```
 
-**Step 5 — Create the environment file with secrets:**
+**Step 5 Create the environment file with secrets:**
 
 ```bash
 sudo mkdir -p /etc/beamdrop
@@ -164,7 +164,7 @@ sudo chmod 600 /etc/beamdrop/beamdrop.env
 sudo chown root:root /etc/beamdrop/beamdrop.env
 ```
 
-**Step 6 — Enable and start:**
+**Step 6 Enable and start:**
 
 ```bash
 sudo systemctl daemon-reload
@@ -252,48 +252,48 @@ make build
 
 All variables can be set in `.env` (Docker Compose), `/etc/beamdrop/beamdrop.env` (systemd), or exported directly.
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `BEAMDROP_PORT` | `7777` | Port to listen on |
-| `BEAMDROP_PASSWORD` | *(none)* | Web UI password. Leave unset to disable auth |
-| `BEAMDROP_LOG_LEVEL` | `info` | Log verbosity: `debug`, `info`, `warn`, `error` |
-| `BEAMDROP_RATE_LIMIT` | `100` | General rate limit in requests/min per IP (`0` = disabled) |
-| `BEAMDROP_API_AUTH` | `false` | Enable S3 API key authentication |
-| `BEAMDROP_QR` | `false` | Print a QR code to the terminal at startup |
-| `BEAMDROP_ALLOWED_ORIGINS` | *(none)* | Comma-separated CORS origins. Empty = CORS disabled |
-| `BEAMDROP_DB_PATH` | `<sharedDir>/.beamdrop/beamdrop.db` | SQLite database path or parent directory |
-| `BEAMDROP_TLS_CERT` | *(none)* | Path to TLS certificate (PEM) |
-| `BEAMDROP_TLS_KEY` | *(none)* | Path to TLS private key (PEM) |
+| Variable                   | Default                             | Description                                                |
+| -------------------------- | ----------------------------------- | ---------------------------------------------------------- |
+| `BEAMDROP_PORT`            | `7777`                              | Port to listen on                                          |
+| `BEAMDROP_PASSWORD`        | _(none)_                            | Web UI password. Leave unset to disable auth               |
+| `BEAMDROP_LOG_LEVEL`       | `info`                              | Log verbosity: `debug`, `info`, `warn`, `error`            |
+| `BEAMDROP_RATE_LIMIT`      | `100`                               | General rate limit in requests/min per IP (`0` = disabled) |
+| `BEAMDROP_API_AUTH`        | `false`                             | Enable S3 API key authentication                           |
+| `BEAMDROP_QR`              | `false`                             | Print a QR code to the terminal at startup                 |
+| `BEAMDROP_ALLOWED_ORIGINS` | _(none)_                            | Comma-separated CORS origins. Empty = CORS disabled        |
+| `BEAMDROP_DB_PATH`         | `<sharedDir>/.beamdrop/beamdrop.db` | SQLite database path or parent directory                   |
+| `BEAMDROP_TLS_CERT`        | _(none)_                            | Path to TLS certificate (PEM)                              |
+| `BEAMDROP_TLS_KEY`         | _(none)_                            | Path to TLS private key (PEM)                              |
 
 ### 2.2 Command-Line Flags
 
 Flags override environment variables when both are set.
 
-| Flag | Description | Default |
-|------|-------------|---------|
-| `-dir` | Directory to share | Current directory |
-| `-port` | Server port | Auto-detect |
-| `-p` | Web UI password | None |
-| `-api-auth` | Enable API key authentication | `false` |
-| `-tls-cert` | Path to TLS certificate | None |
-| `-tls-key` | Path to TLS private key | None |
-| `-allowed-origins` | CORS allowed origins (comma-separated) | None |
-| `-db-path` | SQLite database path or directory | `~/.beamdrop/beamdrop.db` |
-| `-rate-limit` | Rate limit in req/min per IP (`0` = off) | `100` |
-| `-log-level` | `debug` / `info` / `warn` / `error` | `info` |
-| `-qr` | Print QR code at startup | `false` |
-| `-v` | Print version and exit | — |
-| `-h` | Print help and exit | — |
+| Flag               | Description                              | Default                   |
+| ------------------ | ---------------------------------------- | ------------------------- |
+| `-dir`             | Directory to share                       | Current directory         |
+| `-port`            | Server port                              | Auto-detect               |
+| `-p`               | Web UI password                          | None                      |
+| `-api-auth`        | Enable API key authentication            | `false`                   |
+| `-tls-cert`        | Path to TLS certificate                  | None                      |
+| `-tls-key`         | Path to TLS private key                  | None                      |
+| `-allowed-origins` | CORS allowed origins (comma-separated)   | None                      |
+| `-db-path`         | SQLite database path or directory        | `~/.beamdrop/beamdrop.db` |
+| `-rate-limit`      | Rate limit in req/min per IP (`0` = off) | `100`                     |
+| `-log-level`       | `debug` / `info` / `warn` / `error`      | `info`                    |
+| `-qr`              | Print QR code at startup                 | `false`                   |
+| `-v`               | Print version and exit                   |                           |
+| `-h`               | Print help and exit                      |                           |
 
 ### 2.3 Rate Limiting Tiers
 
 Beamdrop applies three independent per-IP token-bucket tiers derived from the general rate (`-rate-limit`):
 
-| Tier | Endpoints | Rate |
-|------|-----------|------|
-| General | All other endpoints | `BEAMDROP_RATE_LIMIT` req/min |
-| Auth | `/auth/login` | 5% of general (min 1) req/min |
-| Upload | `/upload`, S3 PUT object | 10% of general (min 1) req/min |
+| Tier    | Endpoints                | Rate                           |
+| ------- | ------------------------ | ------------------------------ |
+| General | All other endpoints      | `BEAMDROP_RATE_LIMIT` req/min  |
+| Auth    | `/auth/login`            | 5% of general (min 1) req/min  |
+| Upload  | `/upload`, S3 PUT object | 10% of general (min 1) req/min |
 
 ### 2.4 TLS / HTTPS
 
@@ -317,7 +317,7 @@ docker compose up -d
 ### 2.5 Production `.env` Example
 
 ```bash
-# .env — Production configuration
+# .env   Production configuration
 BEAMDROP_PORT=7777
 BEAMDROP_PASSWORD=<strong-random-password>
 BEAMDROP_LOG_LEVEL=info
@@ -326,7 +326,7 @@ BEAMDROP_API_AUTH=true
 BEAMDROP_QR=false
 BEAMDROP_ALLOWED_ORIGINS=https://files.example.com
 BEAMDROP_DB_PATH=/data/.beamdrop/beamdrop.db
-# TLS is handled by Caddy — leave these blank if using a reverse proxy
+# TLS is handled by Caddy   leave these blank if using a reverse proxy
 BEAMDROP_TLS_CERT=
 BEAMDROP_TLS_KEY=
 ```
@@ -337,12 +337,12 @@ BEAMDROP_TLS_KEY=
 
 Beamdrop stores state in two locations:
 
-| Location | Contents | Must Back Up? |
-|----------|----------|---------------|
-| `<sharedDir>/` | Uploaded files, buckets | **Yes** |
-| `<sharedDir>/.beamdrop/beamdrop.db` (or `BEAMDROP_DB_PATH`) | API keys, shareable links, starred files, stats | **Yes** |
-| `<sharedDir>/.beamdrop/beamdrop.log` | Structured JSON logs | Optional |
-| `<sharedDir>/.beamdrop_trash/` | Deleted files (recoverable) | Optional |
+| Location                                                    | Contents                                        | Must Back Up? |
+| ----------------------------------------------------------- | ----------------------------------------------- | ------------- |
+| `<sharedDir>/`                                              | Uploaded files, buckets                         | **Yes**       |
+| `<sharedDir>/.beamdrop/beamdrop.db` (or `BEAMDROP_DB_PATH`) | API keys, shareable links, starred files, stats | **Yes**       |
+| `<sharedDir>/.beamdrop/beamdrop.log`                        | Structured JSON logs                            | Optional      |
+| `<sharedDir>/.beamdrop_trash/`                              | Deleted files (recoverable)                     | Optional      |
 
 ### 3.1 Manual Backup
 
@@ -361,7 +361,7 @@ sudo systemctl start beamdrop
 echo "Backup saved: $BACKUP_DIR/beamdrop-data-$DATE.tar.gz"
 ```
 
-### 3.2 Live Database Backup (SQLite — No Downtime)
+### 3.2 Live Database Backup (SQLite No Downtime)
 
 The SQLite `.backup` command creates a consistent copy while the server is running:
 
@@ -466,12 +466,12 @@ sudo systemctl start beamdrop
 
 Beamdrop provides Kubernetes-compatible health probes. These require no authentication.
 
-| Endpoint | Purpose | Use Case |
-|----------|---------|----------|
-| `GET /health` | Full health overview (all components) | Manual checks, dashboards |
-| `GET /health/live` | Liveness — process is running (no I/O) | K8s `livenessProbe` |
-| `GET /health/ready` | Readiness — DB + storage accessible | K8s `readinessProbe` |
-| `GET /health/startup` | Startup complete | K8s `startupProbe` |
+| Endpoint              | Purpose                               | Use Case                  |
+| --------------------- | ------------------------------------- | ------------------------- |
+| `GET /health`         | Full health overview (all components) | Manual checks, dashboards |
+| `GET /health/live`    | Liveness process is running (no I/O)  | K8s `livenessProbe`       |
+| `GET /health/ready`   | Readiness DB + storage accessible     | K8s `readinessProbe`      |
+| `GET /health/startup` | Startup complete                      | K8s `startupProbe`        |
 
 **Example response (`/health`):**
 
@@ -482,11 +482,11 @@ Beamdrop provides Kubernetes-compatible health probes. These require no authenti
   "version": "1.0.0",
   "timestamp": "2026-01-01T00:00:00Z",
   "components": {
-    "process":  { "status": "ok", "message": "running" },
-    "startup":  { "status": "ok", "message": "initialisation complete" },
+    "process": { "status": "ok", "message": "running" },
+    "startup": { "status": "ok", "message": "initialisation complete" },
     "database": { "status": "ok", "message": "connected", "latency": "1.23ms" },
-    "storage":  { "status": "ok", "message": "writable" },
-    "runtime":  { "status": "ok", "message": "goroutines: 12" }
+    "storage": { "status": "ok", "message": "writable" },
+    "runtime": { "status": "ok", "message": "goroutines: 12" }
   }
 }
 ```
@@ -505,20 +505,20 @@ Beamdrop exposes a `/metrics` endpoint in Prometheus text format (no authenticat
 
 **Key metrics:**
 
-| Metric | Type | Description |
-|--------|------|-------------|
-| `beamdrop_requests_total` | counter | HTTP requests by method, path, status |
-| `beamdrop_request_duration_seconds` | histogram | Request latency (p50/p95/p99) |
-| `beamdrop_auth_failures_total` | counter | Auth failures by reason |
-| `beamdrop_uploads_total` | counter | Completed uploads |
-| `beamdrop_downloads_total` | counter | Completed downloads |
-| `beamdrop_upload_size_bytes` | histogram | Upload file sizes |
-| `beamdrop_storage_bytes` | gauge | Bytes used by stored files |
-| `beamdrop_objects_total` | gauge | Number of stored files |
-| `beamdrop_active_connections` | gauge | In-flight HTTP requests |
-| `beamdrop_storage_free_bytes` | gauge | Free disk space |
-| `beamdrop_storage_total_bytes` | gauge | Total disk capacity |
-| `beamdrop_goroutines_count` | gauge | Go goroutine count |
+| Metric                              | Type      | Description                           |
+| ----------------------------------- | --------- | ------------------------------------- |
+| `beamdrop_requests_total`           | counter   | HTTP requests by method, path, status |
+| `beamdrop_request_duration_seconds` | histogram | Request latency (p50/p95/p99)         |
+| `beamdrop_auth_failures_total`      | counter   | Auth failures by reason               |
+| `beamdrop_uploads_total`            | counter   | Completed uploads                     |
+| `beamdrop_downloads_total`          | counter   | Completed downloads                   |
+| `beamdrop_upload_size_bytes`        | histogram | Upload file sizes                     |
+| `beamdrop_storage_bytes`            | gauge     | Bytes used by stored files            |
+| `beamdrop_objects_total`            | gauge     | Number of stored files                |
+| `beamdrop_active_connections`       | gauge     | In-flight HTTP requests               |
+| `beamdrop_storage_free_bytes`       | gauge     | Free disk space                       |
+| `beamdrop_storage_total_bytes`      | gauge     | Total disk capacity                   |
+| `beamdrop_goroutines_count`         | gauge     | Go goroutine count                    |
 
 **Add Beamdrop as a Prometheus scrape target:**
 
@@ -675,14 +675,14 @@ Beamdrop is a single-process server backed by an embedded SQLite database. The f
 
 The simplest way to handle more load. Beamdrop's Go runtime makes good use of multiple CPU cores for concurrent request handling.
 
-| Resource | Recommendation |
-|----------|---------------|
-| CPU | 2+ cores for moderate traffic; 4+ cores for high concurrency |
-| RAM | 512 MB minimum; 2 GB+ for large file transfers |
+| Resource | Recommendation                                                 |
+| -------- | -------------------------------------------------------------- |
+| CPU      | 2+ cores for moderate traffic; 4+ cores for high concurrency   |
+| RAM      | 512 MB minimum; 2 GB+ for large file transfers                 |
 | Disk I/O | Use SSD/NVMe; IOPS matter more than throughput for small files |
-| Network | 1 Gbps for general use; 10 Gbps for sustained large uploads |
+| Network  | 1 Gbps for general use; 10 Gbps for sustained large uploads    |
 
-**Monitor goroutine count** (`beamdrop_goroutines_count`) — a continuously rising count may indicate a leak; a spike under load is normal.
+**Monitor goroutine count** (`beamdrop_goroutines_count`) a continuously rising count may indicate a leak; a spike under load is normal.
 
 ### 5.2 Storage Scaling
 
@@ -696,7 +696,7 @@ sudo systemctl start beamdrop
 
 **Recommended filesystem:**
 
-- `ext4` or `xfs` on Linux — both handle large directories well
+- `ext4` or `xfs` on Linux both handle large directories well
 - Enable `noatime` mount option to reduce write overhead:
 
   ```
@@ -738,20 +738,20 @@ proxy_request_buffering off;   # stream uploads directly to backend
 
 Adjust the rate limit to balance protection against abuse vs. legitimate user throughput. As a starting point:
 
-| Traffic Level | `BEAMDROP_RATE_LIMIT` |
-|---------------|-----------------------|
-| Personal / low | `50` |
-| Team (< 20 users) | `100` (default) |
-| Departmental | `300` |
-| CI/CD heavy usage | `500–1000` |
-| Disable (trusted network) | `0` |
+| Traffic Level             | `BEAMDROP_RATE_LIMIT` |
+| ------------------------- | --------------------- |
+| Personal / low            | `50`                  |
+| Team (< 20 users)         | `100` (default)       |
+| Departmental              | `300`                 |
+| CI/CD heavy usage         | `500–1000`            |
+| Disable (trusted network) | `0`                   |
 
 ### 5.5 Read-Only Replicas (Advanced)
 
 SQLite supports multiple readers. If your workload is read-heavy (many downloads), you can serve reads from a replica by periodically copying the `.db` file:
 
 ```bash
-# On a read replica node — refresh every 60 seconds
+# On a read replica node   refresh every 60 seconds
 while true; do
   rsync -a beamdrop-primary:/var/lib/beamdrop/.beamdrop/beamdrop.db \
             /var/lib/beamdrop/.beamdrop/beamdrop.db
@@ -860,7 +860,7 @@ curl -s http://localhost:7777/health | jq .
 # 2. Check that the access key and secret match what was generated
 #    (the secret is shown only once at key creation)
 
-# 3. Verify the clock skew — the HMAC timestamp must be within 15 minutes
+# 3. Verify the clock skew   the HMAC timestamp must be within 15 minutes
 date -u
 
 # 4. Regenerate the signature with the correct timestamp format: 2006-01-02T15:04:05Z
@@ -946,7 +946,7 @@ ls -la /var/lib/beamdrop/.beamdrop/beamdrop.db
 # 3. Check SQLite integrity
 sqlite3 /var/lib/beamdrop/.beamdrop/beamdrop.db "PRAGMA integrity_check;"
 
-# 4. If corrupt — restore from latest backup (see Section 3.5)
+# 4. If corrupt   restore from latest backup (see Section 3.5)
 
 # 5. Enable WAL mode for better concurrent access
 sqlite3 /var/lib/beamdrop/.beamdrop/beamdrop.db "PRAGMA journal_mode=WAL;"
@@ -988,7 +988,7 @@ curl -s http://localhost:7777/health | jq .
 # 2. Database component unhealthy
 sqlite3 /var/lib/beamdrop/.beamdrop/beamdrop.db "SELECT 1;"
 
-# 3. Storage component unhealthy — check directory permissions
+# 3. Storage component unhealthy   check directory permissions
 ls -la /var/lib/beamdrop/
 
 # 4. Restart the service

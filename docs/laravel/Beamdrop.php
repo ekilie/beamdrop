@@ -40,7 +40,7 @@ class BeamdropException extends RuntimeException
 }
 
 /**
- * Beamdrop — A production-ready PHP client for the Beamdrop S3-compatible API.
+ * Beamdrop   A production-ready PHP client for the Beamdrop S3-compatible API.
  *
  * Handles HMAC-SHA256 request signing, presigned URL generation, bucket and
  * object management. Designed for use as a Laravel singleton service.
@@ -159,7 +159,7 @@ class Beamdrop
     /**
      * Check whether a bucket exists.
      *
-     * Uses a HEAD request — no response body is transferred.
+     * Uses a HEAD request   no response body is transferred.
      *
      * @param  string $name  Bucket name.
      * @return bool
@@ -311,12 +311,12 @@ class Beamdrop
     //
     //  Beamdrop supports TWO types of presigned URLs:
     //
-    //  1. Client-side (HMAC) presigned URLs — generated locally using your secret key.
+    //  1. Client-side (HMAC) presigned URLs   generated locally using your secret key.
     //     No server round-trip. URL contains the HMAC token, expiry, and access key in
     //     query params. Longer/uglier, but works without the server-side registry feature.
     //     Use: presignedUrl()
     //
-    //  2. Server-side (pretty) presigned URLs — created via POST /api/v1/presign.
+    //  2. Server-side (pretty) presigned URLs   created via POST /api/v1/presign.
     //     Returns a short /dl/{token} URL. Supports max-download limits. Individually
     //     revocable. Requires the server-side presigned URL registry feature.
     //     Use: createPrettyPresignedUrl(), revokePrettyPresignedUrl(), listPrettyPresignedUrls()
@@ -325,11 +325,11 @@ class Beamdrop
     /**
      * Generate a client-side HMAC presigned URL for downloading a file.
      *
-     * This is the traditional method — the token is computed locally from your
+     * This is the traditional method   the token is computed locally from your
      * secret key. No server request is made. The resulting URL is long but works
      * without the server-side presigned URL registry.
      *
-     * The URL can be shared with anyone — no API key required to access it.
+     * The URL can be shared with anyone   no API key required to access it.
      * The link expires after $expiresIn seconds.
      *
      * @param  string $bucket     Bucket name.

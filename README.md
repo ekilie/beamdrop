@@ -2,7 +2,7 @@
 
 **Turn any VPS or server into a private, self-hosted Google Drive + S3 in seconds.**
 
-Developers and teams can upload, manage, and share files via a web UI or an S3-compatible API—no cloud vendor needed, no complex setup.
+Developers and teams can upload, manage, and share files via a web UI or an S3-compatible API no cloud vendor needed, no complex setup.
 
 ![BeamDrop Preview](docs/beamdrop.jpeg)
 
@@ -26,12 +26,12 @@ Beamdrop is a single-binary file storage server built with Go and React. Drop it
 
 ## Features
 
-- **Web-based file manager** — modern React UI with drag-and-drop upload, search, and file operations (move, copy, rename, mkdir)
-- **S3-compatible API** — buckets, objects, presigned URLs, HMAC-SHA256 auth
-- **Shareable links** — generate unique URLs with optional password protection and expiry
-- **Real-time stats** — live storage metrics via WebSocket
-- **Single binary** — zero dependencies, runs on Linux, macOS, and Windows
-- **Docker-ready** — ~39 MB image, non-root, health checks included
+- **Web-based file manager** modern React UI with drag-and-drop upload, search, and file operations (move, copy, rename, mkdir)
+- **S3-compatible API** buckets, objects, presigned URLs, HMAC-SHA256 auth
+- **Shareable links** generate unique URLs with optional password protection and expiry
+- **Real-time stats** live storage metrics via WebSocket
+- **Single binary** zero dependencies, runs on Linux, macOS, and Windows
+- **Docker-ready** ~39 MB image, non-root, health checks included
 - QR code generation for easy mobile access
 - Cross-platform support
 - **Security features**:
@@ -135,7 +135,7 @@ docker compose logs -f beamdrop
 docker compose down
 ```
 
-Configure via environment variables — create a `.env` file or export them:
+Configure via environment variables create a `.env` file or export them:
 
 ```bash
 # .env (optional)

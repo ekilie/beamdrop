@@ -12,8 +12,9 @@ const (
 
 	ConfigDirName = ".beamdrop"
 
-	// MaxUploadSize defines the maximum upload file size (100MB by default)
-	MaxUploadSize int64 = 100 * 1024 * 1024 // 100MB in bytes
+	// MaxUploadSize defines the maximum upload file size (500MB by default)
+	MaxUploadSize int64 = 500 * 1024 * 1024 // 500MB in bytes //TODO: Will fix this,
+	//  probably also should user should set this via a flag
 )
 
 // Set via -ldflags at build time

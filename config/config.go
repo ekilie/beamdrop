@@ -15,6 +15,8 @@ const (
 	// MaxUploadSize defines the maximum upload file size (500MB by default)
 	MaxUploadSize int64 = 500 * 1024 * 1024 // 500MB in bytes //TODO: Will fix this,
 	//  probably also should user should set this via a flag
+
+	MultipartFormMaxMemory int64 = 10 << 30 // 10GB in bytes, for parsing multipart forms
 )
 
 // Set via -ldflags at build time

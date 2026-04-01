@@ -178,6 +178,4 @@ func (h *BucketHandler) getBucketInfo(w http.ResponseWriter, r *http.Request, na
 	}, http.StatusOK)
 }
 
-// Helper functions
-
 

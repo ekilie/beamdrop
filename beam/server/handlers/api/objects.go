@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/ekilie/beamdrop/beam"
+	"github.com/ekilie/beamdrop/config"
 	"github.com/ekilie/beamdrop/pkg/errors"
 	"github.com/ekilie/beamdrop/pkg/storage"
 )
@@ -149,7 +150,7 @@ func (h *ObjectHandler) putObjectMultipart(w http.ResponseWriter, r *http.Reques
 	}
 
 	// Parse multipart form (max 10GB)
-	if err := r.ParseMultipartForm(10 << 30); err != nil {
+	if err := r.ParseMultipartForm(config.MultipartFormMaxMemory); err != nil {
 		errors.InvalidRequest("Failed to parse multipart form").WithCause(err).WriteHTTPResponse(w)
 		return
 	}

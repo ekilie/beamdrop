@@ -128,7 +128,6 @@ export function FilePreview({
       "babelrc",
       "npmrc",
       "yarnrc",
-      "env",
     ].includes(fileExt) ||
     [
       "Dockerfile",
@@ -146,7 +145,6 @@ export function FilePreview({
       ".babelrc",
       ".npmrc",
       ".yarnrc",
-      ".env",
       "docker-compose.yml",
       "docker-compose.yaml",
     ].includes(fileName);

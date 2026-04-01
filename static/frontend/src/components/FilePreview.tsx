@@ -18,8 +18,8 @@ import {
   Minimize,
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
-import Prism from 'prismjs';
-import 'prismjs/themes/prism-tomorrow.css';
+import Prism from "prismjs";
+import "prismjs/themes/prism-tomorrow.css";
 import { getFileIcon } from "@/lib/utils";
 import { useTheme } from "./ThemeProvider";
 import { EnhancedVideoPlayer } from "./EnhancedVideoPlayer";
@@ -33,7 +33,12 @@ interface FilePreviewProps {
   currentPath?: string;
 }
 
-export function FilePreview({ fileName, isOpen, onClose, currentPath = "." }: FilePreviewProps) {
+export function FilePreview({
+  fileName,
+  isOpen,
+  onClose,
+  currentPath = ".",
+}: FilePreviewProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [zoom, setZoom] = useState(100);
@@ -44,12 +49,107 @@ export function FilePreview({ fileName, isOpen, onClose, currentPath = "." }: Fi
 
   const fileExt = fileName.split(".").pop()?.toLowerCase() || "";
 
-  const isImage = ["jpg", "jpeg", "png", "gif", "webp", "svg", "bmp"].includes(fileExt);
+  const isImage = ["jpg", "jpeg", "png", "gif", "webp", "svg", "bmp"].includes(
+    fileExt,
+  );
   const isPdf = fileExt === "pdf";
-  const isVideo = ["mp4", "mkv", "avi", "mov", "wmv", "flv", "webm"].includes(fileExt);
+  const isVideo = ["mp4", "mkv", "avi", "mov", "wmv", "flv", "webm"].includes(
+    fileExt,
+  );
   const isAudio = ["mp3", "wav", "ogg", "flac", "aac"].includes(fileExt);
-  const isText = ["txt", "md", "json", "xml", "csv", "log"].includes(fileExt);
-  const isCode = ["js", "ts", "tsx", "jsx", "py", "java", "vint", "go", "php", "rb", "html", "css", "scss"].includes(fileExt);
+  const isText = [
+    "txt",
+    "md",
+    "json",
+    "xml",
+    "csv",
+    "log",
+    "env",
+    "ini",
+    "cfg",
+    "conf",
+    "toml",
+  ].includes(fileExt);
+  const isCode = [
+    "js",
+    "ts",
+    "tsx",
+    "jsx",
+    "py",
+    "java",
+    "go",
+    "php",
+    "rb",
+    "html",
+    "css",
+    "scss",
+    "sass",
+    "yml",
+    "yaml",
+    "sh",
+    "bash",
+    "c",
+    "cpp",
+    "cc",
+    "cxx",
+    "h",
+    "hpp",
+    "rs",
+    "vue",
+    "swift",
+    "kt",
+    "kts",
+    "sql",
+    "graphql",
+    "gql",
+    "r",
+    "lua",
+    "perl",
+    "pl",
+    "tf",
+    "hcl",
+    "zig",
+    "nim",
+    "ex",
+    "exs",
+    "erl",
+    "clj",
+    "scala",
+    "groovy",
+    "dart",
+  ].includes(fileExt);
+  const isConfig =
+    [
+      "gitignore",
+      "dockerignore",
+      "editorconfig",
+      "prettierrc",
+      "eslintrc",
+      "babelrc",
+      "npmrc",
+      "yarnrc",
+      "env",
+    ].includes(fileExt) ||
+    [
+      "Dockerfile",
+      "Makefile",
+      "Caddyfile",
+      "Vagrantfile",
+      "Procfile",
+      "Gemfile",
+      "Rakefile",
+      ".gitignore",
+      ".dockerignore",
+      ".editorconfig",
+      ".prettierrc",
+      ".eslintrc",
+      ".babelrc",
+      ".npmrc",
+      ".yarnrc",
+      ".env",
+      "docker-compose.yml",
+      "docker-compose.yaml",
+    ].includes(fileName);
 
   useEffect(() => {
     if (isCode && fileContent) {
@@ -73,9 +173,9 @@ export function FilePreview({ fileName, isOpen, onClose, currentPath = "." }: Fi
       setIsFullscreen(!!document.fullscreenElement);
     };
 
-    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
     return () => {
-      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      document.removeEventListener("fullscreenchange", handleFullscreenChange);
     };
   }, []);
 
@@ -85,22 +185,23 @@ export function FilePreview({ fileName, isOpen, onClose, currentPath = "." }: Fi
 
     if (!document.fullscreenElement) {
       dialog.requestFullscreen().catch((err) => {
-        console.error('Error attempting to enable fullscreen:', err);
+        console.error("Error attempting to enable fullscreen:", err);
       });
     } else {
       document.exitFullscreen().catch((err) => {
-        console.error('Error attempting to exit fullscreen:', err);
+        console.error("Error attempting to exit fullscreen:", err);
       });
     }
   };
 
   const handleDownload = () => {
     try {
-      const link = document.createElement('a');
-      const filePath = currentPath === "." ? fileName : `${currentPath}/${fileName}`;
+      const link = document.createElement("a");
+      const filePath =
+        currentPath === "." ? fileName : `${currentPath}/${fileName}`;
       link.href = `/download?file=${encodeURIComponent(filePath)}`;
       link.download = fileName;
-      link.style.display = 'none';
+      link.style.display = "none";
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -119,7 +220,8 @@ export function FilePreview({ fileName, isOpen, onClose, currentPath = "." }: Fi
   };
 
   const renderPreviewContent = () => {
-    const filePath = currentPath === "." ? fileName : `${currentPath}/${fileName}`;
+    const filePath =
+      currentPath === "." ? fileName : `${currentPath}/${fileName}`;
     const previewUrl = `/files?path=${encodeURIComponent(filePath)}`;
 
     if (isImage) {
@@ -135,7 +237,10 @@ export function FilePreview({ fileName, isOpen, onClose, currentPath = "." }: Fi
             >
               <ZoomOut className="w-4 h-4" />
             </Button>
-            <Badge variant="secondary" className="font-mono text-xs min-w-[4rem] text-center">
+            <Badge
+              variant="secondary"
+              className="font-mono text-xs min-w-[4rem] text-center"
+            >
               {zoom}%
             </Badge>
             <Button
@@ -210,7 +315,7 @@ export function FilePreview({ fileName, isOpen, onClose, currentPath = "." }: Fi
       );
     }
 
-    if (isText || isCode) {
+    if (isText || isCode || isConfig) {
       return (
         <div className="w-full">
           <TextFilePreview
@@ -285,7 +390,11 @@ export function FilePreview({ fileName, isOpen, onClose, currentPath = "." }: Fi
                 size="sm"
                 onClick={toggleFullscreen}
                 className="shrink-0 sm:hidden p-2"
-                aria-label={isFullscreen ? "Exit fullscreen mode" : "Toggle fullscreen mode"}
+                aria-label={
+                  isFullscreen
+                    ? "Exit fullscreen mode"
+                    : "Toggle fullscreen mode"
+                }
               >
                 {isFullscreen ? (
                   <Minimize className="w-4 h-4" />
@@ -293,7 +402,7 @@ export function FilePreview({ fileName, isOpen, onClose, currentPath = "." }: Fi
                   <Maximize className="w-4 h-4" />
                 )}
               </Button>
-              {(isText || isCode) && (
+              {(isText || isCode || isConfig) && (
                 <CodeEditorDialog
                   currentPath={currentPath}
                   initialFileName={fileName}
@@ -301,7 +410,7 @@ export function FilePreview({ fileName, isOpen, onClose, currentPath = "." }: Fi
                   mode="edit"
                   onSaveSuccess={() => {
                     // Refresh the preview by updating the refresh key
-                    setRefreshKey(prev => prev + 1);
+                    setRefreshKey((prev) => prev + 1);
                     setLoading(true);
                     setError(null);
                     setFileContent("");
@@ -356,7 +465,13 @@ export function FilePreview({ fileName, isOpen, onClose, currentPath = "." }: Fi
               <div className="text-center space-y-4 animate-fade-in">
                 <div className="relative">
                   <div className="w-12 h-12 border-4 border-primary/30 border-t-primary animate-spin rounded-full mx-auto"></div>
-                  <div className="w-12 h-12 border-4 border-accent/30 border-b-accent animate-spin rounded-full mx-auto absolute top-0 left-1/2 -translate-x-1/2" style={{ animationDirection: 'reverse', animationDuration: '0.8s' }}></div>
+                  <div
+                    className="w-12 h-12 border-4 border-accent/30 border-b-accent animate-spin rounded-full mx-auto absolute top-0 left-1/2 -translate-x-1/2"
+                    style={{
+                      animationDirection: "reverse",
+                      animationDuration: "0.8s",
+                    }}
+                  ></div>
                 </div>
                 <p className="font-mono text-sm text-muted-foreground font-semibold">
                   LOADING PREVIEW...
@@ -376,7 +491,11 @@ export function FilePreview({ fileName, isOpen, onClose, currentPath = "." }: Fi
               <p className="text-muted-foreground font-mono text-sm mb-6 max-w-md mx-auto">
                 {error}
               </p>
-              <Button onClick={handleDownload} variant="default" className="hover-lift">
+              <Button
+                onClick={handleDownload}
+                variant="default"
+                className="hover-lift"
+              >
                 <Download className="w-4 h-4 mr-2" />
                 Download File
               </Button>
@@ -384,7 +503,7 @@ export function FilePreview({ fileName, isOpen, onClose, currentPath = "." }: Fi
           )}
 
           {!error && (
-            <div style={{ display: loading ? 'none' : 'block' }}>
+            <div style={{ display: loading ? "none" : "block" }}>
               {renderPreviewContent()}
             </div>
           )}
@@ -397,46 +516,76 @@ export function FilePreview({ fileName, isOpen, onClose, currentPath = "." }: Fi
 // Language mapping for syntax highlighting
 function getLanguageFromExtension(ext: string): string {
   const languageMap: { [key: string]: string } = {
-    'js': 'javascript',
-    'jsx': 'jsx',
-    'ts': 'typescript',
-    'tsx': 'tsx',
-    'py': 'python',
-    'java': 'java',
-    'go': 'go',
-    'php': 'php',
-    'rb': 'ruby',
-    'html': 'html',
-    'css': 'css',
-    'scss': 'scss',
-    'sass': 'scss',
-    'json': 'json',
-    'xml': 'xml',
-    'yml': 'yaml',
-    'yaml': 'yaml',
-    'md': 'markdown',
-    'sh': 'bash',
-    'bash': 'bash',
-    'c': 'c',
-    'cpp': 'cpp',
-    'cc': 'cpp',
-    'cxx': 'cpp',
-    'h': 'c',
-    'hpp': 'cpp',
-    'rs': 'rust',
-    'vue': 'vue',
-    'swift': 'swift',
-    'kt': 'kotlin',
-    'kts': 'kotlin',
-    'sql': 'sql',
-    'dockerfile': 'dockerfile',
+    js: "javascript",
+    jsx: "jsx",
+    ts: "typescript",
+    tsx: "tsx",
+    py: "python",
+    java: "java",
+    go: "go",
+    php: "php",
+    rb: "ruby",
+    html: "html",
+    css: "css",
+    scss: "scss",
+    sass: "scss",
+    json: "json",
+    xml: "xml",
+    yml: "yaml",
+    yaml: "yaml",
+    md: "markdown",
+    sh: "bash",
+    bash: "bash",
+    c: "c",
+    cpp: "cpp",
+    cc: "cpp",
+    cxx: "cpp",
+    h: "c",
+    hpp: "cpp",
+    rs: "rust",
+    swift: "swift",
+    kt: "kotlin",
+    kts: "kotlin",
+    sql: "sql",
+    dockerfile: "dockerfile",
+    toml: "toml",
+    ini: "ini",
+    graphql: "graphql",
+    gql: "graphql",
+    r: "r",
+    lua: "lua",
+    perl: "perl",
+    pl: "perl",
+    tf: "hcl",
+    hcl: "hcl",
+    zig: "zig",
+    dart: "dart",
+    scala: "scala",
+    groovy: "groovy",
+    ex: "elixir",
+    exs: "elixir",
+    erl: "erlang",
+    clj: "clojure",
+    nim: "nim",
+    vue: "markup",
+    gitignore: "git",
+    dockerignore: "docker",
+    env: "bash",
+    cfg: "ini",
+    conf: "ini",
   };
 
-  return languageMap[ext] || 'text';
+  return languageMap[ext] || "text";
 }
 
 // Component for text file previews
-function TextFilePreview({ fileName, currentPath = ".", onLoad, onError, onContentLoaded }: {
+function TextFilePreview({
+  fileName,
+  currentPath = ".",
+  onLoad,
+  onError,
+  onContentLoaded,
+}: {
   fileName: string;
   currentPath?: string;
   onLoad: () => void;
@@ -449,8 +598,11 @@ function TextFilePreview({ fileName, currentPath = ".", onLoad, onError, onConte
   useEffect(() => {
     const fetchContent = async () => {
       try {
-        const filePath = currentPath === "." ? fileName : `${currentPath}/${fileName}`;
-        const response = await fetch(`/files?path=${encodeURIComponent(filePath)}`);
+        const filePath =
+          currentPath === "." ? fileName : `${currentPath}/${fileName}`;
+        const response = await fetch(
+          `/files?path=${encodeURIComponent(filePath)}`,
+        );
         if (!response.ok) {
           throw new Error("Failed to fetch file content");
         }
@@ -469,7 +621,66 @@ function TextFilePreview({ fileName, currentPath = ".", onLoad, onError, onConte
   }, [fileName, currentPath, onLoad, onError]);
 
   const fileExt = fileName.split(".").pop()?.toLowerCase() || "";
-  const isCode = ["js", "ts", "tsx", "jsx", "py", "java", "go", "php", "rb", "html", "css", "scss", "json", "xml", "yml", "yaml", "md", "sh", "bash", "c", "cpp", "cc", "cxx", "h", "hpp", "rs", "vue", "swift", "kt", "kts", "sql", "dockerfile"].includes(fileExt);
+  const isCode = [
+    "js",
+    "ts",
+    "tsx",
+    "jsx",
+    "py",
+    "java",
+    "go",
+    "php",
+    "rb",
+    "html",
+    "css",
+    "scss",
+    "sass",
+    "json",
+    "xml",
+    "yml",
+    "yaml",
+    "md",
+    "sh",
+    "bash",
+    "c",
+    "cpp",
+    "cc",
+    "cxx",
+    "h",
+    "hpp",
+    "rs",
+    "vue",
+    "swift",
+    "kt",
+    "kts",
+    "sql",
+    "dockerfile",
+    "toml",
+    "ini",
+    "graphql",
+    "gql",
+    "r",
+    "lua",
+    "perl",
+    "pl",
+    "tf",
+    "hcl",
+    "zig",
+    "dart",
+    "scala",
+    "groovy",
+    "ex",
+    "exs",
+    "erl",
+    "clj",
+    "nim",
+    "gitignore",
+    "dockerignore",
+    "editorconfig",
+    "env",
+    "cfg",
+    "conf",
+  ].includes(fileExt);
 
   // Get the appropriate icon from the getFileIcon function
   const fileIcon = getFileIcon(fileName);
@@ -493,7 +704,9 @@ function TextFilePreview({ fileName, currentPath = ".", onLoad, onError, onConte
       </div>
       <div className="bg-background border-2 border-border rounded-lg overflow-hidden shadow-sm">
         <div className="p-4 max-h-[50vh] overflow-auto scrollbar-thin bg-muted/30">
-          <pre className={`text-sm font-mono ${isCode ? 'language-' + language : ''} whitespace-pre-wrap`}>
+          <pre
+            className={`text-sm font-mono ${isCode ? "language-" + language : ""} whitespace-pre-wrap`}
+          >
             <code className={isCode ? `language-${language}` : undefined}>
               {content}
             </code>

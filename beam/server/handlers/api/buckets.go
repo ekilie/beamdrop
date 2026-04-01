@@ -1,12 +1,12 @@
 package api
 
 import (
-	"encoding/json"
 	"log/slog"
 	"net/http"
 	"strings"
 	"time"
 
+	"github.com/ekilie/beamdrop/beam"
 	"github.com/ekilie/beamdrop/pkg/errors"
 	"github.com/ekilie/beamdrop/pkg/storage"
 )
@@ -81,7 +81,7 @@ func (h *BucketHandler) listBuckets(w http.ResponseWriter, r *http.Request) {
 		"count":   len(buckets),
 	}
 
-	sendJSON(w, response, http.StatusOK)
+	beam.SendJSON(w, response, http.StatusOK)
 }
 
 func (h *BucketHandler) createBucket(w http.ResponseWriter, r *http.Request, name string) {
@@ -100,7 +100,7 @@ func (h *BucketHandler) createBucket(w http.ResponseWriter, r *http.Request, nam
 	}
 
 	slog.Info("Bucket created", "bucket", name)
-	sendJSON(w, map[string]any{
+	beam.SendJSON(w, map[string]any{
 		"bucket":   name,
 		"created":  time.Now().UTC().Format(time.RFC3339),
 		"location": "/api/v1/buckets/" + name,
@@ -122,14 +122,14 @@ func (h *BucketHandler) createBucketIfNotExists(w http.ResponseWriter, r *http.R
 
 	if created {
 		slog.Info("Bucket created", "bucket", name)
-		sendJSON(w, map[string]any{
+		beam.SendJSON(w, map[string]any{
 			"bucket":   name,
 			"created":  time.Now().UTC().Format(time.RFC3339),
 			"location": "/api/v1/buckets/" + name,
 		}, http.StatusCreated)
 	} else {
 		slog.Info("Bucket already exists", "bucket", name)
-		sendJSON(w, map[string]any{
+		beam.SendJSON(w, map[string]any{
 			"bucket":   name,
 			"exists":   true,
 			"location": "/api/v1/buckets/" + name,
@@ -172,7 +172,7 @@ func (h *BucketHandler) getBucketInfo(w http.ResponseWriter, r *http.Request, na
 		return
 	}
 
-	sendJSON(w, map[string]any{
+	beam.SendJSON(w, map[string]any{
 		"bucket": name,
 		"exists": true,
 	}, http.StatusOK)
@@ -180,8 +180,4 @@ func (h *BucketHandler) getBucketInfo(w http.ResponseWriter, r *http.Request, na
 
 // Helper functions
 
-func sendJSON(w http.ResponseWriter, data any, status int) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(status)
-	json.NewEncoder(w).Encode(data)
-}
+

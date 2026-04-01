@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/ekilie/beamdrop/beam"
 	"github.com/ekilie/beamdrop/pkg/errors"
 	"github.com/ekilie/beamdrop/pkg/storage"
 )
@@ -131,7 +132,7 @@ func (h *ObjectHandler) putObject(w http.ResponseWriter, r *http.Request, bucket
 	slog.Info("Object uploaded", "bucket", bucket, "key", key, "bytes", info.Size)
 
 	w.Header().Set("ETag", `"`+info.ETag+`"`)
-	sendJSON(w, map[string]any{
+	beam.SendJSON(w, map[string]any{
 		"bucket": bucket,
 		"key":    key,
 		"etag":   info.ETag,
@@ -182,7 +183,7 @@ func (h *ObjectHandler) putObjectMultipart(w http.ResponseWriter, r *http.Reques
 	slog.Info("Object uploaded (multipart)", "bucket", bucket, "key", key, "bytes", info.Size)
 
 	w.Header().Set("ETag", `"`+info.ETag+`"`)
-	sendJSON(w, map[string]any{
+	beam.SendJSON(w, map[string]any{
 		"bucket": bucket,
 		"key":    key,
 		"etag":   info.ETag,
@@ -267,7 +268,7 @@ func (h *ObjectHandler) listObjects(w http.ResponseWriter, r *http.Request, buck
 		return
 	}
 
-	sendJSON(w, map[string]any{
+	beam.SendJSON(w, map[string]any{
 		"bucket":         bucket,
 		"prefix":         result.Prefix,
 		"delimiter":      result.Delimiter,

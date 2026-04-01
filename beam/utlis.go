@@ -1,9 +1,11 @@
 package beam
 
 import (
+	"encoding/json"
 	"fmt"
 	"log/slog"
 	"net"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
@@ -161,4 +163,11 @@ func searchFiles(rootPath, query, relativePath string, results *[]File) error {
 
 		return nil
 	})
+}
+
+// SendJSON is a helper function to send JSON responses
+func SendJSON(w http.ResponseWriter, data any, status int) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	json.NewEncoder(w).Encode(data)
 }

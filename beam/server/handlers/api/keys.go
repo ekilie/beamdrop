@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/ekilie/beamdrop/beam"
 	"github.com/ekilie/beamdrop/pkg/db"
 	"github.com/ekilie/beamdrop/pkg/errors"
 )
@@ -68,7 +69,7 @@ func (h *KeysHandler) listKeys(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	sendJSON(w, map[string]any{
+	beam.SendJSON(w, map[string]any{
 		"keys":  response,
 		"count": len(response),
 	}, http.StatusOK)
@@ -108,7 +109,7 @@ func (h *KeysHandler) createKey(w http.ResponseWriter, r *http.Request) {
 	slog.Info("API key created", "name", apiKey.Name, "access_key_id", apiKey.AccessKeyID)
 
 	// Return the key with the secret (only shown once!)
-	sendJSON(w, map[string]any{
+	beam.SendJSON(w, map[string]any{
 		"id":          apiKey.ID,
 		"name":        apiKey.Name,
 		"accessKeyId": apiKey.AccessKeyID,

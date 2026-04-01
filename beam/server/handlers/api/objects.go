@@ -2,7 +2,6 @@ package api
 
 import (
 	stderrors "errors"
-	"io"
 	"log/slog"
 	"net/http"
 	"path/filepath"
@@ -283,32 +282,132 @@ func (h *ObjectHandler) listObjects(w http.ResponseWriter, r *http.Request, buck
 // getContentType returns the MIME type for a file extension
 func getContentType(ext string) string {
 	types := map[string]string{
-		".html":  "text/html",
-		".css":   "text/css",
-		".js":    "application/javascript",
-		".json":  "application/json",
-		".xml":   "application/xml",
-		".txt":   "text/plain",
-		".md":    "text/markdown",
-		".pdf":   "application/pdf",
-		".zip":   "application/zip",
-		".tar":   "application/x-tar",
-		".gz":    "application/gzip",
-		".png":   "image/png",
-		".jpg":   "image/jpeg",
-		".jpeg":  "image/jpeg",
-		".gif":   "image/gif",
-		".svg":   "image/svg+xml",
-		".webp":  "image/webp",
-		".ico":   "image/x-icon",
-		".mp3":   "audio/mpeg",
-		".wav":   "audio/wav",
-		".mp4":   "video/mp4",
-		".webm":  "video/webm",
+		// Text
+		".html": "text/html",
+		".htm":  "text/html",
+		".css":  "text/css",
+		".js":   "application/javascript",
+		".mjs":  "application/javascript",
+		".json": "application/json",
+		".xml":  "application/xml",
+		".txt":  "text/plain",
+		".md":   "text/markdown",
+		".csv":  "text/csv",
+		".tsv":  "text/tab-separated-values",
+		".yaml": "text/yaml",
+		".yml":  "text/yaml",
+		".toml": "text/plain",
+		".ini":  "text/plain",
+		".cfg":  "text/plain",
+		".conf": "text/plain",
+		".log":  "text/plain",
+		".env":  "text/plain",
+
+		// Code / script
+		".ts":      "text/typescript",
+		".tsx":     "text/typescript",
+		".jsx":     "text/javascript",
+		".py":      "text/x-python",
+		".go":      "text/x-go",
+		".rs":      "text/x-rust",
+		".java":    "text/x-java",
+		".c":       "text/x-c",
+		".cpp":     "text/x-c++",
+		".h":       "text/x-c",
+		".hpp":     "text/x-c++",
+		".rb":      "text/x-ruby",
+		".php":     "text/x-php",
+		".sh":      "application/x-sh",
+		".bash":    "application/x-sh",
+		".sql":     "application/sql",
+		".lua":     "text/x-lua",
+		".swift":   "text/x-swift",
+		".kt":      "text/x-kotlin",
+		".scala":   "text/x-scala",
+		".dart":    "text/x-dart",
+		".r":       "text/x-r",
+		".scss":    "text/x-scss",
+		".sass":    "text/x-sass",
+		".less":    "text/x-less",
+		".vue":     "text/html",
+		".graphql": "application/graphql",
+
+		// Documents
+		".pdf":  "application/pdf",
+		".doc":  "application/msword",
+		".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+		".xls":  "application/vnd.ms-excel",
+		".xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+		".ppt":  "application/vnd.ms-powerpoint",
+		".pptx": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+		".odt":  "application/vnd.oasis.opendocument.text",
+		".ods":  "application/vnd.oasis.opendocument.spreadsheet",
+		".rtf":  "application/rtf",
+
+		// Archives
+		".zip": "application/zip",
+		".tar": "application/x-tar",
+		".gz":  "application/gzip",
+		".tgz": "application/gzip",
+		".bz2": "application/x-bzip2",
+		".xz":  "application/x-xz",
+		".7z":  "application/x-7z-compressed",
+		".rar": "application/vnd.rar",
+		".zst": "application/zstd",
+		".dmg": "application/x-apple-diskimage",
+		".iso": "application/x-iso9660-image",
+		".deb": "application/vnd.debian.binary-package",
+		".rpm": "application/x-rpm",
+
+		// Images
+		".png":  "image/png",
+		".jpg":  "image/jpeg",
+		".jpeg": "image/jpeg",
+		".gif":  "image/gif",
+		".svg":  "image/svg+xml",
+		".webp": "image/webp",
+		".ico":  "image/x-icon",
+		".bmp":  "image/bmp",
+		".tiff": "image/tiff",
+		".tif":  "image/tiff",
+		".avif": "image/avif",
+		".heic": "image/heic",
+		".heif": "image/heif",
+
+		// Audio
+		".mp3":  "audio/mpeg",
+		".wav":  "audio/wav",
+		".ogg":  "audio/ogg",
+		".flac": "audio/flac",
+		".aac":  "audio/aac",
+		".m4a":  "audio/mp4",
+		".opus": "audio/opus",
+		".wma":  "audio/x-ms-wma",
+
+		// Video
+		".mp4":  "video/mp4",
+		".webm": "video/webm",
+		".mkv":  "video/x-matroska",
+		".avi":  "video/x-msvideo",
+		".mov":  "video/quicktime",
+		".wmv":  "video/x-ms-wmv",
+		".flv":  "video/x-flv",
+		".m4v":  "video/mp4",
+		".3gp":  "video/3gpp",
+
+		// Fonts
 		".woff":  "font/woff",
 		".woff2": "font/woff2",
 		".ttf":   "font/ttf",
+		".otf":   "font/otf",
 		".eot":   "application/vnd.ms-fontobject",
+
+		// Binary / misc
+		".wasm": "application/wasm",
+		".bin":  "application/octet-stream",
+		".exe":  "application/vnd.microsoft.portable-executable",
+		".apk":  "application/vnd.android.package-archive",
+		".ipa":  "application/octet-stream",
 	}
 
 	if ct, ok := types[ext]; ok {
@@ -316,6 +415,3 @@ func getContentType(ext string) string {
 	}
 	return "application/octet-stream"
 }
-
-// Ensure io package is used
-var _ = io.EOF

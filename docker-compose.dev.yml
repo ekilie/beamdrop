@@ -18,6 +18,9 @@ services:
       - BEAMDROP_LOG_LEVEL=debug
       - BEAMDROP_RATE_LIMIT=0
     volumes:
-      - ./data:/data
+      - beamdrop_data:/data
     # Override restart policy for development
     restart: "no"
+
+volumes:
+  beamdrop_data:

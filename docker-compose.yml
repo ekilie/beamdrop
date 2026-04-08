@@ -6,7 +6,7 @@
 #   docker compose down               # stop
 #
 # All configuration is done through environment variables.
-# See docker-entrypoint.sh for the full list of BEAMDROP_* vars.
+# The binary reads BEAMDROP_* env vars natively — no entrypoint script needed.
 
 services:
   beamdrop:
@@ -16,24 +16,26 @@ services:
         VERSION: ${VERSION:-dev}
         COMMIT: ${COMMIT:-unknown}
         BUILD_DATE: ${BUILD_DATE:-unknown}
-    image: beamdrop:latest
+    image: ekilie/beamdrop:latest
     container_name: beamdrop
     restart: unless-stopped
     ports:
       - "${BEAMDROP_PORT:-7777}:${BEAMDROP_PORT:-7777}"
     volumes:
-      - ./data:/data
+      - beamdrop_data:/data
     environment:
-      - BEAMDROP_PORT=${BEAMDROP_PORT:-7777}
-      - BEAMDROP_PASSWORD=${BEAMDROP_PASSWORD:-}
-      - BEAMDROP_LOG_LEVEL=${BEAMDROP_LOG_LEVEL:-info}
-      - BEAMDROP_RATE_LIMIT=${BEAMDROP_RATE_LIMIT:-100}
-      - BEAMDROP_QR=${BEAMDROP_QR:-false}
-      - BEAMDROP_ALLOWED_ORIGINS=${BEAMDROP_ALLOWED_ORIGINS:-}
-      - BEAMDROP_DB_PATH=${BEAMDROP_DB_PATH:-}
-      - BEAMDROP_API_AUTH=${BEAMDROP_API_AUTH:-false}
-      - BEAMDROP_TLS_CERT=${BEAMDROP_TLS_CERT:-}
-      - BEAMDROP_TLS_KEY=${BEAMDROP_TLS_KEY:-}
+      BEAMDROP_DIR: /data
+      BEAMDROP_PORT: ${BEAMDROP_PORT:-7777}
+      BEAMDROP_PASSWORD: ${BEAMDROP_PASSWORD:-}
+      BEAMDROP_LOG_LEVEL: ${BEAMDROP_LOG_LEVEL:-info}
+      BEAMDROP_RATE_LIMIT: ${BEAMDROP_RATE_LIMIT:-100}
+      BEAMDROP_QR: ${BEAMDROP_QR:-false}
+      BEAMDROP_ALLOWED_ORIGINS: ${BEAMDROP_ALLOWED_ORIGINS:-}
+      BEAMDROP_DB_PATH: ${BEAMDROP_DB_PATH:-}
+      BEAMDROP_API_AUTH: ${BEAMDROP_API_AUTH:-false}
+      BEAMDROP_TLS_CERT: ${BEAMDROP_TLS_CERT:-}
+      BEAMDROP_TLS_KEY: ${BEAMDROP_TLS_KEY:-}
+      BEAMDROP_SHUTDOWN_TIMEOUT: ${BEAMDROP_SHUTDOWN_TIMEOUT:-30s}
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:${BEAMDROP_PORT:-7777}/health/live"]
       interval: 30s
@@ -66,3 +68,6 @@ services:
 # volumes:
 #   caddy_data:
 #   caddy_config:
+
+volumes:
+  beamdrop_data:

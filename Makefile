@@ -1,4 +1,4 @@
-.PHONY: run build dev build-all build-linux build-darwin build-windows deps clean build-ui release checksums
+.PHONY: run build dev build-all build-linux build-darwin build-windows deps clean build-ui release checksums docker-builder docker-push
 
 # ── Variables ──────────────────────────────────────────────────────────────────
 APP_NAME    := beamdrop
@@ -75,6 +75,21 @@ build-windows: deps build-ui
 	GOOS=windows GOARCH=arm64 CGO_ENABLED=0 go build -ldflags "$(LDFLAGS)" -o $(BUILD_DIR)/$(APP_NAME)-windows-arm64.exe ./cmd/beam
 	cd $(BUILD_DIR) && cp $(APP_NAME)-windows-amd64.exe $(APP_NAME).exe && zip $(APP_NAME)-windows-amd64.zip $(APP_NAME).exe && rm $(APP_NAME).exe
 	cd $(BUILD_DIR) && cp $(APP_NAME)-windows-arm64.exe $(APP_NAME).exe && zip $(APP_NAME)-windows-arm64.zip $(APP_NAME).exe && rm $(APP_NAME).exe
+
+
+# ── Docker Hub (requires docker buildx + docker login) ───────────────────────
+docker-builder:
+	docker buildx create --use --name beamdrop-builder
+
+docker-push:
+	docker buildx build \
+		--platform linux/amd64,linux/arm64 \
+		--build-arg VERSION=$(VERSION) \
+		--build-arg COMMIT=$(COMMIT) \
+		--build-arg BUILD_DATE=$(BUILD_DATE) \
+		-t ekilie/beamdrop:latest \
+		-t ekilie/beamdrop:$(VERSION) \
+		--push .
 
 # ── SHA256 checksums ─────────────────────────────────────────────────────────
 checksums:

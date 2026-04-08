@@ -53,7 +53,9 @@ FROM alpine:3.21
 
 LABEL org.opencontainers.image.title="BeamDrop" \
     org.opencontainers.image.description="Local-first file sharing with S3-compatible API" \
-    org.opencontainers.image.source="https://github.com/ekilie/beamdrop" 
+    org.opencontainers.image.source="https://github.com/ekilie/beamdrop" \
+    org.opencontainers.image.url="https://github.com/ekilie/beamdrop" \
+    org.opencontainers.image.licenses="MIT"
 
 # Install ca-certificates for HTTPS and wget for HEALTHCHECK
 RUN apk add --no-cache ca-certificates wget \
@@ -63,17 +65,17 @@ RUN apk add --no-cache ca-certificates wget \
 # Copy the static binary
 COPY --from=builder /beamdrop /usr/local/bin/beamdrop
 
-# Copy the entrypoint script (translates env vars → CLI flags)
-COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
-RUN chmod +x /usr/local/bin/docker-entrypoint.sh
-
-# /data is the shared directory   mount a volume here for persistence.
+# /data is the shared directory — mount a volume here for persistence.
 # The SQLite DB, logs, and uploaded files all live under this path.
 RUN mkdir -p /data && chown beamdrop:beamdrop /data
 VOLUME /data
 
-# Default port (beamdrop will also try 8080, 8888, … if 7777 is taken)
+# Default port
 EXPOSE 7777
+
+# Default environment — beamdrop reads BEAMDROP_* env vars natively
+ENV BEAMDROP_DIR=/data \
+    BEAMDROP_PORT=7777
 
 # Health check using the lightweight liveness probe
 HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
@@ -81,5 +83,5 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
 
 USER beamdrop:beamdrop
 
-ENTRYPOINT ["docker-entrypoint.sh"]
-CMD []
+ENTRYPOINT ["beamdrop"]
+CMD ["--dir", "/data"]

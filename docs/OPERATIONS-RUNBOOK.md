@@ -896,14 +896,21 @@ curl -s http://localhost:7777/metrics | grep rate_limit
 
 ### 6.6 Disk Full
 
-**Symptom:** HTTP 500 on uploads; `no space left on device` in logs.
+**Symptom:** HTTP 500 on uploads; `no space left on device` in logs; or HTTP 507 `STORAGE_FULL` when `-max-storage` limit is reached.
 
 ```bash
 # 1. Check disk usage
 df -h /var/lib/beamdrop
 du -sh /var/lib/beamdrop/*
 
-# 2. Recover space from trash (permanently delete trashed files)
+# 2. Check if max-storage limit is set
+grep MAX_STORAGE /etc/beamdrop/beamdrop.env
+
+# 3. Increase the limit or set to 0 (unlimited)
+BEAMDROP_MAX_STORAGE=0   # in /etc/beamdrop/beamdrop.env
+sudo systemctl restart beamdrop
+
+# 4. Recover space from trash (permanently delete trashed files)
 sudo rm -rf /var/lib/beamdrop/.beamdrop_trash/*
 
 # 3. Compress or archive old files in buckets

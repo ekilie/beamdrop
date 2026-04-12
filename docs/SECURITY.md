@@ -105,6 +105,22 @@ All endpoints now enforce strict HTTP method requirements:
 
 Requests with incorrect methods receive a `405 Method Not Allowed` response.
 
+## Storage Limits
+
+Beamdrop supports a configurable maximum storage limit. When enabled, write requests (POST, PUT, PATCH) are rejected with `STORAGE_FULL` once usage exceeds the threshold.
+
+### Configuration
+
+```bash
+# Limit storage to 10GB
+beamdrop -dir /path/to/share -max-storage 10737418240
+
+# Unlimited (default)
+beamdrop -dir /path/to/share -max-storage 0
+```
+
+Storage usage is cached for 5 seconds to avoid disk overhead on every request. Only user files count toward the limit — internal `.beamdrop` directories are excluded.
+
 ## Rate Limiting
 
 Beamdrop includes built-in per-IP rate limiting to protect against brute-force attacks, upload flooding, and general abuse.
@@ -223,6 +239,8 @@ beamdrop -dir /path/to/share -log-level debug
       Enable API key authentication for S3-like API endpoints
 -rate-limit int
       General rate limit in requests/min per IP (default 100, 0 = disabled)
+-max-storage int
+      Maximum total storage in bytes (0 = unlimited)
 -log-level string
       Log level: debug, info, warn, error (default "info")
 -qr

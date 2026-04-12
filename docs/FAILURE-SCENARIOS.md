@@ -91,7 +91,9 @@ When the disk is full, file write operations fail at the OS level. Beamdrop hand
 
 ### Storage Full Detection
 
-Beamdrop defines the `STORAGE_FULL` and `QUOTA_EXCEEDED` error codes. When a write fails, the OS error is wrapped and surfaced through the structured error system. Administrators can monitor disk space via standard OS tools or Grafana dashboards (see `docs/grafana-dashboard.json`).
+Beamdrop enforces storage limits via the `MaxStorageCheck` middleware (`pkg/middleware/disk.go`). When `-max-storage` is set, all write requests (POST, PUT, PATCH) are checked against current disk usage before proceeding. If usage exceeds the limit, the request is rejected with a `STORAGE_FULL` error. The `QUOTA_EXCEEDED` error code is also defined for future per-bucket quotas.
+
+Storage usage is cached for 5 seconds to avoid expensive disk walks on every request. Administrators can also monitor disk space via standard OS tools or Grafana dashboards (see `docs/grafana-dashboard.json`).
 
 ---
 

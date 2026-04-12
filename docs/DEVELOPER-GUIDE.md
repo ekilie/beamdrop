@@ -145,34 +145,37 @@ The S3-compatible API allows applications to interact with Beamdrop using famili
 ### Key Concepts
 
 #### Buckets
+
 - A **bucket** is a top-level container for objects (like a folder)
 - Bucket names must be 3-63 characters, lowercase alphanumeric, hyphens, or dots
 - Stored as directories under `{shared-dir}/buckets/`
 
 #### Objects
+
 - An **object** is a file stored in a bucket
 - Objects are identified by a **key** (path within the bucket)
 - Keys can contain slashes to create hierarchical structures
 - Stored as files: `{shared-dir}/buckets/{bucket}/{key}`
 
 #### API Keys
+
 - API keys provide programmatic access to the S3 API
 - Each key has an **access key ID** (public) and **secret key** (private)
 - Requests are signed using HMAC-SHA256 to prove ownership of the secret key
 
 ### Supported Operations
 
-| Operation | HTTP Method | Endpoint |
-|-----------|-------------|----------|
-| List buckets | GET | `/api/v1/buckets` |
-| Create bucket | PUT | `/api/v1/buckets/{bucket}` |
-| Delete bucket | DELETE | `/api/v1/buckets/{bucket}` |
-| Check bucket exists | HEAD | `/api/v1/buckets/{bucket}` |
-| List objects | GET | `/api/v1/buckets/{bucket}?prefix=...` |
-| Get object | GET | `/api/v1/buckets/{bucket}/{key}` |
-| Put object | PUT | `/api/v1/buckets/{bucket}/{key}` |
-| Delete object | DELETE | `/api/v1/buckets/{bucket}/{key}` |
-| Head object | HEAD | `/api/v1/buckets/{bucket}/{key}` |
+| Operation           | HTTP Method | Endpoint                              |
+| ------------------- | ----------- | ------------------------------------- |
+| List buckets        | GET         | `/api/v1/buckets`                     |
+| Create bucket       | PUT         | `/api/v1/buckets/{bucket}`            |
+| Delete bucket       | DELETE      | `/api/v1/buckets/{bucket}`            |
+| Check bucket exists | HEAD        | `/api/v1/buckets/{bucket}`            |
+| List objects        | GET         | `/api/v1/buckets/{bucket}?prefix=...` |
+| Get object          | GET         | `/api/v1/buckets/{bucket}/{key}`      |
+| Put object          | PUT         | `/api/v1/buckets/{bucket}/{key}`      |
+| Delete object       | DELETE      | `/api/v1/buckets/{bucket}/{key}`      |
+| Head object         | HEAD        | `/api/v1/buckets/{bucket}/{key}`      |
 
 ### Code Organization
 
@@ -201,7 +204,7 @@ Client Request:
 
 1. HTTP Server (server.go:ServeHTTP)
    • Logs request
-   • Applies middleware (CORS, rate limiting, security headers)
+   • Applies middleware (CORS, rate limiting, max storage check, security headers)
 
      ↓
 
@@ -281,6 +284,7 @@ Client Request:
 │  HTTP Server (server.go)        │
 │  • Logs request                 │
 │  • Applies rate limiting        │
+│  • Checks max storage limit     │
 │  • Adds security headers        │
 └────────────┬────────────────────┘
              │
@@ -345,6 +349,7 @@ BucketExists(name)              // Check if directory exists
 ```
 
 **Key validations:**
+
 - Bucket names: 3-63 chars, lowercase, alphanumeric/hyphens/dots
 - No IP addresses (prevents `192.168.1.1` as bucket name)
 - Must start/end with letter or number
@@ -368,6 +373,7 @@ ListObjects(bucket, prefix, delimiter, maxKeys)  // List files
 ```
 
 **Key features:**
+
 - **Path validation**: Prevents `..` (directory traversal) and leading `/`
 - **File locking**: Prevents concurrent writes to same file
 - **Atomic writes**: Uses temporary files + rename for crash safety
@@ -391,6 +397,7 @@ writer.Commit()     // fsync() + rename to beach.jpg
 ```
 
 **How it works:**
+
 1. Create temp file: `beach.jpg.tmp.abc123`
 2. Write all data to temp file
 3. Call `fsync()` to flush to disk
@@ -414,6 +421,7 @@ defer unlock()
 ```
 
 **Why locking?**
+
 - Multiple clients might upload to same key simultaneously
 - Without locking, file could be corrupted
 - Locks are per-object (bucket + key), not global
@@ -431,12 +439,14 @@ Beamdrop uses **HMAC-SHA256 request signing**, similar to AWS Signature Version 
    - Secret Key: `sk_xyz789` (private, never sent over network)
 
 2. **Client creates signature:**
+
    ```
    message = "{METHOD}\n{PATH}\n{TIMESTAMP}"
    signature = Base64(HMAC-SHA256(secret_key, message))
    ```
 
 3. **Client sends request:**
+
    ```http
    PUT /api/v1/buckets/photos/beach.jpg
    Authorization: Bearer BDK_abc123:{signature}
@@ -454,11 +464,11 @@ Beamdrop uses **HMAC-SHA256 request signing**, similar to AWS Signature Version 
 func GenerateSignature(secretKey, method, path, timestamp string) string {
     // Create message to sign
     message := fmt.Sprintf("%s\n%s\n%s", method, path, timestamp)
-    
+
     // Compute HMAC-SHA256
     h := hmac.New(sha256.New, []byte(secretKey))
     h.Write([]byte(message))
-    
+
     // Return base64-encoded signature
     return base64.StdEncoding.EncodeToString(h.Sum(nil))
 }
@@ -472,6 +482,7 @@ func VerifySignature(secretKey, method, path, timestamp, signature string) bool 
 #### Why Timestamp?
 
 The `X-Beamdrop-Date` header prevents **replay attacks**:
+
 - Server only accepts requests within ±15 minutes of current time
 - An attacker who intercepts a signed request can't replay it later
 - Implemented in `crypto.IsTimestampValid()`
@@ -499,6 +510,7 @@ apiKey, secretKey, err := db.CreateAPIKey(name, permissions, bucketScope, expire
 ### Web UI Authentication
 
 The web UI uses **session-based authentication**:
+
 - Optional password protection (`-p` flag)
 - Session stored in memory (cleared on restart)
 - Implemented in `pkg/auth/middleware.go`
@@ -555,7 +567,7 @@ func (bm *BucketManager) GetBucketInfo(name string) (*BucketInfo, error) {
 ```go
 func (h *BucketHandler) Handle(w http.ResponseWriter, r *http.Request) {
     // ... existing code ...
-    
+
     case http.MethodGet:
         if bucketName == "" {
             h.listBuckets(w, r)
@@ -625,6 +637,7 @@ slog.Error("Failed to write file", "error", err)
 ```
 
 Logs go to:
+
 - **Console**: Human-readable, colored output
 - **File**: `{shared-dir}/.beamdrop/beamdrop.log` (structured JSON)
 

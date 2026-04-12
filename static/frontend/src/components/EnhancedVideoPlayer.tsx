@@ -19,7 +19,6 @@ import {
 
 interface EnhancedVideoPlayerProps {
   src: string;
-  fileName: string;
   onLoadedData: () => void;
   onError: () => void;
 }
@@ -39,7 +38,7 @@ export function EnhancedVideoPlayer({
   const [, setIsFullscreen] = useState(false);
   const [showControls, setShowControls] = useState(true);
   const containerRef = useRef<HTMLDivElement>(null);
-  const controlsTimeoutRef = useRef<NodeJS.Timeout>();
+  const controlsTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
 
   useEffect(() => {
     const video = videoRef.current;

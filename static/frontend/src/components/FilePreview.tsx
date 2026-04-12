@@ -289,7 +289,6 @@ export function FilePreview({
       return (
         <EnhancedVideoPlayer
           src={previewUrl}
-          fileName={fileName}
           onLoadedData={() => setLoading(false)}
           onError={() => {
             setError("Failed to load video");

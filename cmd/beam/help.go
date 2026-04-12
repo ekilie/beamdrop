@@ -33,6 +33,8 @@ Options:
 		Auth endpoints: 5% of general rate; Upload endpoints: 10% of general rate
   -db-path string
     Path to database file or directory (default: ~/.beamdrop/beamdrop.db). If a directory is provided, beamdrop.db is appended automatically
+  -max-storage int
+		Maximum total storage in bytes (0 = unlimited)
   -shutdown-timeout duration
 		Graceful shutdown timeout for draining connections (default 30s)
   -qr
@@ -56,6 +58,7 @@ Environment Variables:
     BEAMDROP_QR               -qr              ("true"/"1" to enable)
     BEAMDROP_LOG_LEVEL        -log-level
     BEAMDROP_RATE_LIMIT       -rate-limit
+    BEAMDROP_MAX_STORAGE      -max-storage
     BEAMDROP_SHUTDOWN_TIMEOUT -shutdown-timeout (Go duration, e.g. "30s")
 
 S3-like API:

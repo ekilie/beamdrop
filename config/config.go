@@ -73,6 +73,7 @@ type Flags struct {
 	RateLimit       int           // General rate limit in requests/min (0 = disabled)
 	ShutdownTimeout time.Duration // Graceful shutdown timeout (default 30s)
 	DBPath          string        // Path to database file (default: <sharedDir>/.beamdrop/beamdrop.db)
+	MaxStorage      int64         // Maximum total storage in bytes (0 = unlimited)
 }
 
 func GetDBPath() string {

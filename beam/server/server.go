@@ -63,7 +63,6 @@ func New(sharedDir string, flags config.Flags) *Server {
 }
 
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	// Increment request counter
 	db.IncrementRequests()
 
 	// Build middleware chain

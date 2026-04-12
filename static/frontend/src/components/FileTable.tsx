@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
@@ -79,7 +79,10 @@ const FileTable: React.FC<FileTableProps> = ({
   const [sortField, setSortField] = useState<SortField>("name");
   const [sortOrder, setSortOrder] = useState<SortOrder>("asc");
   const { showHiddenFiles } = useSettings();
-  const [renameDialog, setRenameDialog] = useState<{ open: boolean; fileName: string }>({
+  const [renameDialog, setRenameDialog] = useState<{
+    open: boolean;
+    fileName: string;
+  }>({
     open: false,
     fileName: "",
   });
@@ -92,13 +95,16 @@ const FileTable: React.FC<FileTableProps> = ({
     fileName: "",
     mode: "move",
   });
-  const [shareDialog, setShareDialog] = useState<{ open: boolean; fileName: string }>({
+  const [shareDialog, setShareDialog] = useState<{
+    open: boolean;
+    fileName: string;
+  }>({
     open: false,
     fileName: "",
   });
 
   if (!showHiddenFiles) {
-    files = files.filter(file => !file.name.startsWith('.'));
+    files = files.filter((file) => !file.name.startsWith("."));
   }
   const sortedFiles = useMemo(() => {
     return [...files].sort((a, b) => {
@@ -112,22 +118,22 @@ const FileTable: React.FC<FileTableProps> = ({
         case "name":
           comparison = a.name.localeCompare(b.name);
           break;
-        case "size":
-          {
-            const parseSize = (s: string) => {
-              if (a.isDir || b.isDir) return 0; // Directories don't have meaningful size comparison
-              const [num, unit] = s.split(" ");
-              const n = parseFloat(num);
-              if (unit === "KB") return n * 1024;
-              if (unit === "MB") return n * 1024 * 1024;
-              if (unit === "GB") return n * 1024 * 1024 * 1024;
-              return n;
-            };
-            comparison = parseSize(a.size) - parseSize(b.size);
-            break;
-          }
+        case "size": {
+          const parseSize = (s: string) => {
+            if (a.isDir || b.isDir) return 0; // Directories don't have meaningful size comparison
+            const [num, unit] = s.split(" ");
+            const n = parseFloat(num);
+            if (unit === "KB") return n * 1024;
+            if (unit === "MB") return n * 1024 * 1024;
+            if (unit === "GB") return n * 1024 * 1024 * 1024;
+            return n;
+          };
+          comparison = parseSize(a.size) - parseSize(b.size);
+          break;
+        }
         case "modTime":
-          comparison = new Date(a.modTime).getTime() - new Date(b.modTime).getTime();
+          comparison =
+            new Date(a.modTime).getTime() - new Date(b.modTime).getTime();
           break;
       }
 
@@ -146,7 +152,8 @@ const FileTable: React.FC<FileTableProps> = ({
 
   const handleFileClick = (file: FileItem) => {
     if (file.isDir) {
-      const newPath = currentPath === "." ? file.name : `${currentPath}/${file.name}`;
+      const newPath =
+        currentPath === "." ? file.name : `${currentPath}/${file.name}`;
       onNavigate(newPath);
     } else {
       onPreview(file.name);
@@ -156,11 +163,12 @@ const FileTable: React.FC<FileTableProps> = ({
   const downloadFile = async (fileName: string, event: React.MouseEvent) => {
     event.stopPropagation();
     try {
-      const link = document.createElement('a');
-      const filePath = currentPath === "." ? fileName : `${currentPath}/${fileName}`;
+      const link = document.createElement("a");
+      const filePath =
+        currentPath === "." ? fileName : `${currentPath}/${fileName}`;
       link.href = `/download?file=${encodeURIComponent(filePath)}`;
       link.download = fileName;
-      link.style.display = 'none';
+      link.style.display = "none";
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -181,11 +189,12 @@ const FileTable: React.FC<FileTableProps> = ({
   const deleteFile = async (fileName: string, event: React.MouseEvent) => {
     event.stopPropagation();
     try {
-      const filePath = currentPath === "." ? fileName : `${currentPath}/${fileName}`;
-      const response = await fetch('/trash', {
-        method: 'POST',
+      const filePath =
+        currentPath === "." ? fileName : `${currentPath}/${fileName}`;
+      const response = await fetch("/trash", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({ sourcePath: filePath }),
       });
@@ -212,7 +221,6 @@ const FileTable: React.FC<FileTableProps> = ({
       });
     }
   };
-
 
   const getSortIcon = (field: SortField) => {
     if (sortField !== field) {
@@ -251,9 +259,15 @@ const FileTable: React.FC<FileTableProps> = ({
                       <Skeleton className="h-4 w-32 animate-pulse" />
                     </div>
                   </TableCell>
-                  <TableCell><Skeleton className="h-4 w-16 animate-pulse" /></TableCell>
-                  <TableCell><Skeleton className="h-4 w-24 animate-pulse" /></TableCell>
-                  <TableCell><Skeleton className="h-8 w-8 animate-pulse" /></TableCell>
+                  <TableCell>
+                    <Skeleton className="h-4 w-16 animate-pulse" />
+                  </TableCell>
+                  <TableCell>
+                    <Skeleton className="h-4 w-24 animate-pulse" />
+                  </TableCell>
+                  <TableCell>
+                    <Skeleton className="h-8 w-8 animate-pulse" />
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
@@ -271,7 +285,9 @@ const FileTable: React.FC<FileTableProps> = ({
           <div className="font-mono text-sm font-bold uppercase tracking-wide text-foreground">
             {sortedFiles.length} ITEM{sortedFiles.length !== 1 ? "S" : ""}
             {searchTerm && (
-              <span className="text-muted-foreground ml-2">matching "{searchTerm}"</span>
+              <span className="text-muted-foreground ml-2">
+                matching "{searchTerm}"
+              </span>
             )}
           </div>
           <Button
@@ -325,7 +341,11 @@ const FileTable: React.FC<FileTableProps> = ({
             <TableBody>
               {sortedFiles.map((file) => {
                 // Use isStarred from backend response, fallback to Set lookup for backwards compatibility
-                const filePath = file.path || (currentPath === "." ? file.name : `${currentPath}/${file.name}`);
+                const filePath =
+                  file.path ||
+                  (currentPath === "."
+                    ? file.name
+                    : `${currentPath}/${file.name}`);
                 const isStarred = file.isStarred ?? starredFiles.has(filePath);
                 return (
                   <TableRow
@@ -345,7 +365,9 @@ const FileTable: React.FC<FileTableProps> = ({
                           )}
                         </div>
                         <div className="flex items-center gap-2 min-w-0 flex-1">
-                          <span className="font-mono truncate">{file.name}</span>
+                          <span className="font-mono truncate">
+                            {file.name}
+                          </span>
                           {isStarred && (
                             <Star className="w-4 h-4 text-primary fill-primary flex-shrink-0" />
                           )}
@@ -374,7 +396,10 @@ const FileTable: React.FC<FileTableProps> = ({
                             onClick={(e) => {
                               e.stopPropagation();
                               if (file.isDir) {
-                                const newPath = currentPath === "." ? file.name : `${currentPath}/${file.name}`;
+                                const newPath =
+                                  currentPath === "."
+                                    ? file.name
+                                    : `${currentPath}/${file.name}`;
                                 onNavigate(newPath);
                               } else {
                                 onPreview(file.name);
@@ -385,20 +410,32 @@ const FileTable: React.FC<FileTableProps> = ({
                             {file.isDir ? "Open" : "Preview"}
                           </DropdownMenuItem>
                           {!file.isDir && (
-                            <DropdownMenuItem onClick={(e) => downloadFile(file.name, e)}>
+                            <DropdownMenuItem
+                              onClick={(e) => downloadFile(file.name, e)}
+                            >
                               <Download className="w-4 h-4 mr-2" />
                               Download
                             </DropdownMenuItem>
                           )}
-                          <DropdownMenuItem onClick={(e) => onToggleStar(file.name, e)}>
-                            <Star className={cn("w-4 h-4 mr-2", isStarred && "fill-primary")} />
+                          <DropdownMenuItem
+                            onClick={(e) => onToggleStar(file.name, e)}
+                          >
+                            <Star
+                              className={cn(
+                                "w-4 h-4 mr-2",
+                                isStarred && "fill-primary",
+                              )}
+                            />
                             {isStarred ? "Unstar" : "Star"}
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem
                             onClick={(e) => {
                               e.stopPropagation();
-                              setShareDialog({ open: true, fileName: file.name });
+                              setShareDialog({
+                                open: true,
+                                fileName: file.name,
+                              });
                             }}
                           >
                             <Share2 className="w-4 h-4 mr-2" />
@@ -408,7 +445,10 @@ const FileTable: React.FC<FileTableProps> = ({
                           <DropdownMenuItem
                             onClick={(e) => {
                               e.stopPropagation();
-                              setRenameDialog({ open: true, fileName: file.name });
+                              setRenameDialog({
+                                open: true,
+                                fileName: file.name,
+                              });
                             }}
                           >
                             <Edit className="w-4 h-4 mr-2" />
@@ -417,7 +457,11 @@ const FileTable: React.FC<FileTableProps> = ({
                           <DropdownMenuItem
                             onClick={(e) => {
                               e.stopPropagation();
-                              setMoveDialog({ open: true, fileName: file.name, mode: "move" });
+                              setMoveDialog({
+                                open: true,
+                                fileName: file.name,
+                                mode: "move",
+                              });
                             }}
                           >
                             <Move className="w-4 h-4 mr-2" />
@@ -426,7 +470,11 @@ const FileTable: React.FC<FileTableProps> = ({
                           <DropdownMenuItem
                             onClick={(e) => {
                               e.stopPropagation();
-                              setMoveDialog({ open: true, fileName: file.name, mode: "copy" });
+                              setMoveDialog({
+                                open: true,
+                                fileName: file.name,
+                                mode: "copy",
+                              });
                             }}
                           >
                             <Copy className="w-4 h-4 mr-2" />

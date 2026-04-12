@@ -30,7 +30,7 @@ dev:
 build-all: deps build-ui
 	@echo "==> Building for all platforms ($(VERSION))..."
 	mkdir -p $(BUILD_DIR)
-	# macOS Apple Silicon (M1/M2/M3/M4)
+	# macOS Apple Silicon (M1/M2/M3/M4...)
 	GOOS=darwin  GOARCH=arm64 CGO_ENABLED=0 go build -ldflags "$(LDFLAGS)" -o $(BUILD_DIR)/$(APP_NAME)-darwin-arm64      ./cmd/beam
 	# macOS Intel
 	GOOS=darwin  GOARCH=amd64 CGO_ENABLED=0 go build -ldflags "$(LDFLAGS)" -o $(BUILD_DIR)/$(APP_NAME)-darwin-amd64      ./cmd/beam

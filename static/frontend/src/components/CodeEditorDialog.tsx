@@ -28,8 +28,8 @@ export function CodeEditorDialog({
   mode = "create",
 }: CodeEditorDialogProps) {
   const [open, setOpen] = useState(false);
-  const [fileName, setFileName] = useState(initialFileName);
-  const [content, setContent] = useState(initialContent);
+  const [, setFileName] = useState(initialFileName);
+  const [, setContent] = useState(initialContent);
 
   const handleSave = (savedFileName: string, savedContent: string) => {
     setFileName(savedFileName);
@@ -83,7 +83,10 @@ export function CodeEditorDialog({
             {mode === "create" ? "Create New File" : "Edit File"}
           </DialogTitle>
         </DialogHeader>
-        <div className="flex-1 overflow-hidden" style={{ height: 'calc(90vh - 4rem)' }}>
+        <div
+          className="flex-1 overflow-hidden"
+          style={{ height: "calc(90vh - 4rem)" }}
+        >
           <CodeEditor
             initialFileName={initialFileName}
             initialContent={initialContent}
@@ -96,4 +99,3 @@ export function CodeEditorDialog({
     </Dialog>
   );
 }
-

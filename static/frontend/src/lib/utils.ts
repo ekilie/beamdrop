@@ -4,10 +4,6 @@ import {
   FileText,
   Image as ImageIcon,
   FileSpreadsheet,
-  FileCode,
-  FileVideo,
-  Music,
-  Database,
 } from "lucide-react";
 import { 
   FaCss3Alt, 

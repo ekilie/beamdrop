@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Dialog,
   DialogContent,
@@ -21,7 +21,7 @@ import { toast } from "@/hooks/use-toast";
 import Prism from "prismjs";
 import "prismjs/themes/prism-tomorrow.css";
 import { getFileIcon } from "@/lib/utils";
-import { useTheme } from "./ThemeProvider";
+
 import { EnhancedVideoPlayer } from "./EnhancedVideoPlayer";
 import { EnhancedAudioPlayer } from "./EnhancedAudioPlayer";
 import { CodeEditorDialog } from "./CodeEditorDialog";
@@ -591,8 +591,6 @@ function TextFilePreview({
   onContentLoaded?: (content: string) => void;
 }) {
   const [content, setContent] = useState<string>("");
-  const { theme } = useTheme();
-
   useEffect(() => {
     const fetchContent = async () => {
       try {

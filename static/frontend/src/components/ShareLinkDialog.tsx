@@ -3,7 +3,6 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -12,7 +11,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
 import { Copy, Check, Link2, Lock, Calendar, ExternalLink } from "lucide-react";
-import { cn } from "@/lib/utils";
 
 interface ShareLinkDialogProps {
   open: boolean;
@@ -36,8 +34,9 @@ export function ShareLinkDialog({
   const generateShareLink = async () => {
     setIsGenerating(true);
     try {
-      const filePath = currentPath === "." ? fileName : `${currentPath}/${fileName}`;
-      
+      const filePath =
+        currentPath === "." ? fileName : `${currentPath}/${fileName}`;
+
       const requestBody: {
         path: string;
         password?: string;
@@ -123,7 +122,8 @@ export function ShareLinkDialog({
         <DialogHeader>
           <DialogTitle className="font-mono uppercase">Share Link</DialogTitle>
           <DialogDescription>
-            Create a shareable link for <span className="font-semibold">{fileName}</span>
+            Create a shareable link for{" "}
+            <span className="font-semibold">{fileName}</span>
           </DialogDescription>
         </DialogHeader>
 
@@ -220,7 +220,8 @@ export function ShareLinkDialog({
               <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-md">
                 <p className="text-sm text-blue-700 dark:text-blue-400 flex items-center gap-2">
                   <Calendar className="w-4 h-4" />
-                  This link will expire in {expiresIn} hour{parseFloat(expiresIn) === 1 ? '' : 's'}
+                  This link will expire in {expiresIn} hour
+                  {parseFloat(expiresIn) === 1 ? "" : "s"}
                 </p>
               </div>
             )}

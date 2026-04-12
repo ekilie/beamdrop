@@ -5,33 +5,33 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Save, FileText, Loader2, Maximize, Minimize } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
-import { useTheme } from "./ThemeProvider";
+
 import Editor from "react-simple-code-editor";
-import Prism from 'prismjs';
+import Prism from "prismjs";
 
 // Import Prism languages - import in dependency order
 // NOTE: We Don't import prism-core separately, it's included in prismjs
-import 'prismjs/components/prism-clike';
-import 'prismjs/components/prism-markup';
-import 'prismjs/components/prism-css';
-import 'prismjs/components/prism-javascript';
-import 'prismjs/components/prism-json';
-import 'prismjs/components/prism-bash';
-import 'prismjs/components/prism-c';
-import 'prismjs/components/prism-cpp';
-import 'prismjs/components/prism-go';
-import 'prismjs/components/prism-java';
-import 'prismjs/components/prism-php';
-import 'prismjs/components/prism-python';
-import 'prismjs/components/prism-ruby';
-import 'prismjs/components/prism-rust';
-import 'prismjs/components/prism-sql';
-import 'prismjs/components/prism-yaml';
-import 'prismjs/components/prism-markdown';
+import "prismjs/components/prism-clike";
+import "prismjs/components/prism-markup";
+import "prismjs/components/prism-css";
+import "prismjs/components/prism-javascript";
+import "prismjs/components/prism-json";
+import "prismjs/components/prism-bash";
+import "prismjs/components/prism-c";
+import "prismjs/components/prism-cpp";
+import "prismjs/components/prism-go";
+import "prismjs/components/prism-java";
+import "prismjs/components/prism-php";
+import "prismjs/components/prism-python";
+import "prismjs/components/prism-ruby";
+import "prismjs/components/prism-rust";
+import "prismjs/components/prism-sql";
+import "prismjs/components/prism-yaml";
+import "prismjs/components/prism-markdown";
 // JSX/TSX must come after JavaScript (they extend it)
-import 'prismjs/components/prism-jsx';
-import 'prismjs/components/prism-typescript';
-import 'prismjs/components/prism-tsx';
+import "prismjs/components/prism-jsx";
+import "prismjs/components/prism-typescript";
+import "prismjs/components/prism-tsx";
 
 interface CodeEditorProps {
   initialFileName?: string;
@@ -44,42 +44,42 @@ interface CodeEditorProps {
 // Language mapping for syntax highlighting
 function getLanguageFromExtension(ext: string): string {
   const languageMap: { [key: string]: string } = {
-    'js': 'javascript',
-    'jsx': 'jsx',
-    'ts': 'typescript',
-    'tsx': 'tsx',
-    'py': 'python',
-    'java': 'java',
-    'go': 'go',
-    'php': 'php',
-    'rb': 'ruby',
-    'html': 'html',
-    'css': 'css',
-    'scss': 'scss',
-    'sass': 'scss',
-    'json': 'json',
-    'xml': 'xml',
-    'yml': 'yaml',
-    'yaml': 'yaml',
-    'md': 'markdown',
-    'sh': 'bash',
-    'bash': 'bash',
-    'c': 'c',
-    'cpp': 'cpp',
-    'cc': 'cpp',
-    'cxx': 'cpp',
-    'h': 'c',
-    'hpp': 'cpp',
-    'rs': 'rust',
-    'vue': 'vue',
-    'swift': 'swift',
-    'kt': 'kotlin',
-    'kts': 'kotlin',
-    'sql': 'sql',
-    'dockerfile': 'dockerfile',
+    js: "javascript",
+    jsx: "jsx",
+    ts: "typescript",
+    tsx: "tsx",
+    py: "python",
+    java: "java",
+    go: "go",
+    php: "php",
+    rb: "ruby",
+    html: "html",
+    css: "css",
+    scss: "scss",
+    sass: "scss",
+    json: "json",
+    xml: "xml",
+    yml: "yaml",
+    yaml: "yaml",
+    md: "markdown",
+    sh: "bash",
+    bash: "bash",
+    c: "c",
+    cpp: "cpp",
+    cc: "cpp",
+    cxx: "cpp",
+    h: "c",
+    hpp: "cpp",
+    rs: "rust",
+    vue: "vue",
+    swift: "swift",
+    kt: "kotlin",
+    kts: "kotlin",
+    sql: "sql",
+    dockerfile: "dockerfile",
   };
 
-  return languageMap[ext] || 'text';
+  return languageMap[ext] || "text";
 }
 
 export function CodeEditor({
@@ -87,7 +87,6 @@ export function CodeEditor({
   initialContent = "",
   currentPath = ".",
   onSave,
-  onClose,
 }: CodeEditorProps) {
   const [fileName, setFileName] = useState(initialFileName);
   const [content, setContent] = useState(initialContent);
@@ -95,12 +94,6 @@ export function CodeEditor({
   const [hasChanges, setHasChanges] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const editorRef = useRef<HTMLDivElement>(null);
-  const { theme } = useTheme();
-
-  // Determine the current effective theme
-  const currentTheme = theme === "system"
-    ? (typeof window !== 'undefined' && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light")
-    : theme;
 
   useEffect(() => {
     setFileName(initialFileName);
@@ -113,9 +106,9 @@ export function CodeEditor({
       setIsFullscreen(!!document.fullscreenElement);
     };
 
-    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
     return () => {
-      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      document.removeEventListener("fullscreenchange", handleFullscreenChange);
     };
   }, []);
 
@@ -125,11 +118,11 @@ export function CodeEditor({
 
     if (!document.fullscreenElement) {
       editor.requestFullscreen().catch((err) => {
-        console.error('Error attempting to enable fullscreen:', err);
+        console.error("Error attempting to enable fullscreen:", err);
       });
     } else {
       document.exitFullscreen().catch((err) => {
-        console.error('Error attempting to exit fullscreen:', err);
+        console.error("Error attempting to exit fullscreen:", err);
       });
     }
   };
@@ -156,7 +149,8 @@ export function CodeEditor({
 
     setIsSaving(true);
     try {
-      const filePath = currentPath === "." ? fileName : `${currentPath}/${fileName}`;
+      const filePath =
+        currentPath === "." ? fileName : `${currentPath}/${fileName}`;
 
       const response = await fetch("/write", {
         method: "POST",
@@ -187,7 +181,8 @@ export function CodeEditor({
     } catch (error) {
       toast({
         title: "Error",
-        description: error instanceof Error ? error.message : "Failed to save file",
+        description:
+          error instanceof Error ? error.message : "Failed to save file",
         variant: "destructive",
       });
     } finally {
@@ -197,19 +192,19 @@ export function CodeEditor({
 
   const fileExt = fileName.split(".").pop()?.toLowerCase() || "";
   const language = getLanguageFromExtension(fileExt);
-  const isCode = language !== 'text';
+  const isCode = language !== "text";
 
   // Handle keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+      if ((e.ctrlKey || e.metaKey) && e.key === "s") {
         e.preventDefault();
         handleSave();
       }
     };
 
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -220,27 +215,27 @@ export function CodeEditor({
 
     // Map language names to Prism language identifiers
     const prismLanguageMap: { [key: string]: string } = {
-      'javascript': 'javascript',
-      'jsx': 'jsx',
-      'typescript': 'typescript',
-      'tsx': 'tsx',
-      'python': 'python',
-      'java': 'java',
-      'go': 'go',
-      'php': 'php',
-      'ruby': 'ruby',
-      'html': 'markup',
-      'css': 'css',
-      'scss': 'css',
-      'json': 'json',
-      'xml': 'markup',
-      'yaml': 'yaml',
-      'markdown': 'markdown',
-      'bash': 'bash',
-      'c': 'c',
-      'cpp': 'cpp',
-      'rust': 'rust',
-      'sql': 'sql',
+      javascript: "javascript",
+      jsx: "jsx",
+      typescript: "typescript",
+      tsx: "tsx",
+      python: "python",
+      java: "java",
+      go: "go",
+      php: "php",
+      ruby: "ruby",
+      html: "markup",
+      css: "css",
+      scss: "css",
+      json: "json",
+      xml: "markup",
+      yaml: "yaml",
+      markdown: "markdown",
+      bash: "bash",
+      c: "c",
+      cpp: "cpp",
+      rust: "rust",
+      sql: "sql",
     };
 
     const prismLang = prismLanguageMap[language];
@@ -250,7 +245,7 @@ export function CodeEditor({
     }
 
     const prismLanguage = Prism.languages[prismLang];
-    if (!prismLanguage || typeof prismLanguage !== 'object') {
+    if (!prismLanguage || typeof prismLanguage !== "object") {
       return code;
     }
 
@@ -258,7 +253,7 @@ export function CodeEditor({
       return Prism.highlight(code, prismLanguage, prismLang);
     } catch (e) {
       // If highlighting fails, return unhighlighted code
-      console.warn('Prism highlighting error for language:', prismLang, e);
+      console.warn("Prism highlighting error for language:", prismLang, e);
       return code;
     }
   };
@@ -272,7 +267,10 @@ export function CodeEditor({
             <FileText className="w-5 h-5 text-primary" />
           </div>
           <div className="flex-1 min-w-0">
-            <Label htmlFor="fileName" className="text-xs text-muted-foreground font-mono uppercase mb-1.5 block">
+            <Label
+              htmlFor="fileName"
+              className="text-xs text-muted-foreground font-mono uppercase mb-1.5 block"
+            >
               File Name
             </Label>
             <Input
@@ -284,7 +282,10 @@ export function CodeEditor({
             />
           </div>
           {isCode && (
-            <Badge variant="secondary" className="font-mono text-xs shrink-0 h-fit">
+            <Badge
+              variant="secondary"
+              className="font-mono text-xs shrink-0 h-fit"
+            >
               {language.toUpperCase()}
             </Badge>
           )}
@@ -338,13 +339,14 @@ export function CodeEditor({
             placeholder="Start writing your code here..."
             padding={16}
             style={{
-              fontFamily: 'ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", Menlo, monospace',
+              fontFamily:
+                'ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", Menlo, monospace',
               fontSize: 14,
               lineHeight: 1.6,
-              minHeight: '100%',
-              outline: 'none',
-              backgroundColor: 'transparent',
-              color: 'hsl(var(--foreground))',
+              minHeight: "100%",
+              outline: "none",
+              backgroundColor: "transparent",
+              color: "hsl(var(--foreground))",
             }}
             textareaClassName="editor-textarea"
             preClassName="editor-pre"
@@ -355,7 +357,7 @@ export function CodeEditor({
       {/* Footer */}
       <div className="flex items-center justify-between px-3 sm:px-4 py-2 border-t border-border bg-muted/30 text-xs text-muted-foreground font-mono">
         <div className="flex items-center gap-4">
-          <span>Lines: {content.split('\n').length}</span>
+          <span>Lines: {content.split("\n").length}</span>
           <span>Chars: {content.length}</span>
         </div>
         <div className="hidden sm:flex items-center gap-2">
@@ -368,4 +370,3 @@ export function CodeEditor({
     </div>
   );
 }
-

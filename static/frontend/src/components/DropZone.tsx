@@ -1,6 +1,6 @@
 import { useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Upload, X } from "lucide-react";
+import { Upload } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface DropZoneProps {
@@ -9,7 +9,11 @@ interface DropZoneProps {
   children?: React.ReactNode;
 }
 
-export const DropZone: React.FC<DropZoneProps> = ({ onDrop, className, children }) => {
+export const DropZone: React.FC<DropZoneProps> = ({
+  onDrop,
+  className,
+  children,
+}) => {
   const [isDragging, setIsDragging] = useState(false);
 
   const handleDragEnter = useCallback((e: React.DragEvent) => {
@@ -21,12 +25,12 @@ export const DropZone: React.FC<DropZoneProps> = ({ onDrop, className, children 
   const handleDragLeave = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    
+
     // Only set to false if we're leaving the drop zone entirely
     const rect = e.currentTarget.getBoundingClientRect();
     const x = e.clientX;
     const y = e.clientY;
-    
+
     if (x < rect.left || x >= rect.right || y < rect.top || y >= rect.bottom) {
       setIsDragging(false);
     }
@@ -37,16 +41,19 @@ export const DropZone: React.FC<DropZoneProps> = ({ onDrop, className, children 
     e.stopPropagation();
   }, []);
 
-  const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(false);
+  const handleDrop = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setIsDragging(false);
 
-    const files = Array.from(e.dataTransfer.files);
-    if (files.length > 0) {
-      onDrop(files);
-    }
-  }, [onDrop]);
+      const files = Array.from(e.dataTransfer.files);
+      if (files.length > 0) {
+        onDrop(files);
+      }
+    },
+    [onDrop],
+  );
 
   return (
     <div
@@ -57,7 +64,7 @@ export const DropZone: React.FC<DropZoneProps> = ({ onDrop, className, children 
       className={cn("relative", className)}
     >
       {children}
-      
+
       <AnimatePresence>
         {isDragging && (
           <motion.div
@@ -91,14 +98,14 @@ export const DropZone: React.FC<DropZoneProps> = ({ onDrop, className, children 
                   <Upload className="w-12 h-12 text-primary animate-pulse" />
                 </div>
               </motion.div>
-              <motion.h3 
+              <motion.h3
                 className="text-2xl font-mono font-bold text-foreground mb-2"
                 animate={{ scale: [1, 1.05, 1] }}
                 transition={{ duration: 1.5, repeat: Infinity }}
               >
                 DROP FILES HERE
               </motion.h3>
-              <motion.p 
+              <motion.p
                 className="text-muted-foreground font-mono text-sm"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}

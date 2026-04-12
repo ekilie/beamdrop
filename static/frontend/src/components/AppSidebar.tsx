@@ -99,8 +99,7 @@ export function AppSidebar({ password = "" }: AppSidebarProps) {
         setStats(updatedStats);
       };
 
-      wStatus.onerror = (e) => {
-      };
+      wStatus.onerror = () => {};
     } catch (error) {
       console.error("Err", error);
     }
@@ -187,7 +186,9 @@ export function AppSidebar({ password = "" }: AppSidebarProps) {
                   className={`hover:bg-sidebar-accent ${pathname === "/" ? "bg-sidebar-accent" : ""}`}
                 >
                   <Home className="w-4 h-4" />
-                  {!isCollapsed && <span className="font-mono text-sm">HOME</span>}
+                  {!isCollapsed && (
+                    <span className="font-mono text-sm">HOME</span>
+                  )}
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
@@ -196,7 +197,9 @@ export function AppSidebar({ password = "" }: AppSidebarProps) {
                   className={`hover:bg-sidebar-accent ${pathname === "/shares" ? "bg-sidebar-accent" : ""}`}
                 >
                   <Share2 className="w-4 h-4" />
-                  {!isCollapsed && <span className="font-mono text-sm">SHARES</span>}
+                  {!isCollapsed && (
+                    <span className="font-mono text-sm">SHARES</span>
+                  )}
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
@@ -205,7 +208,9 @@ export function AppSidebar({ password = "" }: AppSidebarProps) {
                   className={`hover:bg-sidebar-accent ${pathname === "/api-keys" ? "bg-sidebar-accent" : ""}`}
                 >
                   <Key className="w-4 h-4" />
-                  {!isCollapsed && <span className="font-mono text-sm">API KEYS</span>}
+                  {!isCollapsed && (
+                    <span className="font-mono text-sm">API KEYS</span>
+                  )}
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
@@ -214,7 +219,9 @@ export function AppSidebar({ password = "" }: AppSidebarProps) {
                   className={`hover:bg-sidebar-accent ${pathname === "/logs" ? "bg-sidebar-accent" : ""}`}
                 >
                   <FileText className="w-4 h-4" />
-                  {!isCollapsed && <span className="font-mono text-sm">LOGS</span>}
+                  {!isCollapsed && (
+                    <span className="font-mono text-sm">LOGS</span>
+                  )}
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
@@ -223,7 +230,9 @@ export function AppSidebar({ password = "" }: AppSidebarProps) {
                   className={`hover:bg-sidebar-accent ${pathname === "/settings" ? "bg-sidebar-accent" : ""}`}
                 >
                   <Settings className="w-4 h-4" />
-                  {!isCollapsed && <span className="font-mono text-sm">SETTINGS</span>}
+                  {!isCollapsed && (
+                    <span className="font-mono text-sm">SETTINGS</span>
+                  )}
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>
@@ -405,7 +414,8 @@ export function AppSidebar({ password = "" }: AppSidebarProps) {
                               />
                             </div>
                             <span className="text-xs font-mono text-sidebar-foreground/60 block truncate">
-                              {formatBytes(stats.system.memory.used)} / {formatBytes(stats.system.memory.total)}
+                              {formatBytes(stats.system.memory.used)} /{" "}
+                              {formatBytes(stats.system.memory.total)}
                             </span>
                           </div>
                         )}
@@ -442,7 +452,8 @@ export function AppSidebar({ password = "" }: AppSidebarProps) {
                               />
                             </div>
                             <span className="text-xs font-mono text-sidebar-foreground/60 block truncate">
-                              {formatBytes(stats.system.disk.used)} / {formatBytes(stats.system.disk.total)}
+                              {formatBytes(stats.system.disk.used)} /{" "}
+                              {formatBytes(stats.system.disk.total)}
                             </span>
                           </div>
                         )}
@@ -483,8 +494,6 @@ export function AppSidebar({ password = "" }: AppSidebarProps) {
             </SidebarGroup>
           </>
         )}
-
-
       </SidebarContent>
 
       <SidebarFooter className="p-4">

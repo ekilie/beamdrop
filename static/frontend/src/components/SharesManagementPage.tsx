@@ -8,12 +8,16 @@ import {
   ExternalLink,
   Lock,
   Calendar,
-  Eye,
-  Folder,
   FileIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
   Table,
@@ -34,7 +38,6 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from "@/hooks/use-toast";
-import { getFileIcon } from "@/lib/utils";
 
 interface ShareableLink {
   id: number;
@@ -102,9 +105,12 @@ export function SharesManagementPage() {
     if (!linkToDelete) return;
 
     try {
-      const response = await fetch(`/api/shares/delete?token=${linkToDelete.token}`, {
-        method: "DELETE",
-      });
+      const response = await fetch(
+        `/api/shares/delete?token=${linkToDelete.token}`,
+        {
+          method: "DELETE",
+        },
+      );
 
       if (!response.ok) throw new Error("Failed to delete link");
 
@@ -150,7 +156,12 @@ export function SharesManagementPage() {
             Manage your shared files and folders
           </p>
         </div>
-        <Button onClick={fetchLinks} variant="outline" size="sm" className="gap-2">
+        <Button
+          onClick={fetchLinks}
+          variant="outline"
+          size="sm"
+          className="gap-2"
+        >
           <RefreshCw className="w-4 h-4" />
           Refresh
         </Button>
@@ -185,14 +196,18 @@ export function SharesManagementPage() {
                 <TableHeader>
                   <TableRow>
                     <TableHead className="font-mono uppercase">Path</TableHead>
-                    <TableHead className="font-mono uppercase text-center">Status</TableHead>
+                    <TableHead className="font-mono uppercase text-center">
+                      Status
+                    </TableHead>
                     <TableHead className="font-mono uppercase text-center hidden md:table-cell">
                       Access Count
                     </TableHead>
                     <TableHead className="font-mono uppercase hidden lg:table-cell">
                       Created
                     </TableHead>
-                    <TableHead className="font-mono uppercase text-right">Actions</TableHead>
+                    <TableHead className="font-mono uppercase text-right">
+                      Actions
+                    </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -216,12 +231,18 @@ export function SharesManagementPage() {
                           )}
                           {link.expiresAt && (
                             <Badge
-                              variant={isExpired(link.expiresAt) ? "destructive" : "default"}
+                              variant={
+                                isExpired(link.expiresAt)
+                                  ? "destructive"
+                                  : "default"
+                              }
                               className="gap-1"
                             >
                               <Calendar className="w-3 h-3" />
                               <span className="hidden sm:inline">
-                                {isExpired(link.expiresAt) ? "Expired" : "Expiring"}
+                                {isExpired(link.expiresAt)
+                                  ? "Expired"
+                                  : "Expiring"}
                               </span>
                             </Badge>
                           )}
@@ -283,13 +304,16 @@ export function SharesManagementPage() {
             <AlertDialogTitle>Delete Shareable Link</AlertDialogTitle>
             <AlertDialogDescription>
               Are you sure you want to delete this shareable link for{" "}
-              <span className="font-semibold">{linkToDelete?.path}</span>? This action cannot
-              be undone and the link will no longer be accessible.
+              <span className="font-semibold">{linkToDelete?.path}</span>? This
+              action cannot be undone and the link will no longer be accessible.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteLink} className="bg-destructive text-destructive-foreground">
+            <AlertDialogAction
+              onClick={handleDeleteLink}
+              className="bg-destructive text-destructive-foreground"
+            >
               Delete
             </AlertDialogAction>
           </AlertDialogFooter>

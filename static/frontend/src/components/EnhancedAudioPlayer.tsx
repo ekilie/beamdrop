@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Badge } from "@/components/ui/badge";
@@ -64,9 +64,9 @@ export function EnhancedAudioPlayer({
       setIsFullscreen(!!document.fullscreenElement);
     };
 
-    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
     return () => {
-      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      document.removeEventListener("fullscreenchange", handleFullscreenChange);
     };
   }, []);
 
@@ -76,11 +76,11 @@ export function EnhancedAudioPlayer({
 
     if (!document.fullscreenElement) {
       container.requestFullscreen().catch((err) => {
-        console.error('Error attempting to enable fullscreen:', err);
+        console.error("Error attempting to enable fullscreen:", err);
       });
     } else {
       document.exitFullscreen().catch((err) => {
-        console.error('Error attempting to exit fullscreen:', err);
+        console.error("Error attempting to exit fullscreen:", err);
       });
     }
   };
@@ -138,10 +138,8 @@ export function EnhancedAudioPlayer({
     return `${minutes}:${seconds.toString().padStart(2, "0")}`;
   };
 
-  const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
-
   return (
-    <div 
+    <div
       ref={containerRef}
       className="w-full bg-gradient-to-br from-primary/20 via-accent/10 to-secondary rounded-lg p-6 border-2 border-border animate-fade-in"
     >

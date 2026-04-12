@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import {
@@ -26,7 +26,6 @@ interface EnhancedVideoPlayerProps {
 
 export function EnhancedVideoPlayer({
   src,
-  fileName,
   onLoadedData,
   onError,
 }: EnhancedVideoPlayerProps) {
@@ -37,7 +36,7 @@ export function EnhancedVideoPlayer({
   const [volume, setVolume] = useState(100);
   const [isMuted, setIsMuted] = useState(false);
   const [playbackRate, setPlaybackRate] = useState(1);
-  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [, setIsFullscreen] = useState(false);
   const [showControls, setShowControls] = useState(true);
   const containerRef = useRef<HTMLDivElement>(null);
   const controlsTimeoutRef = useRef<NodeJS.Timeout>();
@@ -171,8 +170,11 @@ export function EnhancedVideoPlayer({
 
       {/* Controls Overlay */}
       <div
-        className={`absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/60 to-transparent p-4 transition-all duration-300 ${showControls ? "opacity-100 translate-y-0" : "opacity-0 translate-y-full"
-          }`}
+        className={`absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/60 to-transparent p-4 transition-all duration-300 ${
+          showControls
+            ? "opacity-100 translate-y-0"
+            : "opacity-0 translate-y-full"
+        }`}
       >
         {/* Progress Bar */}
         <div className="mb-4">

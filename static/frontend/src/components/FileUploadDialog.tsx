@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Settings, Upload } from "lucide-react";
+import { Upload } from "lucide-react";
 import {
   Dialog,
   DialogContent,

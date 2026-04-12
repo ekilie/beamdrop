@@ -33,7 +33,7 @@ const Index = () => {
   const [currentPath, setCurrentPath] = useState(".");
   const [previewFile, setPreviewFile] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<"table" | "grid">("table");
-  const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
+  const [, setUploadDialogOpen] = useState(false);
   const [starredFiles, setStarredFiles] = useState<Set<string>>(new Set());
 
   const fetchStarredFiles = useCallback(async () => {
@@ -44,7 +44,7 @@ const Index = () => {
       }
       const data = await response.json();
       const starredPaths = new Set<string>(
-        data.starred.map((item: { filePath: string }) => item.filePath)
+        data.starred.map((item: { filePath: string }) => item.filePath),
       );
       setStarredFiles(starredPaths);
     } catch (error) {
@@ -180,11 +180,12 @@ const Index = () => {
   const downloadFile = async (fileName: string, event: React.MouseEvent) => {
     event.stopPropagation();
     try {
-      const link = document.createElement('a');
-      const filePath = currentPath === "." ? fileName : `${currentPath}/${fileName}`;
+      const link = document.createElement("a");
+      const filePath =
+        currentPath === "." ? fileName : `${currentPath}/${fileName}`;
       link.href = `/download?file=${encodeURIComponent(filePath)}`;
       link.download = fileName;
-      link.style.display = 'none';
+      link.style.display = "none";
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -205,11 +206,12 @@ const Index = () => {
   const deleteFile = async (fileName: string, event: React.MouseEvent) => {
     event.stopPropagation();
     try {
-      const filePath = currentPath === "." ? fileName : `${currentPath}/${fileName}`;
-      const response = await fetch('/trash', {
-        method: 'POST',
+      const filePath =
+        currentPath === "." ? fileName : `${currentPath}/${fileName}`;
+      const response = await fetch("/trash", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({ sourcePath: filePath }),
       });
@@ -240,7 +242,8 @@ const Index = () => {
   const toggleStar = async (fileName: string, event: React.MouseEvent) => {
     event.stopPropagation();
     try {
-      const filePath = currentPath === "." ? fileName : `${currentPath}/${fileName}`;
+      const filePath =
+        currentPath === "." ? fileName : `${currentPath}/${fileName}`;
       const response = await fetch("/star", {
         method: "POST",
         headers: {
@@ -277,7 +280,10 @@ const Index = () => {
   };
 
   return (
-    <DropZone onDrop={handleDrop} className="bg-background min-h-screen flex flex-col">
+    <DropZone
+      onDrop={handleDrop}
+      className="bg-background min-h-screen flex flex-col"
+    >
       {/* Modern Header */}
       <header className="border-b border-border bg-card backdrop-blur-sm sticky top-0 z-40">
         <div className="container mx-auto px-4 sm:px-6 py-4">
@@ -345,7 +351,10 @@ const Index = () => {
                     <Grid3x3 className="w-4 h-4" />
                   </Button>
                 </div>
-                <CreateFolderDialog currentPath={currentPath} onSuccess={() => fetchFiles()} />
+                <CreateFolderDialog
+                  currentPath={currentPath}
+                  onSuccess={() => fetchFiles()}
+                />
                 <CodeEditorDialog
                   currentPath={currentPath}
                   onSaveSuccess={() => fetchFiles()}

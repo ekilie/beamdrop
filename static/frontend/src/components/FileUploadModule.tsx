@@ -1,9 +1,8 @@
 import { useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Upload, FileText, X, Target, Plus, Trash2 } from "lucide-react";
+import { Upload, FileText, X, Target, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { toast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 
 interface FileUploadModuleProps {

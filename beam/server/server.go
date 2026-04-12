@@ -63,11 +63,13 @@ func New(sharedDir string, flags config.Flags) *Server {
 }
 
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	// Increment request counter
 	db.IncrementRequests()
 
 	// Build middleware chain
 	var handler http.Handler = s.mux
+
+	// Apply max storage check before writes
+	handler = middleware.MaxStorageCheck(s.sharedDir, s.flags.MaxStorage)(handler)
 
 	// Apply auth middleware
 	handler = s.authMiddleware.Middleware(handler)

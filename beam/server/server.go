@@ -69,6 +69,9 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// Build middleware chain
 	var handler http.Handler = s.mux
 
+	// Apply max storage check before writes
+	handler = middleware.MaxStorageCheck(s.sharedDir, s.flags.MaxStorage)(handler)
+
 	// Apply auth middleware
 	handler = s.authMiddleware.Middleware(handler)
 

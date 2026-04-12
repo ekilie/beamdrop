@@ -53,6 +53,18 @@ func envInt(flagName, envName string, flagVal *int) {
 	}
 }
 
+// envInt64 sets the int64 flag from an env var when the flag was not explicitly set.
+func envInt64(flagName, envName string, flagVal *int64) {
+	if isFlagSet(flagName) {
+		return
+	}
+	if v := os.Getenv(envName); v != "" {
+		if n, err := strconv.ParseInt(v, 10, 64); err == nil {
+			*flagVal = n
+		}
+	}
+}
+
 // envDuration sets the duration flag from an env var when the flag was not explicitly set.
 func envDuration(flagName, envName string, flagVal *time.Duration) {
 	if isFlagSet(flagName) {
@@ -90,12 +102,13 @@ func main() {
 	logLevel := flag.String("log-level", "info", "Log level: debug, info, warn, error")
 	rateLimit := flag.Int("rate-limit", 100, "General rate limit in requests/min per IP (0 = disabled)")
 	shutdownTimeout := flag.Duration("shutdown-timeout", 30*time.Second, "Graceful shutdown timeout")
+	maxStorage := flag.Int64("max-storage", 0, "Maximum total storage in bytes (0 = unlimited)")
 
 	// NOTE:Here i default it to 0 so when it zero we know that the flag wasnt passed
 	// Since the flag is a non-boolean value
 	port := flag.Int("port", 0, "Set the port that beamdrop will run on")
 	flag.Parse()
-	
+
 	if *versionFlag {
 		styles.InfoStyle.Println("Beamdrop Version:", config.VERSION)
 		return
@@ -121,6 +134,7 @@ func main() {
 	envInt("port", "BEAMDROP_PORT", port)
 	envInt("rate-limit", "BEAMDROP_RATE_LIMIT", rateLimit)
 	envDuration("shutdown-timeout", "BEAMDROP_SHUTDOWN_TIMEOUT", shutdownTimeout)
+	envInt64("max-storage", "BEAMDROP_MAX_STORAGE", maxStorage)
 
 	// Initialize structured logger before anything else.
 	// Terminal gets colored human-readable output; JSON logs go to <sharedDir>/.beamdrop/beamdrop.log
@@ -149,6 +163,7 @@ func main() {
 		RateLimit:       *rateLimit,
 		ShutdownTimeout: *shutdownTimeout,
 		DBPath:          *dbPath,
+		MaxStorage:      *maxStorage,
 	}
 
 	if flag.NArg() > 0 {

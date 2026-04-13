@@ -53,18 +53,6 @@ func envInt(flagName, envName string, flagVal *int) {
 	}
 }
 
-// envInt64 sets the int64 flag from an env var when the flag was not explicitly set.
-func envInt64(flagName, envName string, flagVal *int64) {
-	if isFlagSet(flagName) {
-		return
-	}
-	if v := os.Getenv(envName); v != "" {
-		if n, err := strconv.ParseInt(v, 10, 64); err == nil {
-			*flagVal = n
-		}
-	}
-}
-
 // envDuration sets the duration flag from an env var when the flag was not explicitly set.
 func envDuration(flagName, envName string, flagVal *time.Duration) {
 	if isFlagSet(flagName) {
@@ -88,6 +76,44 @@ func isFlagSet(name string) bool {
 	return found
 }
 
+// parseByteSize parses a human-readable size string (e.g. "10GB", "500MB", "1TB") into bytes.
+// Also accepts raw byte values (e.g. "1073741824"). Returns 0 for empty or "0".
+func parseByteSize(s string) (int64, error) {
+	s = strings.TrimSpace(s)
+	if s == "" || s == "0" {
+		return 0, nil
+	}
+
+	if n, err := strconv.ParseInt(s, 10, 64); err == nil {
+		return n, nil
+	}
+
+	upper := strings.ToUpper(s)
+	multipliers := []struct {
+		suffix string
+		mult   int64
+	}{
+		{"TB", 1 << 40},
+		{"GB", 1 << 30},
+		{"MB", 1 << 20},
+		{"KB", 1 << 10},
+		{"B", 1},
+	}
+
+	for _, m := range multipliers {
+		if strings.HasSuffix(upper, m.suffix) {
+			numStr := strings.TrimSpace(strings.TrimSuffix(upper, m.suffix))
+			n, err := strconv.ParseFloat(numStr, 64)
+			if err != nil {
+				return 0, fmt.Errorf("invalid size value: %q", s)
+			}
+			return int64(n * float64(m.mult)), nil
+		}
+	}
+
+	return 0, fmt.Errorf("invalid size format: %q (use e.g. 500MB, 10GB, 1TB)", s)
+}
+
 func main() {
 	sharedDir := flag.String("dir", ".", "Directory to share files from")
 	QR := flag.Bool("qr", false, "Enable QR code generation")
@@ -102,7 +128,7 @@ func main() {
 	logLevel := flag.String("log-level", "info", "Log level: debug, info, warn, error")
 	rateLimit := flag.Int("rate-limit", 100, "General rate limit in requests/min per IP (0 = disabled)")
 	shutdownTimeout := flag.Duration("shutdown-timeout", 30*time.Second, "Graceful shutdown timeout")
-	maxStorage := flag.Int64("max-storage", 0, "Maximum total storage in bytes (0 = unlimited)")
+	maxStorageStr := flag.String("max-storage", "0", "Maximum total storage, e.g. 500MB, 10GB, 1TB (0 = unlimited)")
 
 	// NOTE:Here i default it to 0 so when it zero we know that the flag wasnt passed
 	// Since the flag is a non-boolean value
@@ -134,7 +160,14 @@ func main() {
 	envInt("port", "BEAMDROP_PORT", port)
 	envInt("rate-limit", "BEAMDROP_RATE_LIMIT", rateLimit)
 	envDuration("shutdown-timeout", "BEAMDROP_SHUTDOWN_TIMEOUT", shutdownTimeout)
-	envInt64("max-storage", "BEAMDROP_MAX_STORAGE", maxStorage)
+	envStr("max-storage", "BEAMDROP_MAX_STORAGE", maxStorageStr)
+
+	// Parse max-storage from human-readable format
+	maxStorage, err := parseByteSize(*maxStorageStr)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error: invalid -max-storage value %q: %v\n", *maxStorageStr, err)
+		os.Exit(1)
+	}
 
 	// Initialize structured logger before anything else.
 	// Terminal gets colored human-readable output; JSON logs go to <sharedDir>/.beamdrop/beamdrop.log
@@ -163,7 +196,7 @@ func main() {
 		RateLimit:       *rateLimit,
 		ShutdownTimeout: *shutdownTimeout,
 		DBPath:          *dbPath,
-		MaxStorage:      *maxStorage,
+		MaxStorage:      maxStorage,
 	}
 
 	if flag.NArg() > 0 {
@@ -181,7 +214,7 @@ func main() {
 
 	srv := server.New(*sharedDir, flags)
 
-	err := config.CreateTrashBin(*sharedDir)
+	err = config.CreateTrashBin(*sharedDir)
 
 	if err != nil {
 		logger.Fatal("Failed to create trash bin", "error", err)

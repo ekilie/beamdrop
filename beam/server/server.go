@@ -95,6 +95,11 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) Start() error {
+	// Validate max storage against filesystem capacity
+	if err := storage.ValidateMaxStorage(s.sharedDir, s.flags.MaxStorage); err != nil {
+		return fmt.Errorf("storage validation failed: %w", err)
+	}
+
 	// Cleaningup any orphaned temp files from interrupted writes
 	if err := storage.CleanupOrphanedTempFiles(s.sharedDir); err != nil {
 		slog.Warn("Failed to clean up orphaned temp files", "error", err)

@@ -144,7 +144,7 @@ docker run -d \
   -e BEAMDROP_PASSWORD="secret" \
   -e BEAMDROP_API_AUTH=true \
   -e BEAMDROP_RATE_LIMIT=100 \
-  -e BEAMDROP_MAX_STORAGE=0 \
+  -e BEAMDROP_MAX_STORAGE=10GB \
   beamdrop
 ```
 
@@ -252,7 +252,7 @@ A pre-built Grafana dashboard is available at [`docs/grafana-dashboard.json`](do
 | `-allowed-origins` | CORS allowed origins (comma-separated)                                    | None                      |
 | `-db-path`         | Path to database file or directory (directory auto-appends `beamdrop.db`) | `~/.beamdrop/beamdrop.db` |
 | `-rate-limit`      | Rate limit in requests/min per IP (0 = disabled)                          | 100                       |
-| `-max-storage`     | Maximum total storage in bytes (0 = unlimited)                            | 0                         |
+| `-max-storage`     | Maximum total storage, e.g. 500MB, 10GB, 1TB (0 = unlimited)              | 0                         |
 | `-log-level`       | Log level: debug, info, warn, error                                       | info                      |
 | `-qr`              | Enable QR code display                                                    | false                     |
 | `-v`               | Show version                                                              | -                         |

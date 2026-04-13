@@ -179,7 +179,7 @@ sudo ufw delete allow 7777
 - Keep strong password for web UI (`-p` flag)
 - Enable API key authentication: `--api-auth` or `BEAMDROP_API_AUTH=true`
 - Consider rate limiting with `--rate-limit` or `BEAMDROP_RATE_LIMIT`
-- Set a storage limit with `--max-storage` or `BEAMDROP_MAX_STORAGE` (bytes, 0 = unlimited)
+- Set a storage limit with `--max-storage` or `BEAMDROP_MAX_STORAGE` (e.g. 10GB, 0 = unlimited)
 
 ---
 
@@ -187,13 +187,13 @@ sudo ufw delete allow 7777
 
 You can set environment variables in systemd service for additional config:
 
-| Variable                   | Purpose                              |
-| -------------------------- | ------------------------------------ |
-| `BEAMDROP_PORT`            | Change default port (7777)           |
-| `BEAMDROP_API_AUTH`        | Enable API key authentication        |
-| `BEAMDROP_ALLOWED_ORIGINS` | Set allowed CORS origins             |
-| `BEAMDROP_RATE_LIMIT`      | Requests per minute per IP           |
-| `BEAMDROP_MAX_STORAGE`     | Max storage in bytes (0 = unlimited) |
+| Variable                   | Purpose                                |
+| -------------------------- | -------------------------------------- |
+| `BEAMDROP_PORT`            | Change default port (7777)             |
+| `BEAMDROP_API_AUTH`        | Enable API key authentication          |
+| `BEAMDROP_ALLOWED_ORIGINS` | Set allowed CORS origins               |
+| `BEAMDROP_RATE_LIMIT`      | Requests per minute per IP             |
+| `BEAMDROP_MAX_STORAGE`     | Max storage, e.g. 10GB (0 = unlimited) |
 
 ---
 

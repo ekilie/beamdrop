@@ -113,7 +113,7 @@ Beamdrop supports a configurable maximum storage limit. When enabled, write requ
 
 ```bash
 # Limit storage to 10GB
-beamdrop -dir /path/to/share -max-storage 10737418240
+beamdrop -dir /path/to/share -max-storage 10GB
 
 # Unlimited (default)
 beamdrop -dir /path/to/share -max-storage 0
@@ -239,8 +239,8 @@ beamdrop -dir /path/to/share -log-level debug
       Enable API key authentication for S3-like API endpoints
 -rate-limit int
       General rate limit in requests/min per IP (default 100, 0 = disabled)
--max-storage int
-      Maximum total storage in bytes (0 = unlimited)
+-max-storage string
+      Maximum total storage, e.g. 500MB, 10GB, 1TB (0 = unlimited)
 -log-level string
       Log level: debug, info, warn, error (default "info")
 -qr

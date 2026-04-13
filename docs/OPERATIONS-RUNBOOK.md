@@ -907,7 +907,7 @@ du -sh /var/lib/beamdrop/*
 grep MAX_STORAGE /etc/beamdrop/beamdrop.env
 
 # 3. Increase the limit or set to 0 (unlimited)
-BEAMDROP_MAX_STORAGE=0   # in /etc/beamdrop/beamdrop.env
+BEAMDROP_MAX_STORAGE=10GB   # in /etc/beamdrop/beamdrop.env
 sudo systemctl restart beamdrop
 
 # 4. Recover space from trash (permanently delete trashed files)

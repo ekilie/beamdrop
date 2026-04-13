@@ -33,8 +33,8 @@ Options:
 		Auth endpoints: 5% of general rate; Upload endpoints: 10% of general rate
   -db-path string
     Path to database file or directory (default: ~/.beamdrop/beamdrop.db). If a directory is provided, beamdrop.db is appended automatically
-  -max-storage int
-		Maximum total storage in bytes (0 = unlimited)
+  -max-storage string
+		Maximum total storage, e.g. 500MB, 10GB, 1TB (0 = unlimited)
   -shutdown-timeout duration
 		Graceful shutdown timeout for draining connections (default 30s)
   -qr

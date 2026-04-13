@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"golang.org/x/sys/unix"
+	"github.com/ekilie/beamdrop/pkg/system"
 )
 
 // DirUsage represents storage usage for a directory.
@@ -86,14 +86,8 @@ func calculateDirSize(root string) (uint64, error) {
 
 // getFilesystemStats returns total and free bytes via statfs syscall.
 func getFilesystemStats(path string) (total, free uint64) {
-	var stat unix.Statfs_t
-	if err := unix.Statfs(path, &stat); err != nil {
-		return 0, 0
-	}
-
-	total = uint64(stat.Blocks) * uint64(stat.Bsize)
-	free = uint64(stat.Bavail) * uint64(stat.Bsize)
-	return total, free
+	stat := system.GetDiskUsage(path)
+	return stat.Total, stat.Free
 }
 
 // ValidateMaxStorage checks that maxBytes does not exceed the filesystem's total capacity.

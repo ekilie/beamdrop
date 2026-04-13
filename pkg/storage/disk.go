@@ -95,3 +95,21 @@ func getFilesystemStats(path string) (total, free uint64) {
 	free = uint64(stat.Bavail) * uint64(stat.Bsize)
 	return total, free
 }
+
+// ValidateMaxStorage checks that maxBytes does not exceed the filesystem's total capacity.
+func ValidateMaxStorage(dir string, maxBytes int64) error {
+	if maxBytes <= 0 {
+		return nil
+	}
+	total, _ := getFilesystemStats(dir)
+	if total == 0 {
+		return fmt.Errorf("unable to determine filesystem size for %q", dir)
+	}
+	if uint64(maxBytes) > total {
+		return fmt.Errorf(
+			"max-storage (%d bytes) exceeds filesystem capacity (%d bytes) on %q",
+			maxBytes, total, dir,
+		)
+	}
+	return nil
+}

@@ -79,6 +79,30 @@ beamdrop -dir /path/to/share -api-auth -tls-cert cert.pem -tls-key key.pem
 
 ## Installation
 
+### Quick Install (macOS & Linux)
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/ekilie/beamdrop/main/docs/install.sh | sh
+```
+
+Or inspect the script first:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/ekilie/beamdrop/main/docs/install.sh -o install.sh
+less install.sh
+sh install.sh
+```
+
+Options via environment variables:
+
+```bash
+# Install a specific version
+BEAMDROP_VERSION=v1.0.0 sh install.sh
+
+# Install to a custom directory
+BEAMDROP_INSTALL=~/.local/bin sh install.sh
+```
+
 ### From Source
 
 ```bash

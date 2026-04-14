@@ -18,6 +18,7 @@ import (
 	"github.com/ekilie/beamdrop/pkg/db"
 	"github.com/ekilie/beamdrop/pkg/logger"
 	"github.com/ekilie/beamdrop/pkg/styles"
+	"github.com/ekilie/beamdrop/pkg/system"
 	"github.com/ekilie/beamdrop/static"
 )
 
@@ -167,6 +168,16 @@ func main() {
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error: invalid -max-storage value %q: %v\n", *maxStorageStr, err)
 		os.Exit(1)
+	}
+
+	// Validate max-storage does not exceed the device's disk capacity
+	if maxStorage > 0 {
+		disk := system.GetDiskUsage(*sharedDir)
+		if disk.Total > 0 && maxStorage > int64(disk.Total) {
+			fmt.Fprintf(os.Stderr, "Error: -max-storage %s exceeds device capacity of %s\n",
+				*maxStorageStr, system.FormatBytes(disk.Total))
+			os.Exit(1)
+		}
 	}
 
 	// Initialize structured logger before anything else.

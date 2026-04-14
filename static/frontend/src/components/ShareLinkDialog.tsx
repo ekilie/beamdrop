@@ -10,7 +10,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
-import { Copy, Check, Link2, Lock, Calendar, ExternalLink } from "lucide-react";
+import {
+  Copy,
+  Check,
+  Link2,
+  Lock,
+  Calendar,
+  ExternalLink,
+  Loader2,
+} from "lucide-react";
 
 interface ShareLinkDialogProps {
   open: boolean;
@@ -118,7 +126,7 @@ export function ShareLinkDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="font-mono uppercase">Share Link</DialogTitle>
           <DialogDescription>
@@ -169,8 +177,17 @@ export function ShareLinkDialog({
               disabled={isGenerating}
               className="w-full"
             >
-              <Link2 className="w-4 h-4 mr-2" />
-              {isGenerating ? "Generating..." : "Generate Link"}
+              {isGenerating ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Generating...
+                </>
+              ) : (
+                <>
+                  <Link2 className="w-4 h-4 mr-2" />
+                  Generate Link
+                </>
+              )}
             </Button>
           </div>
         ) : (

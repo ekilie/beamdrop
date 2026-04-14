@@ -14,9 +14,13 @@ import { toast } from "@/hooks/use-toast";
 
 interface FileUploadDialogProps {
   currentPath?: string;
+  onUploadComplete?: () => void;
 }
 
-export function FileUploadDialog({ currentPath = "." }: FileUploadDialogProps) {
+export function FileUploadDialog({
+  currentPath = ".",
+  onUploadComplete,
+}: FileUploadDialogProps) {
   const [open, setOpen] = useState(false);
 
   const handleUploadSuccess = () => {
@@ -24,8 +28,9 @@ export function FileUploadDialog({ currentPath = "." }: FileUploadDialogProps) {
       title: "Success",
       description: "File uploaded successfully",
     });
-    // Refresh the page or trigger a refresh callback
-    window.location.reload();
+    if (onUploadComplete) {
+      onUploadComplete();
+    }
   };
 
   return (
@@ -34,6 +39,7 @@ export function FileUploadDialog({ currentPath = "." }: FileUploadDialogProps) {
         <Button
           variant="default"
           className="flex items-center gap-2 font-mono text-xs font-bold uppercase tracking-wide w-full sm:w-auto"
+          data-upload-trigger
         >
           <Upload className="h-4 w-4" />
           Upload Files

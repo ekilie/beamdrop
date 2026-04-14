@@ -40,6 +40,16 @@ import { useSettings } from "@/context/settings";
 import { RenameDialog } from "./RenameDialog";
 import { MoveDialog } from "./MoveDialog";
 import { ShareLinkDialog } from "./ShareLinkDialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface FileItem {
   name: string;
@@ -60,6 +70,9 @@ interface FileTableProps {
   currentPath?: string;
   starredFiles: Set<string>;
   onToggleStar: (fileName: string, event: React.MouseEvent) => Promise<void>;
+  selectedFiles?: Set<string>;
+  onToggleSelect?: (fileName: string) => void;
+  onSelectAll?: () => void;
 }
 
 type SortField = "name" | "size" | "modTime";
@@ -75,6 +88,9 @@ const FileTable: React.FC<FileTableProps> = ({
   currentPath = ".",
   starredFiles,
   onToggleStar,
+  selectedFiles,
+  onToggleSelect,
+  onSelectAll,
 }) => {
   const [sortField, setSortField] = useState<SortField>("name");
   const [sortOrder, setSortOrder] = useState<SortOrder>("asc");
@@ -96,6 +112,13 @@ const FileTable: React.FC<FileTableProps> = ({
     mode: "move",
   });
   const [shareDialog, setShareDialog] = useState<{
+    open: boolean;
+    fileName: string;
+  }>({
+    open: false,
+    fileName: "",
+  });
+  const [deleteConfirm, setDeleteConfirm] = useState<{
     open: boolean;
     fileName: string;
   }>({
@@ -304,10 +327,26 @@ const FileTable: React.FC<FileTableProps> = ({
         </div>
 
         {/* Table */}
-        <div className="border-t border-b border-border hover-lift transition-smooth rounded-lg overflow-hidden shadow-sm">
+        <div className="border-t border-b border-border hover-lift transition-smooth rounded-lg overflow-x-auto shadow-sm">
           <Table>
             <TableHeader>
               <TableRow className="hover:bg-transparent border-b border-border">
+                {onToggleSelect && (
+                  <TableHead className="w-[40px]">
+                    <input
+                      type="checkbox"
+                      checked={
+                        selectedFiles
+                          ? selectedFiles.size === sortedFiles.length &&
+                            sortedFiles.length > 0
+                          : false
+                      }
+                      onChange={() => onSelectAll?.()}
+                      className="rounded border-border accent-primary cursor-pointer"
+                      aria-label="Select all files"
+                    />
+                  </TableHead>
+                )}
                 <TableHead
                   className="cursor-pointer select-none font-mono font-bold uppercase tracking-wide"
                   onClick={() => handleSort("name")}
@@ -350,9 +389,23 @@ const FileTable: React.FC<FileTableProps> = ({
                 return (
                   <TableRow
                     key={`${file.name}-${file.modTime}`}
-                    className="cursor-pointer border-b border-border hover:bg-muted/50 transition-all group hover:shadow-sm"
+                    className={cn(
+                      "cursor-pointer border-b border-border hover:bg-muted/50 transition-all group hover:shadow-sm",
+                      selectedFiles?.has(file.name) && "bg-primary/5",
+                    )}
                     onClick={() => handleFileClick(file)}
                   >
+                    {onToggleSelect && (
+                      <TableCell onClick={(e) => e.stopPropagation()}>
+                        <input
+                          type="checkbox"
+                          checked={selectedFiles?.has(file.name) ?? false}
+                          onChange={() => onToggleSelect(file.name)}
+                          className="rounded border-border accent-primary cursor-pointer"
+                          aria-label={`Select ${file.name}`}
+                        />
+                      </TableCell>
+                    )}
                     <TableCell className="font-medium">
                       <div className="flex items-center gap-3">
                         <div className="flex-shrink-0">
@@ -482,7 +535,13 @@ const FileTable: React.FC<FileTableProps> = ({
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem
-                            onClick={(e) => deleteFile(file.name, e)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setDeleteConfirm({
+                                open: true,
+                                fileName: file.name,
+                              });
+                            }}
                             className="text-destructive focus:text-destructive"
                           >
                             <Trash2 className="w-4 h-4 mr-2" />
@@ -522,6 +581,34 @@ const FileTable: React.FC<FileTableProps> = ({
         fileName={shareDialog.fileName}
         currentPath={currentPath}
       />
+
+      <AlertDialog
+        open={deleteConfirm.open}
+        onOpenChange={(open) => setDeleteConfirm({ ...deleteConfirm, open })}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Move to Trash</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to move{" "}
+              <span className="font-semibold">"{deleteConfirm.fileName}"</span>{" "}
+              to trash?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                deleteFile(deleteConfirm.fileName, e);
+                setDeleteConfirm({ open: false, fileName: "" });
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 };

@@ -22,13 +22,25 @@ interface MoveDialogProps {
   mode: "move" | "copy";
 }
 
-export function MoveDialog({ open, onOpenChange, fileName, currentPath, onSuccess, mode }: MoveDialogProps) {
+export function MoveDialog({
+  open,
+  onOpenChange,
+  fileName,
+  currentPath,
+  onSuccess,
+  mode,
+}: MoveDialogProps) {
   const [targetPath, setTargetPath] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
 
+  const sourcePath =
+    currentPath === "." ? fileName : `${currentPath}/${fileName}`;
+
   useEffect(() => {
-    setTargetPath(currentPath === "." ? fileName : `${currentPath}/${fileName}`);
-  }, [fileName, currentPath]);
+    if (open) {
+      setTargetPath("");
+    }
+  }, [open]);
 
   const handleProcess = async () => {
     if (!targetPath.trim()) {
@@ -42,9 +54,8 @@ export function MoveDialog({ open, onOpenChange, fileName, currentPath, onSucces
 
     setIsProcessing(true);
     try {
-      const sourcePath = currentPath === "." ? fileName : `${currentPath}/${fileName}`;
       const endpoint = mode === "move" ? "/move" : "/copy";
-      
+
       const response = await fetch(endpoint, {
         method: "POST",
         headers: {
@@ -93,8 +104,14 @@ export function MoveDialog({ open, onOpenChange, fileName, currentPath, onSucces
         </DialogHeader>
         <div className="grid gap-4 py-4">
           <div className="grid gap-2">
+            <Label className="font-mono text-xs uppercase">Source</Label>
+            <div className="p-3 bg-muted rounded-lg font-mono text-sm text-muted-foreground break-all">
+              {sourcePath}
+            </div>
+          </div>
+          <div className="grid gap-2">
             <Label htmlFor="targetPath" className="font-mono text-xs uppercase">
-              Target Path
+              Destination Path
             </Label>
             <Input
               id="targetPath"
@@ -107,18 +124,23 @@ export function MoveDialog({ open, onOpenChange, fileName, currentPath, onSucces
               }}
               placeholder="e.g., documents/new-folder/file.txt"
               className="font-mono"
+              autoFocus
             />
-            <p className="text-xs text-muted-foreground font-mono">
-              Current: {currentPath === "." ? "/" : currentPath}/{fileName}
-            </p>
           </div>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isProcessing}>
+          <Button
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            disabled={isProcessing}
+          >
             Cancel
           </Button>
-          <Button onClick={handleProcess} disabled={isProcessing || !targetPath.trim()}>
-            {isProcessing ? "Processing..." : (mode === "move" ? "Move" : "Copy")}
+          <Button
+            onClick={handleProcess}
+            disabled={isProcessing || !targetPath.trim()}
+          >
+            {isProcessing ? "Processing..." : mode === "move" ? "Move" : "Copy"}
           </Button>
         </DialogFooter>
       </DialogContent>

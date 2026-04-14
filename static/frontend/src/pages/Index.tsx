@@ -1,6 +1,15 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Card } from "@/components/ui/card";
-import { Download, Search, Grid3x3, List } from "lucide-react";
+import {
+  Download,
+  Search,
+  Grid3x3,
+  List,
+  Keyboard,
+  Trash2,
+  X,
+  CheckSquare,
+} from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
@@ -15,6 +24,12 @@ import { DropZone } from "@/components/DropZone";
 import { CreateFolderDialog } from "@/components/CreateFolderDialog";
 import { AdvancedSearch } from "@/components/AdvancedSearch";
 import { CodeEditorDialog } from "@/components/CodeEditorDialog";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { Progress } from "@/components/ui/progress";
 
 export interface FileItem {
   name: string;
@@ -33,8 +48,73 @@ const Index = () => {
   const [currentPath, setCurrentPath] = useState(".");
   const [previewFile, setPreviewFile] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<"table" | "grid">("table");
-  const [, setUploadDialogOpen] = useState(false);
   const [starredFiles, setStarredFiles] = useState<Set<string>>(new Set());
+  const [dropUploadProgress, setDropUploadProgress] = useState<number | null>(
+    null,
+  );
+  const uploadDialogRef = useRef<{ open: () => void }>(null);
+  const [selectedFiles, setSelectedFiles] = useState<Set<string>>(new Set());
+
+  const toggleFileSelection = (fileName: string) => {
+    setSelectedFiles((prev) => {
+      const next = new Set(prev);
+      if (next.has(fileName)) {
+        next.delete(fileName);
+      } else {
+        next.add(fileName);
+      }
+      return next;
+    });
+  };
+
+  const selectAllFiles = () => {
+    if (selectedFiles.size === filteredFiles.length) {
+      setSelectedFiles(new Set());
+    } else {
+      setSelectedFiles(new Set(filteredFiles.map((f) => f.name)));
+    }
+  };
+
+  const clearSelection = () => setSelectedFiles(new Set());
+
+  const batchDelete = async () => {
+    const names = Array.from(selectedFiles);
+    let successCount = 0;
+    for (const name of names) {
+      try {
+        const filePath = currentPath === "." ? name : `${currentPath}/${name}`;
+        const response = await fetch("/trash", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ sourcePath: filePath }),
+        });
+        if (response.ok) successCount++;
+      } catch {}
+    }
+    clearSelection();
+    fetchFiles();
+    toast({
+      title: "Moved to Trash",
+      description: `${successCount} of ${names.length} item(s) moved to trash.`,
+    });
+  };
+
+  const batchDownload = () => {
+    for (const name of selectedFiles) {
+      const filePath = currentPath === "." ? name : `${currentPath}/${name}`;
+      const link = document.createElement("a");
+      link.href = `/download?file=${encodeURIComponent(filePath)}`;
+      link.download = name;
+      link.style.display = "none";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+    toast({
+      title: "Downloads Started",
+      description: `${selectedFiles.size} file(s) downloading.`,
+    });
+  };
 
   const fetchStarredFiles = useCallback(async () => {
     try {
@@ -92,7 +172,6 @@ const Index = () => {
 
   const handleNavigate = (path: string) => {
     setCurrentPath(path);
-    setSearchTerm(""); // Clear search when navigating
     fetchFiles(path);
   };
 
@@ -153,27 +232,40 @@ const Index = () => {
     });
     formData.append("path", currentPath);
 
+    setDropUploadProgress(0);
+
     try {
-      const response = await fetch("/upload", {
-        method: "POST",
-        body: formData,
+      await new Promise<void>((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open("POST", "/upload");
+
+        xhr.upload.onprogress = (e) => {
+          if (e.lengthComputable) {
+            setDropUploadProgress(Math.round((e.loaded / e.total) * 100));
+          }
+        };
+
+        xhr.onload = () => {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            resolve();
+          } else {
+            reject(new Error("Upload failed"));
+          }
+        };
+
+        xhr.onerror = () => reject(new Error("Upload failed"));
+        xhr.send(formData);
       });
 
-      if (response.ok) {
-        handleUploadSuccess();
-      } else {
-        toast({
-          title: "Error",
-          description: "Failed to upload files",
-          variant: "destructive",
-        });
-      }
+      handleUploadSuccess();
     } catch (error) {
       toast({
         title: "Error",
         description: "Failed to upload files",
         variant: "destructive",
       });
+    } finally {
+      setDropUploadProgress(null);
     }
   };
 
@@ -241,9 +333,43 @@ const Index = () => {
 
   const toggleStar = async (fileName: string, event: React.MouseEvent) => {
     event.stopPropagation();
+    const filePath =
+      currentPath === "." ? fileName : `${currentPath}/${fileName}`;
+
+    // Optimistic update
+    const wasStarred = starredFiles.has(filePath);
+    setStarredFiles((prev) => {
+      const next = new Set(prev);
+      if (wasStarred) {
+        next.delete(filePath);
+      } else {
+        next.add(filePath);
+      }
+      return next;
+    });
+    // Also update files list optimistically
+    setFiles((prev) =>
+      prev.map((f) => {
+        const fp =
+          f.path || (currentPath === "." ? f.name : `${currentPath}/${f.name}`);
+        if (fp === filePath) {
+          return { ...f, isStarred: !wasStarred };
+        }
+        return f;
+      }),
+    );
+    setFilteredFiles((prev) =>
+      prev.map((f) => {
+        const fp =
+          f.path || (currentPath === "." ? f.name : `${currentPath}/${f.name}`);
+        if (fp === filePath) {
+          return { ...f, isStarred: !wasStarred };
+        }
+        return f;
+      }),
+    );
+
     try {
-      const filePath =
-        currentPath === "." ? fileName : `${currentPath}/${fileName}`;
       const response = await fetch("/star", {
         method: "POST",
         headers: {
@@ -254,16 +380,23 @@ const Index = () => {
 
       if (response.ok) {
         const result = await response.json();
-        // Refresh files list to get updated isStarred status from backend
-        await fetchFiles();
-
-        // Show appropriate toast message
         const isStarred = result.starred === "true";
         toast({
           title: isStarred ? "Starred" : "Unstarred",
           description: `${fileName} ${isStarred ? "added to" : "removed from"} starred files.`,
         });
       } else {
+        // Rollback on failure
+        setStarredFiles((prev) => {
+          const next = new Set(prev);
+          if (wasStarred) {
+            next.add(filePath);
+          } else {
+            next.delete(filePath);
+          }
+          return next;
+        });
+        await fetchFiles();
         toast({
           title: "Error",
           description: "Failed to update starred status",
@@ -271,6 +404,17 @@ const Index = () => {
         });
       }
     } catch (error) {
+      // Rollback on error
+      setStarredFiles((prev) => {
+        const next = new Set(prev);
+        if (wasStarred) {
+          next.add(filePath);
+        } else {
+          next.delete(filePath);
+        }
+        return next;
+      });
+      await fetchFiles();
       toast({
         title: "Error",
         description: "Failed to update starred status",
@@ -332,7 +476,7 @@ const Index = () => {
                   </button>
                 )}
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <div className="flex items-center border border-border rounded-lg p-1 bg-muted/30">
                   <Button
                     variant={viewMode === "table" ? "default" : "ghost"}
@@ -364,7 +508,38 @@ const Index = () => {
                   onNavigate={handleNavigate}
                   onPreview={handlePreview}
                 />
-                <FileUploadDialog />
+                <FileUploadDialog
+                  currentPath={currentPath}
+                  onUploadComplete={() => fetchFiles()}
+                />
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 text-muted-foreground"
+                    >
+                      <Keyboard className="w-4 h-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent
+                    side="bottom"
+                    className="font-mono text-xs space-y-1"
+                  >
+                    <p>
+                      <kbd className="px-1 bg-muted rounded">⌘/Ctrl+F</kbd>{" "}
+                      Search files
+                    </p>
+                    <p>
+                      <kbd className="px-1 bg-muted rounded">⌘/Ctrl+R</kbd>{" "}
+                      Refresh
+                    </p>
+                    <p>
+                      <kbd className="px-1 bg-muted rounded">Esc</kbd> Clear
+                      search
+                    </p>
+                  </TooltipContent>
+                </Tooltip>
               </div>
             </div>
           </div>
@@ -442,7 +617,12 @@ const Index = () => {
               ) : filteredFiles.length === 0 ? (
                 <EmptyState
                   searchTerm={searchTerm}
-                  onUploadClick={() => setUploadDialogOpen(true)}
+                  onUploadClick={() => {
+                    const uploadBtn = document.querySelector(
+                      "[data-upload-trigger]",
+                    ) as HTMLButtonElement;
+                    uploadBtn?.click();
+                  }}
                 />
               ) : viewMode === "table" ? (
                 <FileTable
@@ -455,6 +635,9 @@ const Index = () => {
                   currentPath={currentPath}
                   starredFiles={starredFiles}
                   onToggleStar={toggleStar}
+                  selectedFiles={selectedFiles}
+                  onToggleSelect={toggleFileSelection}
+                  onSelectAll={selectAllFiles}
                 />
               ) : (
                 <FileGridView
@@ -467,12 +650,64 @@ const Index = () => {
                   starredFiles={starredFiles}
                   currentPath={currentPath}
                   onRefresh={() => fetchFiles()}
+                  selectedFiles={selectedFiles}
+                  onToggleSelect={toggleFileSelection}
                 />
               )}
             </Card>
           </section>
         </div>
       </main>
+
+      {/* Batch action bar */}
+      {selectedFiles.size > 0 && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-card border-2 border-primary/30 rounded-lg shadow-lg px-4 py-3 flex items-center gap-3 animate-slide-up">
+          <span className="font-mono text-sm font-bold">
+            <CheckSquare className="w-4 h-4 inline mr-1" />
+            {selectedFiles.size} selected
+          </span>
+          <div className="h-6 w-px bg-border" />
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={batchDownload}
+            className="gap-1"
+          >
+            <Download className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Download</span>
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={batchDelete}
+            className="gap-1 text-destructive hover:text-destructive"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Delete</span>
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={clearSelection}
+            className="gap-1"
+          >
+            <X className="w-3.5 h-3.5" />
+          </Button>
+        </div>
+      )}
+
+      {/* Drag-drop upload progress */}
+      {dropUploadProgress !== null && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-card border-2 border-border rounded-lg shadow-lg px-6 py-3 flex items-center gap-4 min-w-[280px]">
+          <span className="font-mono text-xs uppercase whitespace-nowrap">
+            Uploading...
+          </span>
+          <Progress value={dropUploadProgress} className="flex-1 h-2" />
+          <span className="font-mono text-xs text-muted-foreground">
+            {dropUploadProgress}%
+          </span>
+        </div>
+      )}
 
       {/* File Preview Modal */}
       {previewFile && (

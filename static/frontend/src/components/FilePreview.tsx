@@ -355,7 +355,7 @@ export function FilePreview({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent
         ref={dialogRef}
-        className="w-[calc(100%-1rem)] max-w-5xl max-h-[90vh] bg-card border-2 border-border overflow-hidden [&>button]:hidden sm:max-h-[95vh]"
+        className="w-[calc(100%-2rem)] max-w-5xl max-h-[85vh] bg-card border-2 border-border overflow-y-auto [&>button]:hidden sm:max-h-[90vh]"
       >
         <DialogHeader className="border-b border-border pb-3 sm:pb-4">
           <div className="flex items-center justify-between gap-2">

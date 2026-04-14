@@ -76,7 +76,7 @@ export function CodeEditorDialog({
       <DialogTrigger asChild title="New File">
         {triggerButton || defaultTrigger}
       </DialogTrigger>
-      <DialogContent className="w-[calc(100%-1rem)] max-w-6xl max-h-[90vh] p-0 bg-card border-2 border-border overflow-hidden sm:max-h-[95vh]">
+      <DialogContent className="w-[calc(100%-2rem)] max-w-6xl max-h-[80vh] p-0 bg-card border-2 border-border overflow-hidden sm:max-h-[90vh]">
         <DialogHeader className="px-4 py-3 border-b border-border sm:px-6 sm:py-4">
           <DialogTitle className="font-mono font-bold text-foreground flex items-center gap-2">
             <Code className="w-5 h-5" />
@@ -85,7 +85,7 @@ export function CodeEditorDialog({
         </DialogHeader>
         <div
           className="flex-1 overflow-hidden"
-          style={{ height: "calc(90vh - 4rem)" }}
+          style={{ height: "min(70vh, calc(100dvh - 8rem))" }}
         >
           <CodeEditor
             initialFileName={initialFileName}

@@ -314,7 +314,7 @@ export function AdvancedSearch({
           </div>
         </div>
 
-        <DialogFooter className="flex-shrink-0 gap-2 sm:gap-0 mt-2">
+        <DialogFooter className="flex-shrink-0 gap-2 sm:gap-0 mt-2 sticky bottom-0 bg-background pt-2 pb-1 border-t border-border sm:border-t-0">
           <Button
             variant="outline"
             onClick={() => setOpen(false)}

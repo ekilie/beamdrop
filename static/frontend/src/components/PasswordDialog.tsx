@@ -35,9 +35,9 @@ export function PasswordDialog({
   const open = controlledOpen ?? internalOpen;
   const setOpen = onOpenChange ?? setInternalOpen;
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!password.trim()) {
       toast({
         title: "Password Required",
@@ -48,9 +48,6 @@ export function PasswordDialog({
     }
 
     setIsValidating(true);
-
-    // Simulate password validation
-    await new Promise(resolve => setTimeout(resolve, 800));
 
     if (onPasswordSubmit) {
       onPasswordSubmit(password);
@@ -74,11 +71,7 @@ export function PasswordDialog({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      {triggerButton && (
-        <DialogTrigger asChild>
-          {triggerButton}
-        </DialogTrigger>
-      )}
+      {triggerButton && <DialogTrigger asChild>{triggerButton}</DialogTrigger>}
       <DialogContent className="sm:max-w-[480px] border-2 border-border bg-gradient-to-br from-card via-card to-card/95 animate-fade-in">
         <DialogHeader className="space-y-4">
           <div className="mx-auto animate-scale-in">
@@ -89,28 +82,31 @@ export function PasswordDialog({
               </div>
             </div>
           </div>
-          
+
           <DialogTitle className="text-2xl font-bold font-mono uppercase tracking-wide text-center text-foreground animate-fade-in">
             <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
               Secure Access
             </span>
           </DialogTitle>
-          
+
           <DialogDescription className="text-center text-muted-foreground font-mono text-sm animate-fade-in">
             ENTER PASSWORD TO UNLOCK PROTECTED FEATURES
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-6 mt-4 animate-slide-up">
+        <form
+          onSubmit={handleSubmit}
+          className="space-y-6 mt-4 animate-slide-up"
+        >
           <div className="space-y-3">
-            <Label 
-              htmlFor="password" 
+            <Label
+              htmlFor="password"
               className="text-sm font-mono uppercase tracking-wide text-foreground flex items-center gap-2"
             >
               <KeyRound className="w-4 h-4 text-primary" />
               Password
             </Label>
-            
+
             <div className="relative group">
               <Input
                 id="password"
@@ -121,7 +117,7 @@ export function PasswordDialog({
                 className="pr-12 font-mono border-2 transition-all duration-300 focus:border-primary focus:shadow-lg focus:shadow-primary/20"
                 disabled={isValidating}
               />
-              
+
               <Button
                 type="button"
                 variant="ghost"
@@ -140,11 +136,21 @@ export function PasswordDialog({
 
             {password.length > 0 && (
               <div className="flex items-center gap-2 animate-fade-in">
-                <Badge 
-                  variant={password.length >= 8 ? "default" : "outline"}
+                <Badge
+                  variant={
+                    password.length >= 12
+                      ? "default"
+                      : password.length >= 8
+                        ? "secondary"
+                        : "outline"
+                  }
                   className="font-mono text-xs transition-smooth"
                 >
-                  {password.length >= 8 ? "STRONG" : "WEAK"}
+                  {password.length >= 12
+                    ? "STRONG"
+                    : password.length >= 8
+                      ? "MODERATE"
+                      : "WEAK"}
                 </Badge>
                 <span className="text-xs font-mono text-muted-foreground">
                   {password.length} characters
@@ -163,7 +169,7 @@ export function PasswordDialog({
             >
               Cancel
             </Button>
-            
+
             <Button
               type="submit"
               variant="utilitarian"
@@ -189,7 +195,7 @@ export function PasswordDialog({
         <div className="flex items-center justify-center gap-2 pt-4 border-t border-border/50 animate-fade-in">
           <div className="w-2 h-2 rounded-full bg-accent animate-pulse" />
           <span className="text-xs font-mono text-muted-foreground uppercase tracking-wide">
-            End-to-End Protected
+            Password Protected
           </span>
         </div>
       </DialogContent>

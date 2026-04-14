@@ -216,7 +216,7 @@ export function SharesManagementPage() {
                       <TableCell>
                         <div className="flex items-center gap-2">
                           <FileIcon className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                          <span className="font-mono truncate max-w-[150px] sm:max-w-xs">
+                          <span className="font-mono truncate max-w-[200px] sm:max-w-xs md:max-w-sm">
                             {getFileName(link.path)}
                           </span>
                         </div>

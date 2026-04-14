@@ -1,6 +1,17 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
-import { Download, Trash2, Star, Eye, Folder, MoreVertical, Edit, Copy, Move, Share2 } from "lucide-react";
+import {
+  Download,
+  Trash2,
+  Star,
+  Eye,
+  Folder,
+  MoreVertical,
+  Edit,
+  Copy,
+  Move,
+  Share2,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -14,6 +25,16 @@ import { cn } from "@/lib/utils";
 import { RenameDialog } from "./RenameDialog";
 import { MoveDialog } from "./MoveDialog";
 import { ShareLinkDialog } from "./ShareLinkDialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface FileItem {
   name: string;
@@ -34,6 +55,8 @@ interface FileGridViewProps {
   starredFiles: Set<string>;
   currentPath: string;
   onRefresh: () => void;
+  selectedFiles?: Set<string>;
+  onToggleSelect?: (fileName: string) => void;
 }
 
 export const FileGridView: React.FC<FileGridViewProps> = ({
@@ -46,8 +69,13 @@ export const FileGridView: React.FC<FileGridViewProps> = ({
   starredFiles,
   currentPath,
   onRefresh,
+  selectedFiles,
+  onToggleSelect,
 }) => {
-  const [renameDialog, setRenameDialog] = useState<{ open: boolean; fileName: string }>({
+  const [renameDialog, setRenameDialog] = useState<{
+    open: boolean;
+    fileName: string;
+  }>({
     open: false,
     fileName: "",
   });
@@ -60,14 +88,25 @@ export const FileGridView: React.FC<FileGridViewProps> = ({
     fileName: "",
     mode: "move",
   });
-  const [shareDialog, setShareDialog] = useState<{ open: boolean; fileName: string }>({
+  const [shareDialog, setShareDialog] = useState<{
+    open: boolean;
+    fileName: string;
+  }>({
+    open: false,
+    fileName: "",
+  });
+  const [deleteConfirm, setDeleteConfirm] = useState<{
+    open: boolean;
+    fileName: string;
+  }>({
     open: false,
     fileName: "",
   });
 
   const handleFileClick = (file: FileItem) => {
     if (file.isDir) {
-      const newPath = currentPath === "." ? file.name : `${currentPath}/${file.name}`;
+      const newPath =
+        currentPath === "." ? file.name : `${currentPath}/${file.name}`;
       onNavigate(newPath);
     } else {
       onPreview(file.name);
@@ -79,7 +118,8 @@ export const FileGridView: React.FC<FileGridViewProps> = ({
     const imageExts = ["jpg", "jpeg", "png", "gif", "webp", "svg"];
 
     if (imageExts.includes(ext || "")) {
-      const filePath = currentPath === "." ? fileName : `${currentPath}/${fileName}`;
+      const filePath =
+        currentPath === "." ? fileName : `${currentPath}/${fileName}`;
       return `/preview?file=${encodeURIComponent(filePath)}`;
     }
     return null;
@@ -90,7 +130,9 @@ export const FileGridView: React.FC<FileGridViewProps> = ({
       {files.map((file, index) => {
         const previewUrl = getFilePreviewBg(file.name);
         // Use isStarred from backend response, fallback to Set lookup for backwards compatibility
-        const filePath = file.path || (currentPath === "." ? file.name : `${currentPath}/${file.name}`);
+        const filePath =
+          file.path ||
+          (currentPath === "." ? file.name : `${currentPath}/${file.name}`);
         const isStarred = file.isStarred ?? starredFiles.has(filePath);
 
         return (
@@ -101,10 +143,30 @@ export const FileGridView: React.FC<FileGridViewProps> = ({
             transition={{ delay: index * 0.05, duration: 0.2 }}
             className={cn(
               "group relative bg-card border border-border rounded-lg overflow-hidden hover:border-primary/50 hover:shadow-lg transition-all cursor-pointer hover-lift",
-              isStarred && "ring-2 ring-primary/20"
+              isStarred && "ring-2 ring-primary/20",
+              selectedFiles?.has(file.name) &&
+                "ring-2 ring-primary border-primary",
             )}
             onClick={() => handleFileClick(file)}
           >
+            {/* Selection checkbox */}
+            {onToggleSelect && (
+              <div
+                className="absolute top-2 right-2 z-10"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <input
+                  type="checkbox"
+                  checked={selectedFiles?.has(file.name) ?? false}
+                  onChange={() => onToggleSelect(file.name)}
+                  className="w-4 h-4 rounded border-border accent-primary cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity data-[checked]:opacity-100"
+                  style={{
+                    opacity: selectedFiles?.has(file.name) ? 1 : undefined,
+                  }}
+                  aria-label={`Select ${file.name}`}
+                />
+              </div>
+            )}
             {/* Preview Area */}
             <div className="aspect-square bg-muted/30 flex items-center justify-center relative overflow-hidden">
               {file.isDir ? (
@@ -133,9 +195,9 @@ export const FileGridView: React.FC<FileGridViewProps> = ({
                 </div>
               )}
 
-              {/* Quick Actions Overlay - desktop hover only */}
+              {/* Quick Actions Overlay - visible on hover (desktop) and always on mobile */}
               {!file.isDir && (
-                <div className="absolute inset-0 bg-background/80 opacity-0 group-hover:opacity-100 transition-opacity hidden md:flex items-center justify-center gap-2">
+                <div className="absolute inset-0 bg-background/80 flex items-center justify-center gap-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
                   <Button
                     size="icon"
                     variant="secondary"
@@ -162,11 +224,17 @@ export const FileGridView: React.FC<FileGridViewProps> = ({
             {/* File Info */}
             <div className="p-3 space-y-1">
               <div className="flex items-start justify-between gap-2">
-                <p className="text-sm font-mono font-medium truncate flex-1" title={file.name}>
+                <p
+                  className="text-sm font-mono font-medium truncate flex-1"
+                  title={file.name}
+                >
                   {file.name}
                 </p>
                 <DropdownMenu>
-                  <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                  <DropdownMenuTrigger
+                    asChild
+                    onClick={(e) => e.stopPropagation()}
+                  >
                     <Button
                       variant="ghost"
                       size="icon"
@@ -176,25 +244,34 @@ export const FileGridView: React.FC<FileGridViewProps> = ({
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={(e) => {
-                      e.stopPropagation();
-                      if (file.isDir) {
-                        handleFileClick(file);
-                      } else {
-                        onPreview(file.name);
-                      }
-                    }}>
+                    <DropdownMenuItem
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (file.isDir) {
+                          handleFileClick(file);
+                        } else {
+                          onPreview(file.name);
+                        }
+                      }}
+                    >
                       <Eye className="w-4 h-4 mr-2" />
                       {file.isDir ? "Open" : "Preview"}
                     </DropdownMenuItem>
                     {!file.isDir && (
-                      <DropdownMenuItem onClick={(e) => onDownload(file.name, e)}>
+                      <DropdownMenuItem
+                        onClick={(e) => onDownload(file.name, e)}
+                      >
                         <Download className="w-4 h-4 mr-2" />
                         Download
                       </DropdownMenuItem>
                     )}
                     <DropdownMenuItem onClick={(e) => onStar(file.name, e)}>
-                      <Star className={cn("w-4 h-4 mr-2", isStarred && "fill-primary")} />
+                      <Star
+                        className={cn(
+                          "w-4 h-4 mr-2",
+                          isStarred && "fill-primary",
+                        )}
+                      />
                       {isStarred ? "Unstar" : "Star"}
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
@@ -220,7 +297,11 @@ export const FileGridView: React.FC<FileGridViewProps> = ({
                     <DropdownMenuItem
                       onClick={(e) => {
                         e.stopPropagation();
-                        setMoveDialog({ open: true, fileName: file.name, mode: "move" });
+                        setMoveDialog({
+                          open: true,
+                          fileName: file.name,
+                          mode: "move",
+                        });
                       }}
                     >
                       <Move className="w-4 h-4 mr-2" />
@@ -229,7 +310,11 @@ export const FileGridView: React.FC<FileGridViewProps> = ({
                     <DropdownMenuItem
                       onClick={(e) => {
                         e.stopPropagation();
-                        setMoveDialog({ open: true, fileName: file.name, mode: "copy" });
+                        setMoveDialog({
+                          open: true,
+                          fileName: file.name,
+                          mode: "copy",
+                        });
                       }}
                     >
                       <Copy className="w-4 h-4 mr-2" />
@@ -237,7 +322,10 @@ export const FileGridView: React.FC<FileGridViewProps> = ({
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem
-                      onClick={(e) => onDelete(file.name, e)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setDeleteConfirm({ open: true, fileName: file.name });
+                      }}
                       className="text-destructive focus:text-destructive"
                     >
                       <Trash2 className="w-4 h-4 mr-2" />
@@ -277,6 +365,37 @@ export const FileGridView: React.FC<FileGridViewProps> = ({
         fileName={shareDialog.fileName}
         currentPath={currentPath}
       />
+
+      <AlertDialog
+        open={deleteConfirm.open}
+        onOpenChange={(open) => setDeleteConfirm({ ...deleteConfirm, open })}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Move to Trash</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to move{" "}
+              <span className="font-semibold">"{deleteConfirm.fileName}"</span>{" "}
+              to trash?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                onDelete(
+                  deleteConfirm.fileName,
+                  e as unknown as React.MouseEvent,
+                );
+                setDeleteConfirm({ open: false, fileName: "" });
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

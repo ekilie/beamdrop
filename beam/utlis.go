@@ -129,7 +129,7 @@ func searchFiles(rootPath, query, relativePath string, results *[]File) error {
 			slog.Warn("Error accessing path", "path", path, "error", err)
 			return nil // Continue searching other files
 		}
-
+		
 		// Get relative path from the search root
 		relPath, err := filepath.Rel(rootPath, path)
 		if err != nil {

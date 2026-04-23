@@ -189,9 +189,31 @@ func (c *Client) PresignObjectURL(method, bucket, key string, expiresAt time.Tim
 }
 
 func (c *Client) CreatePresignedURL(ctx context.Context, request CreatePresignedURLRequest) (*PresignedURL, error) {
-	var response PresignedURL
-	if err := c.doJSON(ctx, http.MethodPost, "/api/v1/presign", nil, jsonBody(request), &response); err != nil {
+	body, err := json.Marshal(request)
+	if err != nil {
+		return nil, fmt.Errorf("marshal request: %w", err)
+	}
+
+	httpRequest, err := c.newRequest(ctx, http.MethodPost, "/api/v1/presign", nil, bytes.NewReader(body))
+	if err != nil {
 		return nil, err
+	}
+	httpRequest.Header.Set("Content-Type", "application/json")
+
+	httpResponse, err := c.httpClient.Do(httpRequest)
+	if err != nil {
+		return nil, err
+	}
+	if httpResponse.StatusCode < 200 || httpResponse.StatusCode >= 300 {
+		apiErr := decodeAPIError(httpResponse)
+		httpResponse.Body.Close()
+		return nil, apiErr
+	}
+	defer httpResponse.Body.Close()
+
+	var response PresignedURL
+	if err := json.NewDecoder(httpResponse.Body).Decode(&response); err != nil {
+		return nil, fmt.Errorf("decode response: %w", err)
 	}
 	return &response, nil
 }
@@ -319,17 +341,6 @@ func (c *Client) newRequest(ctx context.Context, method, path string, query url.
 	}
 
 	return request, nil
-}
-
-func jsonBody(payload any) io.Reader {
-	if payload == nil {
-		return nil
-	}
-	body, err := json.Marshal(payload)
-	if err != nil {
-		return bytes.NewReader(nil)
-	}
-	return bytes.NewReader(body)
 }
 
 func bucketPath(bucket string) string {

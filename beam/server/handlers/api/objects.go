@@ -45,7 +45,7 @@ func (h *ObjectHandler) Handle(w http.ResponseWriter, r *http.Request) {
 		key = parts[1]
 	}
 
-	// If no key, this might be a list objects request
+	// If no key, this will be a list objects request
 	if key == "" {
 		if r.Method == http.MethodGet {
 			h.listObjects(w, r, bucket)

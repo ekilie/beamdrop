@@ -1,0 +1,8 @@
+-   Bulk download to create a zipped file  that will contain 
+    all the selected file and folders the zip them all in one folders
+
+-   Fix all the ui incosistencies and bugs to many of them still live rent free in beamdrop
+
+-   Add multipart upload for file also resumable uploads will be pretty cool
+
+-   Add webhooks and events notification also will be prettycool

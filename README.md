@@ -45,6 +45,7 @@ beamdrop -dir /path/to/share -api-auth -tls-cert cert.pem -tls-key key.pem
 
 - **Web UI + File Browser:** Drag, drop, rename, move, and organize files.
 - **S3-Compatible API:** Works with existing AWS SDKs and scripts.
+- **Official Go client:** In-repo SDK for signed bucket, object, and presigned URL operations.
 - **Shareable Links:** Optional password and expiry.
 - **Single Binary:** Runs anywhere, zero dependencies.
 - **Secure & Production-Ready:** TLS, rate limiting, structured logging.
@@ -78,6 +79,51 @@ beamdrop -dir /path/to/share -api-auth -tls-cert cert.pem -tls-key key.pem
 - **Prometheus metrics**: `/metrics` endpoint with request counters, latency histograms, storage gauges, and a ready-to-import Grafana dashboard
 
 ## Installation
+
+## Go Client
+
+Beamdrop now includes a first-party Go client in this repository:
+
+```go
+import "github.com/ekilie/beamdrop/pkg/client"
+```
+
+Minimal example:
+
+```go
+ctx := context.Background()
+
+sdk, err := client.New(client.Config{
+  BaseURL:     "http://localhost:7777",
+  AccessKeyID: "BDK_your_access_key",
+  SecretKey:   "sk_your_secret_key",
+})
+if err != nil {
+  log.Fatal(err)
+}
+
+if _, err := sdk.CreateBucketIfNotExists(ctx, "uploads"); err != nil {
+  log.Fatal(err)
+}
+
+if _, err := sdk.PutObject(ctx, "uploads", "hello.txt", []byte("hello beamdrop")); err != nil {
+  log.Fatal(err)
+}
+
+object, err := sdk.GetObject(ctx, "uploads", "hello.txt")
+if err != nil {
+  log.Fatal(err)
+}
+
+fmt.Println(string(object.Body))
+```
+
+Current client scope:
+
+- bucket operations
+- object upload, download, metadata, and delete
+- client-side presigned URL generation
+- server-side presigned URL management via `/api/v1/presign`
 
 ### Quick Install (macOS & Linux)
 

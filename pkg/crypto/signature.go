@@ -11,6 +11,8 @@ import (
 	"fmt"
 	"io"
 	"time"
+
+	"golang.org/x/crypto/bcrypt"
 )
 
 // HashSecret creates a SHA-256 hash of a secret key for storage
@@ -23,6 +25,26 @@ func HashSecret(secret string) string {
 // VerifySecret checks if a secret matches a stored hash
 func VerifySecret(secret, hash string) bool {
 	return HashSecret(secret) == hash
+}
+
+// HashPassword creates a bcrypt hash of a password (for shareable link passwords).
+func HashPassword(password string) (string, error) {
+	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return "", err
+	}
+	return string(hash), nil
+}
+
+// VerifyPassword checks if a password matches a bcrypt hash.
+// Also supports legacy SHA-256 hashes for backward compatibility.
+func VerifyPassword(password, hash string) bool {
+	// Try bcrypt first (hashes start with "$2a$" or "$2b$")
+	if len(hash) > 4 && hash[0] == '$' {
+		return bcrypt.CompareHashAndPassword([]byte(hash), []byte(password)) == nil
+	}
+	// Fall back to legacy SHA-256 for old hashes
+	return HashSecret(password) == hash
 }
 
 // GenerateSignature creates an HMAC-SHA256 signature for a request

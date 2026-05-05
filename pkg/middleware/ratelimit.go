@@ -62,6 +62,9 @@ type RateLimiterConfig struct {
 	UploadRate int
 	// Enabled can be set to false to skip rate limiting entirely.
 	Enabled bool
+	// TrustedProxies is a list of trusted proxy IPs/CIDRs.
+	// Only trust X-Forwarded-For/X-Real-IP from these sources.
+	TrustedProxies []*net.IPNet
 }
 
 // DefaultRateLimiterConfig returns sensible defaults.
@@ -84,6 +87,40 @@ type RateLimiter struct {
 	clients map[string]*clientBuckets
 	config  RateLimiterConfig
 	stopCh  chan struct{}
+}
+
+// ParseTrustedProxies parses a comma-separated list of IPs/CIDRs into net.IPNet entries.
+func ParseTrustedProxies(raw string) []*net.IPNet {
+	if raw == "" {
+		return nil
+	}
+	var result []*net.IPNet
+	for _, entry := range strings.Split(raw, ",") {
+		entry = strings.TrimSpace(entry)
+		if entry == "" {
+			continue
+		}
+		// If it's a plain IP, convert to /32 or /128
+		if !strings.Contains(entry, "/") {
+			ip := net.ParseIP(entry)
+			if ip == nil {
+				slog.Warn("Invalid trusted proxy IP, skipping", "ip", entry)
+				continue
+			}
+			if ip.To4() != nil {
+				entry += "/32"
+			} else {
+				entry += "/128"
+			}
+		}
+		_, cidr, err := net.ParseCIDR(entry)
+		if err != nil {
+			slog.Warn("Invalid trusted proxy CIDR, skipping", "cidr", entry, "error", err)
+			continue
+		}
+		result = append(result, cidr)
+	}
+	return result
 }
 
 // clientBuckets holds the three tier buckets for a single IP.
@@ -118,7 +155,7 @@ func (rl *RateLimiter) Middleware(next http.Handler) http.Handler {
 	}
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ip := extractIP(r)
+		ip := extractIP(r, rl.config.TrustedProxies)
 		tier := classifyRequest(r)
 
 		rl.mu.Lock()
@@ -231,29 +268,51 @@ func newBucket(rpm int) bucket {
 	}
 }
 
-// extractIP returns the client IP from the request, respecting X-Forwarded-For
-// and X-Real-IP headers (first untrusted hop).
-func extractIP(r *http.Request) string {
-	// Try X-Forwarded-For first (may contain comma-separated list)
-	if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
-		parts := strings.SplitN(xff, ",", 2)
-		ip := strings.TrimSpace(parts[0])
-		if ip != "" {
-			return ip
+// extractIP returns the client IP from the request.
+// Only trusts X-Forwarded-For and X-Real-IP headers when the direct connection
+// comes from a trusted proxy IP. Otherwise, uses RemoteAddr.
+func extractIP(r *http.Request, trustedProxies []*net.IPNet) string {
+	// Get the direct connection IP
+	directIP, _, err := net.SplitHostPort(r.RemoteAddr)
+	if err != nil {
+		directIP = r.RemoteAddr
+	}
+
+	// Only trust forwarded headers if the direct connection is from a trusted proxy
+	if isTrustedProxy(directIP, trustedProxies) {
+		// Try X-Forwarded-For first (may contain comma-separated list)
+		if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
+			parts := strings.SplitN(xff, ",", 2)
+			ip := strings.TrimSpace(parts[0])
+			if ip != "" {
+				return ip
+			}
+		}
+
+		// Try X-Real-IP
+		if xri := r.Header.Get("X-Real-IP"); xri != "" {
+			return strings.TrimSpace(xri)
 		}
 	}
 
-	// Try X-Real-IP
-	if xri := r.Header.Get("X-Real-IP"); xri != "" {
-		return strings.TrimSpace(xri)
-	}
+	return directIP
+}
 
-	// Fallback to RemoteAddr (host:port)
-	host, _, err := net.SplitHostPort(r.RemoteAddr)
-	if err != nil {
-		return r.RemoteAddr
+// isTrustedProxy checks if an IP is in the trusted proxies list.
+func isTrustedProxy(ipStr string, trustedProxies []*net.IPNet) bool {
+	if len(trustedProxies) == 0 {
+		return false
 	}
-	return host
+	ip := net.ParseIP(ipStr)
+	if ip == nil {
+		return false
+	}
+	for _, cidr := range trustedProxies {
+		if cidr.Contains(ip) {
+			return true
+		}
+	}
+	return false
 }
 
 // cleanup periodically removes stale client entries (unseen for >10 min).

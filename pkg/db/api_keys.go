@@ -18,7 +18,7 @@ type APIKey struct {
 	Name        string     `gorm:"size:255;not null" json:"name"`
 	AccessKeyID string     `gorm:"column:access_key_id;uniqueIndex;size:24;not null" json:"accessKeyId"`
 	SecretKey   string     `gorm:"column:secret_key;size:256;not null" json:"-"` // Encrypted at rest with AES-256-GCM
-	Permissions string     `gorm:"type:text" json:"permissions"`                // JSON permissions
+	Permissions string     `gorm:"type:text" json:"permissions"`                 // JSON permissions
 	BucketScope string     `gorm:"column:bucket_scope;size:255" json:"bucketScope,omitempty"`
 	ExpiresAt   *time.Time `gorm:"column:expires_at" json:"expiresAt,omitempty"`
 	LastUsedAt  *time.Time `gorm:"column:last_used_at" json:"lastUsedAt,omitempty"`

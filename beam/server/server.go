@@ -49,6 +49,7 @@ func New(sharedDir string, flags config.Flags) *Server {
 		rlConfig.AuthRate = max(1, flags.RateLimit/20)
 		rlConfig.UploadRate = max(1, flags.RateLimit/10)
 	}
+	rlConfig.TrustedProxies = middleware.ParseTrustedProxies(flags.TrustedProxies)
 
 	s := &Server{
 		sharedDir:       sharedDir,

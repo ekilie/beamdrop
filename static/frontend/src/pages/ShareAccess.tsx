@@ -254,7 +254,7 @@ export default function ShareAccess() {
         setFileInfo(data);
         setRequiresPassword(false);
         setIsLoading(false);
-      } catch (error: any) {
+      } catch (error) {
         setError(error.message);
         setIsLoading(false);
         toast({
@@ -264,7 +264,7 @@ export default function ShareAccess() {
         });
       }
     },
-    [token]
+    [token],
   );
 
   useEffect(() => {

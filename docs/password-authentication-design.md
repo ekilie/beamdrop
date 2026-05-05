@@ -66,7 +66,7 @@ This document outlines the design for implementing a password authentication sys
 │                 │    │   Generation    │    │   Storage       │
 ├─────────────────┤    ├─────────────────┤    ├─────────────────┤
 │ Password Valid  │───▶│ Create JWT with │───▶│ Store in        │
-│                 │    │ Expiration      │    │ localStorage    │
+│                 │    │ Expiration+JTI  │    │ HttpOnly cookie │
 └─────────────────┘    └─────────────────┘    └─────────────────┘
 ```
 
@@ -227,15 +227,17 @@ interface AuthState {
 - Store only hashed passwords, never plaintext
 
 #### Token Security
-- Use JWT with strong secret key
-- Implement reasonable expiration times (e.g., 24 hours)
-- Include token refresh mechanism
-- Validate token signature and expiration on each request
+- Use JWT with strong secret key (random 256-bit, generated per process)
+- Implement reasonable expiration times (24 hours)
+- Each token includes a unique JTI (JWT ID) for revocation
+- Tokens are revoked on logout via in-memory JTI blocklist
+- Validate token signature, expiration, and revocation status on each request
 
 #### Session Security
-- Implement CSRF protection if using cookies
-- Use secure, httpOnly cookies in production
-- Implement session timeout and cleanup
+- CSRF protection via double-submit cookie (`beamdrop_csrf` cookie + `X-CSRF-Token` header)
+- Tokens stored in `HttpOnly`, `SameSite=Strict` cookies (not localStorage)
+- Session timeout via JWT expiration (24 hours)
+- Token revocation cleanup runs every 10 minutes
 
 ### 7. Configuration Options
 

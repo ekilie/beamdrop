@@ -118,7 +118,7 @@ docker compose up -d
 | `-allowed-origins`  | Comma-separated CORS origins                                              | None (CORS disabled)       |
 | `-db-path`          | Path to database file or directory (directory auto-appends `beamdrop.db`) | `~/.beamdrop/beamdrop.db`  |
 | `-rate-limit`       | Requests/min per IP (0 = disabled)                                        | `100`                      |
-| `-trusted-proxies`  | Comma-separated CIDR ranges of trusted reverse proxies                     | None                       |
+| `-trusted-proxies`  | Comma-separated CIDR ranges of trusted reverse proxies                    | None                       |
 | `-max-storage`      | Maximum total storage, e.g. 500MB, 10GB, 1TB (0 = unlimited)              | `0`                        |
 | `-log-level`        | `debug`, `info`, `warn`, `error`                                          | `info`                     |
 | `-qr`               | Enable QR code display                                                    | `false`                    |

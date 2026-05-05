@@ -1317,7 +1317,7 @@ type APIKey struct {
     ID          uint       // Auto-incrementing primary key
     Name        string     // Human-readable name, e.g., "CI/CD Pipeline"
     AccessKeyID string     // Public identifier: "BDK_a1b2c3d4e5f6g7h8"
-    SecretKey   string     // Secret for HMAC signing (stored in DB for verification)
+    SecretKey   string     // Secret for HMAC signing (AES-256-GCM encrypted in DB)
     Permissions string     // JSON string with permission rules (future use)
     BucketScope string     // Limit key to a specific bucket (optional)
     ExpiresAt   *time.Time // Optional expiration date

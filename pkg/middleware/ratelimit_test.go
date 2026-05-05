@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"encoding/json"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -217,6 +218,7 @@ func TestRateLimiter_Disabled(t *testing.T) {
 func TestRateLimiter_XForwardedFor(t *testing.T) {
 	cfg := DefaultRateLimiterConfig()
 	cfg.GeneralRate = 1
+	cfg.TrustedProxies = ParseTrustedProxies("127.0.0.1/32")
 	rl := NewRateLimiter(cfg)
 	defer rl.Close()
 

@@ -24,15 +24,16 @@ import (
 )
 
 type Server struct {
-	sharedDir        string
-	flags            config.Flags
-	mux              *http.ServeMux
-	passwordService  *auth.PasswordService
-	authMiddleware   *auth.AuthMiddleware
-	rateLimiter      *middleware.RateLimiter
-	httpServer       *http.Server
-	orphanCleaner    *db.OrphanCleaner
-	metricsCollector *metrics.Collector
+	sharedDir            string
+	flags                config.Flags
+	mux                  *http.ServeMux
+	passwordService      *auth.PasswordService
+	authMiddleware       *auth.AuthMiddleware
+	rateLimiter          *middleware.RateLimiter
+	httpServer           *http.Server
+	orphanCleaner        *db.OrphanCleaner
+	metricsCollector     *metrics.Collector
+	stopRevocationCleanup func()
 }
 
 func New(sharedDir string, flags config.Flags) *Server {
@@ -128,6 +129,9 @@ func (s *Server) Start() error {
 	s.metricsCollector = metrics.NewCollector(s.sharedDir, 15*time.Second)
 	s.metricsCollector.Start()
 
+	// Start token revocation cleanup
+	s.stopRevocationCleanup = auth.StartRevocationCleanup()
+
 	port := s.getPort()
 	ip := GetLocalIP()
 
@@ -214,7 +218,13 @@ func (s *Server) Shutdown(ctx context.Context) error {
 		slog.Info("Orphan cleaner stopped")
 	}
 
-	// 5. Close database connection
+	// 5. Stop token revocation cleanup
+	if s.stopRevocationCleanup != nil {
+		s.stopRevocationCleanup()
+		slog.Info("Token revocation cleanup stopped")
+	}
+
+	// 6. Close database connection
 	if err := db.Close(); err != nil {
 		slog.Error("Database close error", "error", err)
 		if shutdownErr == nil {

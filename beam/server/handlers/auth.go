@@ -108,6 +108,14 @@ func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Revoke the current token so it can't be reused
+	if cookie, err := r.Cookie("beamdrop_token"); err == nil && cookie.Value != "" {
+		auth.RevokeToken(cookie.Value)
+	}
+	if authHeader := r.Header.Get("Authorization"); len(authHeader) > 7 && authHeader[:7] == "Bearer " {
+		auth.RevokeToken(authHeader[7:])
+	}
+
 	// Clear the cookie
 	http.SetCookie(w, &http.Cookie{
 		Name:     "beamdrop_token",

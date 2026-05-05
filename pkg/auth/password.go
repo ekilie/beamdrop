@@ -3,10 +3,13 @@ package auth
 import (
 	"crypto/rand"
 	"encoding/base64"
+	"encoding/hex"
 	"errors"
 	"log/slog"
+	"sync"
 	"time"
 
+	"github.com/ekilie/beamdrop/pkg/crypto"
 	"github.com/ekilie/beamdrop/pkg/db"
 	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"
@@ -17,6 +20,9 @@ var (
 	ErrNoPasswordSet   = errors.New("no password set")
 	ErrInvalidToken    = errors.New("invalid token")
 	jwtSecret          []byte
+	// revokedTokens is an in-memory set of revoked token JTIs
+	revokedTokens   = make(map[string]time.Time)
+	revokedTokensMu sync.RWMutex
 )
 
 func init() {
@@ -25,6 +31,14 @@ func init() {
 	if _, err := rand.Read(jwtSecret); err != nil {
 		panic("CRITICAL: failed to generate JWT secret: " + err.Error())
 	}
+	// Share the key with the crypto package for at-rest encryption
+	crypto.SetEncryptionKey(jwtSecret)
+}
+
+// EncryptionKey returns the 32-byte key used for encrypting secrets at rest.
+// This is derived from the JWT secret which is randomly generated per process.
+func EncryptionKey() []byte {
+	return jwtSecret
 }
 
 // Claims represents JWT claims
@@ -76,14 +90,23 @@ func (ps *PasswordService) ValidatePassword(password string) bool {
 	return err == nil
 }
 
-// GenerateToken creates a new JWT token
+// GenerateToken creates a new JWT token with a unique JTI for revocation support
 func (ps *PasswordService) GenerateToken() (string, error) {
 	expirationTime := time.Now().Add(24 * time.Hour)
+
+	// Generate a unique JTI for revocation tracking
+	jtiBytes := make([]byte, 16)
+	if _, err := rand.Read(jtiBytes); err != nil {
+		return "", err
+	}
+	jti := hex.EncodeToString(jtiBytes)
+
 	claims := &Claims{
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(expirationTime),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 			Issuer:    "beamdrop",
+			ID:        jti,
 		},
 	}
 
@@ -96,7 +119,7 @@ func (ps *PasswordService) GenerateToken() (string, error) {
 	return tokenString, nil
 }
 
-// ValidateToken checks if the token is valid
+// ValidateToken checks if the token is valid and not revoked
 func (ps *PasswordService) ValidateToken(tokenString string) bool {
 	if !ps.enabled {
 		return true
@@ -111,7 +134,79 @@ func (ps *PasswordService) ValidateToken(tokenString string) bool {
 		return false
 	}
 
-	return token.Valid
+	if !token.Valid {
+		return false
+	}
+
+	// Check if the token has been revoked
+	if claims.ID != "" {
+		revokedTokensMu.RLock()
+		_, revoked := revokedTokens[claims.ID]
+		revokedTokensMu.RUnlock()
+		if revoked {
+			return false
+		}
+	}
+
+	return true
+}
+
+// RevokeToken extracts the JTI from a token and adds it to the revocation list.
+func RevokeToken(tokenString string) {
+	claims := &Claims{}
+	_, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (any, error) {
+		return jwtSecret, nil
+	})
+	// Even if the token is expired, we still revoke by JTI
+	if err != nil && claims.ID == "" {
+		return
+	}
+	if claims.ID == "" {
+		return
+	}
+
+	expiry := time.Now().Add(24 * time.Hour) // keep until token would have expired
+	if claims.ExpiresAt != nil {
+		expiry = claims.ExpiresAt.Time
+	}
+
+	revokedTokensMu.Lock()
+	revokedTokens[claims.ID] = expiry
+	revokedTokensMu.Unlock()
+
+	slog.Debug("Token revoked", "jti", claims.ID)
+}
+
+// CleanupRevokedTokens removes expired entries from the revocation list.
+// Should be called periodically.
+func CleanupRevokedTokens() {
+	now := time.Now()
+	revokedTokensMu.Lock()
+	for jti, expiry := range revokedTokens {
+		if now.After(expiry) {
+			delete(revokedTokens, jti)
+		}
+	}
+	revokedTokensMu.Unlock()
+}
+
+// StartRevocationCleanup starts a background goroutine to periodically
+// clean up expired revoked tokens. Returns a stop function.
+func StartRevocationCleanup() func() {
+	stopCh := make(chan struct{})
+	go func() {
+		ticker := time.NewTicker(10 * time.Minute)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-stopCh:
+				return
+			case <-ticker.C:
+				CleanupRevokedTokens()
+			}
+		}
+	}()
+	return func() { close(stopCh) }
 }
 
 // storePasswordHash stores the password hash in the database

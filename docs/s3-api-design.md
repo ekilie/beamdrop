@@ -48,7 +48,7 @@ type APIKey struct {
     ID          uint      `gorm:"primaryKey"`
     Name        string    `gorm:"not null"`                    // Human-readable name
     AccessKeyID string    `gorm:"uniqueIndex;size:20;not null"` // BDK_XXXXXXXXXXXX
-    SecretKey   string    `gorm:"size:64;not null"`            // Hashed
+    SecretKey   string    `gorm:\"size:256;not null\"`            // AES-256-GCM encrypted
     Permissions []byte    `gorm:"type:json"`                   // JSON permissions
     BucketScope string    `gorm:"size:255"`                    // Optional: limit to specific bucket
     ExpiresAt   *time.Time                                     // Optional expiration

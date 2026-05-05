@@ -130,6 +130,7 @@ func main() {
 	rateLimit := flag.Int("rate-limit", 100, "General rate limit in requests/min per IP (0 = disabled)")
 	shutdownTimeout := flag.Duration("shutdown-timeout", 30*time.Second, "Graceful shutdown timeout")
 	maxStorageStr := flag.String("max-storage", "0", "Maximum total storage, e.g. 500MB, 10GB, 1TB (0 = unlimited)")
+	trustedProxies := flag.String("trusted-proxies", "", "Comma-separated list of trusted proxy IPs/CIDRs for X-Forwarded-For (empty = trust direct connection only)")
 
 	// NOTE:Here i default it to 0 so when it zero we know that the flag wasnt passed
 	// Since the flag is a non-boolean value
@@ -162,6 +163,7 @@ func main() {
 	envInt("rate-limit", "BEAMDROP_RATE_LIMIT", rateLimit)
 	envDuration("shutdown-timeout", "BEAMDROP_SHUTDOWN_TIMEOUT", shutdownTimeout)
 	envStr("max-storage", "BEAMDROP_MAX_STORAGE", maxStorageStr)
+	envStr("trusted-proxies", "BEAMDROP_TRUSTED_PROXIES", trustedProxies)
 
 	// Parse max-storage from human-readable format
 	maxStorage, err := parseByteSize(*maxStorageStr)
@@ -208,6 +210,7 @@ func main() {
 		ShutdownTimeout: *shutdownTimeout,
 		DBPath:          *dbPath,
 		MaxStorage:      maxStorage,
+		TrustedProxies:  *trustedProxies,
 	}
 
 	if flag.NArg() > 0 {

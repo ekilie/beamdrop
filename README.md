@@ -67,9 +67,15 @@ beamdrop -dir /path/to/share -api-auth -tls-cert cert.pem -tls-key key.pem
 - **Security features**:
   - HTTPS/TLS support for encrypted connections
   - Configurable CORS with strict defaults (disabled by default)
-  - Security headers (HSTS, CSP, X-Frame-Options, etc.)
+  - Security headers (HSTS, CSP, X-Frame-Options, Permissions-Policy, etc.)
   - HTTP method restrictions on all endpoints
   - **Per-IP rate limiting** with tiered enforcement (general, auth, upload)
+  - **CSRF protection** via double-submit cookie pattern
+  - **JWT token revocation** on logout with automatic cleanup
+  - **AES-256-GCM encryption** for API key secrets at rest
+  - **bcrypt password hashing** for shareable link passwords
+  - **Cookie-only JWT storage** (no localStorage) with `HttpOnly` + `SameSite=Strict`
+  - **Trusted proxy support** for accurate IP detection behind reverse proxies
 - **Structured logging**:
   - Colored, human-readable terminal output
   - Structured JSON log file at `<dir>/.beamdrop/beamdrop.log`

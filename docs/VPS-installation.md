@@ -180,6 +180,7 @@ sudo ufw delete allow 7777
 - Enable API key authentication: `--api-auth` or `BEAMDROP_API_AUTH=true`
 - Consider rate limiting with `--rate-limit` or `BEAMDROP_RATE_LIMIT`
 - Set a storage limit with `--max-storage` or `BEAMDROP_MAX_STORAGE` (e.g. 10GB, 0 = unlimited)
+- Configure trusted proxies when behind Nginx: `--trusted-proxies "127.0.0.1/32"` or `BEAMDROP_TRUSTED_PROXIES=127.0.0.1/32`
 
 ---
 
@@ -194,6 +195,7 @@ You can set environment variables in systemd service for additional config:
 | `BEAMDROP_ALLOWED_ORIGINS` | Set allowed CORS origins               |
 | `BEAMDROP_RATE_LIMIT`      | Requests per minute per IP             |
 | `BEAMDROP_MAX_STORAGE`     | Max storage, e.g. 10GB (0 = unlimited) |
+| `BEAMDROP_TRUSTED_PROXIES` | CIDR ranges of trusted proxies         |
 
 ---
 

@@ -83,11 +83,23 @@ Controls how much referrer information is sent with requests:
 Restricts resource loading to prevent XSS and data injection attacks:
 
 - `default-src 'self'`: Only load resources from same origin
-- `script-src 'self' 'unsafe-inline' 'unsafe-eval'`: Allow scripts from same origin and inline scripts
-- `style-src 'self' 'unsafe-inline'`: Allow styles from same origin and inline styles
-- `img-src 'self' data:`: Allow images from same origin and data URIs
+- `script-src 'self'`: Allow scripts from same origin only (no inline scripts or eval)
+- `style-src 'self' 'unsafe-inline'`: Allow styles from same origin and inline styles (required for Tailwind CSS)
+- `img-src 'self' data: blob:`: Allow images from same origin, data URIs, and blob URIs
 - `font-src 'self' data:`: Allow fonts from same origin and data URIs
 - `connect-src 'self' ws: wss:`: Allow connections to same origin and WebSocket
+- `object-src 'none'`: Block all plugin content (Flash, Java applets, etc.)
+- `base-uri 'self'`: Restrict `<base>` tag to same origin
+- `form-action 'self'`: Restrict form submissions to same origin
+- `frame-ancestors 'none'`: Prevent embedding in frames (equivalent to X-Frame-Options: DENY)
+
+### Permissions-Policy
+
+Restricts access to powerful browser features:
+
+- `geolocation=()`: Disabled
+- `microphone=()`: Disabled
+- `camera=()`: Disabled
 
 ### Strict-Transport-Security (HTTPS only)
 
@@ -171,12 +183,27 @@ Example response:
 }
 ```
 
+### Trusted Proxy Support
+
+By default, `X-Forwarded-For` and `X-Real-IP` headers are **ignored** to prevent IP spoofing. When running behind a reverse proxy, configure trusted proxies so headers from known proxies are honoured:
+
+```bash
+# Trust a single proxy
+beamdrop -dir /path/to/share -trusted-proxies "10.0.0.1/32"
+
+# Trust a CIDR range (e.g., Docker network)
+beamdrop -dir /path/to/share -trusted-proxies "172.16.0.0/12"
+
+# Trust multiple ranges
+beamdrop -dir /path/to/share -trusted-proxies "10.0.0.0/8,172.16.0.0/12"
+```
+
 ### IP Detection
 
 The rate limiter identifies clients by IP address, checking in order:
 
-1. `X-Forwarded-For` header (first IP in the chain)
-2. `X-Real-IP` header
+1. `X-Forwarded-For` header (first IP in the chain) — **only if the request comes from a trusted proxy**
+2. `X-Real-IP` header — **only if the request comes from a trusted proxy**
 3. Connection remote address
 
 ### Internals
@@ -241,6 +268,8 @@ beamdrop -dir /path/to/share -log-level debug
       General rate limit in requests/min per IP (default 100, 0 = disabled)
 -max-storage string
       Maximum total storage, e.g. 500MB, 10GB, 1TB (0 = unlimited)
+-trusted-proxies string
+      Comma-separated CIDR ranges of trusted reverse proxies (e.g. "10.0.0.0/8,172.16.0.0/12")
 -log-level string
       Log level: debug, info, warn, error (default "info")
 -qr
@@ -250,6 +279,91 @@ beamdrop -dir /path/to/share -log-level debug
 -v
       Show version information
 ```
+
+## CSRF Protection
+
+Beamdrop uses **double-submit cookie** CSRF protection to prevent cross-site request forgery attacks.
+
+### How It Works
+
+1. On any `GET` request, the server sets a `beamdrop_csrf` cookie with a random token.
+2. The frontend reads this cookie and attaches the value as an `X-CSRF-Token` header on all unsafe requests (`POST`, `PUT`, `DELETE`, `PATCH`).
+3. The server validates that the header matches the cookie on every state-changing request.
+
+### Exemptions
+
+The following requests are exempt from CSRF validation:
+
+- **Safe methods**: `GET`, `HEAD`, `OPTIONS`
+- **API key authenticated requests**: Requests with an `Authorization` header (API keys use HMAC, which is inherently CSRF-safe)
+- **Requests without a session cookie**: Non-authenticated requests or first-time visitors
+- **Shareable link access**: `/api/shares/access/` paths (public endpoints with their own password protection)
+
+### Frontend Integration
+
+The frontend automatically installs a global `fetch` interceptor that reads the `beamdrop_csrf` cookie and attaches the `X-CSRF-Token` header on all unsafe requests. No manual intervention is needed when using the built-in web UI.
+
+For custom integrations, include the `X-CSRF-Token` header with the value from the `beamdrop_csrf` cookie on all POST/PUT/DELETE/PATCH requests.
+
+## Token Revocation
+
+JWT tokens are revoked on logout to prevent reuse of stolen tokens.
+
+### How It Works
+
+1. When a user logs out, the token's unique identifier (JTI) is added to an in-memory revocation list.
+2. Every token validation check now verifies the JTI is not in the revocation list.
+3. Revoked entries are automatically cleaned up when the token would have expired (or after 24 hours, whichever is sooner).
+4. A background goroutine runs every 10 minutes to purge expired revocation entries.
+
+### Implications
+
+- Tokens are immediately invalidated on logout — they cannot be replayed.
+- The revocation list is in-memory and cleared on server restart (which also regenerates the JWT secret, invalidating all tokens).
+- Both cookie-based and `Authorization: Bearer` header tokens are revoked during logout.
+
+## API Key Secret Encryption
+
+API key secrets are encrypted at rest using **AES-256-GCM** before being stored in the database.
+
+### How It Works
+
+1. When an API key is created, the secret key is encrypted with AES-256-GCM using a 32-byte key derived from the JWT secret.
+2. The encrypted ciphertext (base64-encoded) is stored in the database instead of a plain SHA-256 hash.
+3. During HMAC signature verification, the secret is decrypted in memory for the comparison.
+4. The encryption key is regenerated on every server restart (along with the JWT secret), so API keys created on one process cannot be decrypted by another. API key secrets are shown once at creation time — users must save them.
+
+### Why Encryption Instead of Hashing?
+
+API key secrets are used for HMAC signature computation, which requires the raw secret. Unlike passwords (where we only need to verify), API key secrets must be recoverable in the server process. AES-256-GCM provides authenticated encryption with integrity verification.
+
+## Shareable Link Password Hashing
+
+Shareable link passwords are hashed using **bcrypt** (cost 10) instead of SHA-256.
+
+### Backward Compatibility
+
+Existing links with SHA-256 password hashes continue to work. The password verification function detects the hash format:
+
+- If the stored hash starts with `$2a$` (bcrypt prefix), bcrypt verification is used.
+- Otherwise, SHA-256 verification is used as a fallback.
+
+New shareable links always use bcrypt.
+
+## Session Security
+
+### Cookie-Only Token Storage
+
+JWT tokens are stored exclusively in `HttpOnly`, `SameSite=Strict` cookies. The frontend does not use `localStorage` or `sessionStorage` for token storage, eliminating the risk of token theft via XSS.
+
+### Cookie Attributes
+
+| Attribute  | Value    | Purpose                           |
+| ---------- | -------- | --------------------------------- |
+| `HttpOnly` | `true`   | Prevents JavaScript access        |
+| `SameSite` | `Strict` | Prevents cross-site request usage |
+| `Path`     | `/`      | Available to all routes           |
+| `Secure`   | Auto     | Set when TLS is enabled           |
 
 ## Best Practices
 

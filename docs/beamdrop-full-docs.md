@@ -118,6 +118,7 @@ docker compose up -d
 | `-allowed-origins`  | Comma-separated CORS origins                                              | None (CORS disabled)       |
 | `-db-path`          | Path to database file or directory (directory auto-appends `beamdrop.db`) | `~/.beamdrop/beamdrop.db`  |
 | `-rate-limit`       | Requests/min per IP (0 = disabled)                                        | `100`                      |
+| `-trusted-proxies`  | Comma-separated CIDR ranges of trusted reverse proxies                    | None                       |
 | `-max-storage`      | Maximum total storage, e.g. 500MB, 10GB, 1TB (0 = unlimited)              | `0`                        |
 | `-log-level`        | `debug`, `info`, `warn`, `error`                                          | `info`                     |
 | `-qr`               | Enable QR code display                                                    | `false`                    |
@@ -140,6 +141,7 @@ docker compose up -d
 | `BEAMDROP_DB_PATH`         |         | Path to database file or directory (directory auto-appends `beamdrop.db`) |
 | `BEAMDROP_TLS_CERT`        |         | TLS certificate path                                                      |
 | `BEAMDROP_TLS_KEY`         |         | TLS private key path                                                      |
+| `BEAMDROP_TRUSTED_PROXIES` |         | Comma-separated CIDR ranges of trusted reverse proxies                    |
 
 ### Quick Start Examples
 
@@ -168,8 +170,8 @@ beamdrop -dir /data -p secret -api-auth -tls-cert cert.pem -tls-key key.pem -rat
 
 Beamdrop has two independent auth systems:
 
-1. **Password Auth** Protects the web UI and file management endpoints. Uses JWT tokens stored in cookies.
-2. **API Key Auth** Protects the S3-compatible API (`/api/v1/buckets/*`). Uses HMAC-SHA256 signed requests.
+1. **Password Auth** Protects the web UI and file management endpoints. Uses JWT tokens stored in `HttpOnly`, `SameSite=Strict` cookies (not localStorage). Tokens are revoked on logout. CSRF protection is enforced via double-submit cookie.
+2. **API Key Auth** Protects the S3-compatible API (`/api/v1/buckets/*`). Uses HMAC-SHA256 signed requests. API key secrets are encrypted with AES-256-GCM at rest.
 
 ### Password Auth (Web UI)
 

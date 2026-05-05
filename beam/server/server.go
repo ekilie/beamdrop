@@ -24,15 +24,16 @@ import (
 )
 
 type Server struct {
-	sharedDir        string
-	flags            config.Flags
-	mux              *http.ServeMux
-	passwordService  *auth.PasswordService
-	authMiddleware   *auth.AuthMiddleware
-	rateLimiter      *middleware.RateLimiter
-	httpServer       *http.Server
-	orphanCleaner    *db.OrphanCleaner
-	metricsCollector *metrics.Collector
+	sharedDir             string
+	flags                 config.Flags
+	mux                   *http.ServeMux
+	passwordService       *auth.PasswordService
+	authMiddleware        *auth.AuthMiddleware
+	rateLimiter           *middleware.RateLimiter
+	httpServer            *http.Server
+	orphanCleaner         *db.OrphanCleaner
+	metricsCollector      *metrics.Collector
+	stopRevocationCleanup func()
 }
 
 func New(sharedDir string, flags config.Flags) *Server {
@@ -49,6 +50,7 @@ func New(sharedDir string, flags config.Flags) *Server {
 		rlConfig.AuthRate = max(1, flags.RateLimit/20)
 		rlConfig.UploadRate = max(1, flags.RateLimit/10)
 	}
+	rlConfig.TrustedProxies = middleware.ParseTrustedProxies(flags.TrustedProxies)
 
 	s := &Server{
 		sharedDir:       sharedDir,
@@ -73,6 +75,9 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	// Apply auth middleware
 	handler = s.authMiddleware.Middleware(handler)
+
+	// Apply CSRF protection (after auth, before rate limiting)
+	handler = middleware.CSRFProtection()(handler)
 
 	// Apply rate limiting middleware
 	handler = s.rateLimiter.Middleware(handler)
@@ -123,6 +128,9 @@ func (s *Server) Start() error {
 	// Start Prometheus metrics background collector
 	s.metricsCollector = metrics.NewCollector(s.sharedDir, 15*time.Second)
 	s.metricsCollector.Start()
+
+	// Start token revocation cleanup
+	s.stopRevocationCleanup = auth.StartRevocationCleanup()
 
 	port := s.getPort()
 	ip := GetLocalIP()
@@ -210,7 +218,13 @@ func (s *Server) Shutdown(ctx context.Context) error {
 		slog.Info("Orphan cleaner stopped")
 	}
 
-	// 5. Close database connection
+	// 5. Stop token revocation cleanup
+	if s.stopRevocationCleanup != nil {
+		s.stopRevocationCleanup()
+		slog.Info("Token revocation cleanup stopped")
+	}
+
+	// 6. Close database connection
 	if err := db.Close(); err != nil {
 		slog.Error("Database close error", "error", err)
 		if shutdownErr == nil {

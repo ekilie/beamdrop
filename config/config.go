@@ -74,6 +74,7 @@ type Flags struct {
 	ShutdownTimeout time.Duration // Graceful shutdown timeout (default 30s)
 	DBPath          string        // Path to database file (default: <sharedDir>/.beamdrop/beamdrop.db)
 	MaxStorage      int64         // Maximum total storage in bytes (0 = unlimited)
+	TrustedProxies  string        // Comma-separated list of trusted proxy IPs/CIDRs
 }
 
 func GetDBPath() string {

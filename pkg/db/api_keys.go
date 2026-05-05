@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/ekilie/beamdrop/pkg/crypto"
 	"gorm.io/gorm"
 )
 
@@ -15,8 +16,8 @@ type APIKey struct {
 	ID          uint       `gorm:"primaryKey" json:"id"`
 	Name        string     `gorm:"size:255;not null" json:"name"`
 	AccessKeyID string     `gorm:"column:access_key_id;uniqueIndex;size:24;not null" json:"accessKeyId"`
-	SecretKey   string     `gorm:"column:secret_key;size:64;not null" json:"-"` // Stored for HMAC verification
-	Permissions string     `gorm:"type:text" json:"permissions"`                // JSON permissions
+	SecretKey   string     `gorm:"column:secret_key;size:256;not null" json:"-"` // Encrypted at rest with AES-256-GCM
+	Permissions string     `gorm:"type:text" json:"permissions"`                 // JSON permissions
 	BucketScope string     `gorm:"column:bucket_scope;size:255" json:"bucketScope,omitempty"`
 	ExpiresAt   *time.Time `gorm:"column:expires_at" json:"expiresAt,omitempty"`
 	LastUsedAt  *time.Time `gorm:"column:last_used_at" json:"lastUsedAt,omitempty"`
@@ -61,10 +62,17 @@ func CreateAPIKey(name string, permissions string, bucketScope string, expiresIn
 		expiresAt = &t
 	}
 
+	// Encrypt the secret key before storing
+	encryptedSecret, err := crypto.Encrypt(secretKey, crypto.GetEncryptionKey())
+	if err != nil {
+		slog.Error("Failed to encrypt secret key", "error", err)
+		return nil, "", err
+	}
+
 	apiKey := &APIKey{
 		Name:        name,
 		AccessKeyID: accessKeyID,
-		SecretKey:   secretKey, // Store secret for HMAC verification
+		SecretKey:   encryptedSecret, // We Store encrypted
 		Permissions: permissions,
 		BucketScope: bucketScope,
 		ExpiresAt:   expiresAt,
@@ -148,4 +156,9 @@ func DisableAPIKey(accessKeyID string) error {
 	}
 	slog.Info("API key disabled", "access_key_id", accessKeyID)
 	return nil
+}
+
+// DecryptSecretKey decrypts the stored encrypted secret key.
+func DecryptSecretKey(apiKey *APIKey) (string, error) {
+	return crypto.Decrypt(apiKey.SecretKey, crypto.GetEncryptionKey())
 }

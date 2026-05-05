@@ -44,15 +44,15 @@ The backend is written in Go, serving both the web UI and APIs from a single bin
 │                                                         │
 ├─────────────────────────────────────────────────────────┤
 │                   Middleware Layer                      │
-│  • CORS • Rate Limiting • Auth • Security Headers       │
+│  • CORS • Rate Limiting • Auth • CSRF • Security Headers│
 ├─────────────────────────────────────────────────────────┤
 │                                                         │
 │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐ │
 │  │   Storage    │  │   Database   │  │    Crypto    │ │
-│  │   Package    │  │   (SQLite)   │  │   (HMAC)     │ │
+│  │   Package    │  │   (SQLite)   │  │ (HMAC, AES)  │ │
 │  │              │  │              │  │              │ │
 │  │  Buckets &   │  │  API Keys    │  │  Signatures  │ │
-│  │  Objects     │  │  Links       │  │  Hashing     │ │
+│  │  Objects     │  │  Links       │  │  Encryption  │ │
 │  └──────────────┘  └──────────────┘  └──────────────┘ │
 │                                                         │
 └─────────────────────────────────────────────────────────┘
@@ -98,7 +98,8 @@ beamdrop/
 │   │   └── locks.go         # File locking for concurrency
 │   │
 │   ├── crypto/              # Cryptographic utilities
-│   │   └── signature.go     # HMAC-SHA256 signing/verification
+│   │   ├── signature.go     # HMAC-SHA256 signing/verification, AES-256-GCM encryption, bcrypt hashing
+│   │   └── keystore.go      # Shared encryption key management
 │   │
 │   ├── db/                  # Database layer (SQLite)
 │   │   ├── db.go           # Database connection
@@ -108,12 +109,13 @@ beamdrop/
 │   │
 │   ├── auth/                # Authentication middleware
 │   │   ├── middleware.go   # Session-based auth for web UI
-│   │   └── password.go     # Password hashing
+│   │   └── password.go     # Password hashing, JWT management, token revocation
 │   │
 │   ├── middleware/          # HTTP middleware
 │   │   ├── cors.go         # CORS handling
-│   │   ├── ratelimit.go    # Rate limiting
-│   │   └── security.go     # Security headers
+│   │   ├── csrf.go         # CSRF double-submit cookie protection
+│   │   ├── ratelimit.go    # Rate limiting with trusted proxy support
+│   │   └── security.go     # Security headers (CSP, Permissions-Policy, etc.)
 │   │
 │   ├── errors/              # Structured error handling
 │   │   └── errors.go       # Error types and HTTP responses
@@ -494,7 +496,7 @@ type APIKey struct {
     ID          uint
     Name        string        // Human-friendly name
     AccessKeyID string        // Public identifier (BDK_...)
-    SecretKey   string        // HMAC key (hashed in database)
+    SecretKey   string        // HMAC key (AES-256-GCM encrypted in database)
     Permissions string        // Future: fine-grained permissions
     BucketScope string        // Future: restrict to specific bucket
     ExpiresAt   *time.Time    // Optional expiration
@@ -504,15 +506,18 @@ type APIKey struct {
 
 // Creating a key
 apiKey, secretKey, err := db.CreateAPIKey(name, permissions, bucketScope, expiresIn)
-// Returns both hashed version (stored) and plain secret (shown once to user)
+// The secretKey is encrypted with AES-256-GCM before storage
+// Returns the encrypted version (stored) and plain secret (shown once to user)
 ```
 
 ### Web UI Authentication
 
-The web UI uses **session-based authentication**:
+The web UI uses **cookie-based JWT authentication**:
 
 - Optional password protection (`-p` flag)
-- Session stored in memory (cleared on restart)
+- JWT tokens stored in `HttpOnly`, `SameSite=Strict` cookies (not localStorage)
+- Token revocation on logout via in-memory JTI blocklist
+- CSRF protection via double-submit cookie pattern
 - Implemented in `pkg/auth/middleware.go`
 
 ## Common Development Tasks

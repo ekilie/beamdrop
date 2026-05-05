@@ -16,7 +16,7 @@ type ShareableLink struct {
 	ID           uint       `gorm:"primaryKey" json:"id"`
 	Path         string     `gorm:"column:path;size:1024;not null" json:"path"`             // File or folder path
 	Token        string     `gorm:"column:token;uniqueIndex;size:32;not null" json:"token"` // Unique token for the link
-	PasswordHash string     `gorm:"column:password_hash;size:64" json:"-"`                  // Optional password hash
+	PasswordHash string     `gorm:"column:password_hash;size:128" json:"-"`                 // Bcrypt hash (supports legacy SHA-256)
 	ExpiresAt    *time.Time `gorm:"column:expires_at" json:"expiresAt,omitempty"`           // Optional expiry time
 	AccessCount  int        `gorm:"column:access_count;default:0" json:"accessCount"`       // Number of times accessed
 	CreatedAt    time.Time  `gorm:"column:created_at;default:CURRENT_TIMESTAMP" json:"createdAt"`
@@ -46,7 +46,12 @@ func CreateShareableLink(path string, password string, expiresIn *time.Duration)
 
 	var passwordHash string
 	if password != "" {
-		passwordHash = crypto.HashSecret(password)
+		var err error
+		passwordHash, err = crypto.HashPassword(password)
+		if err != nil {
+			slog.Error("Failed to hash link password", "error", err)
+			return nil, err
+		}
 	}
 
 	var expiresAt *time.Time
@@ -99,7 +104,7 @@ func ValidateLinkPassword(link *ShareableLink, password string) bool {
 	if link.PasswordHash == "" {
 		return true // No password set
 	}
-	return crypto.VerifySecret(password, link.PasswordHash)
+	return crypto.VerifyPassword(password, link.PasswordHash)
 }
 
 // IncrementAccessCount increments the access count for a shareable link

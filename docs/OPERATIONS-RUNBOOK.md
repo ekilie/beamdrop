@@ -264,6 +264,7 @@ All variables can be set in `.env` (Docker Compose), `/etc/beamdrop/beamdrop.env
 | `BEAMDROP_DB_PATH`         | `<sharedDir>/.beamdrop/beamdrop.db` | SQLite database path or parent directory                   |
 | `BEAMDROP_TLS_CERT`        | _(none)_                            | Path to TLS certificate (PEM)                              |
 | `BEAMDROP_TLS_KEY`         | _(none)_                            | Path to TLS private key (PEM)                              |
+| `BEAMDROP_TRUSTED_PROXIES` | _(none)_                            | Comma-separated CIDR ranges of trusted reverse proxies     |
 
 ### 2.2 Command-Line Flags
 
@@ -280,6 +281,7 @@ Flags override environment variables when both are set.
 | `-allowed-origins` | CORS allowed origins (comma-separated)   | None                      |
 | `-db-path`         | SQLite database path or directory        | `~/.beamdrop/beamdrop.db` |
 | `-rate-limit`      | Rate limit in req/min per IP (`0` = off) | `100`                     |
+| `-trusted-proxies` | Trusted proxy CIDRs (comma-separated)    | None                      |
 | `-log-level`       | `debug` / `info` / `warn` / `error`      | `info`                    |
 | `-qr`              | Print QR code at startup                 | `false`                   |
 | `-v`               | Print version and exit                   |                           |
@@ -329,6 +331,7 @@ BEAMDROP_DB_PATH=/data/.beamdrop/beamdrop.db
 # TLS is handled by Caddy   leave these blank if using a reverse proxy
 BEAMDROP_TLS_CERT=
 BEAMDROP_TLS_KEY=
+BEAMDROP_TRUSTED_PROXIES=127.0.0.1/32,172.16.0.0/12
 ```
 
 ---

@@ -32,7 +32,7 @@ func (s *Server) setupRoutes() {
 
 	// Stats
 	s.mux.HandleFunc("/stats", handlers.StatsHandler)
-	s.mux.HandleFunc("/ws/stats", StatsSocketHandler(s.sharedDir)) //TODO: will come up with  better structure for the websockts
+	s.mux.HandleFunc("/ws/stats", StatsSocketHandler(s.sharedDir, s.getAllowedOrigins())) //TODO: will come up with  better structure for the websockts
 
 	// Logs
 	s.mux.HandleFunc("/api/logs", handlers.LogsHandler())
@@ -76,8 +76,8 @@ func (s *Server) setupS3APIRoutes() {
 	objectHandler := api.NewObjectHandler(s.sharedDir)
 	keysHandler := api.NewKeysHandler()
 
-	// API auth middleware (disabled by default for now - enable with -api-auth flag)
-	apiAuth := api.NewAPIAuthMiddleware(s.flags.APIAuth) //TODO: FIXME: api-auth should enabled by default
+	// API auth middleware (enabled by default - disable with -api-auth=false flag)
+	apiAuth := api.NewAPIAuthMiddleware(s.flags.APIAuth)
 
 	// API v1 routes - handle bucket and object operations
 	s.mux.HandleFunc("/api/v1/buckets/", func(w http.ResponseWriter, r *http.Request) {

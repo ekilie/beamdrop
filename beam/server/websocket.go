@@ -3,6 +3,7 @@ package server
 import (
 	"log/slog"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/ekilie/beamdrop/pkg/db"
@@ -10,10 +11,36 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-var upgrader = websocket.Upgrader{
-	CheckOrigin: func(r *http.Request) bool {
-		return true
-	},
+// newUpgrader creates a WebSocket upgrader with origin validation.
+// If allowedOrigins is empty, only same-origin requests are allowed.
+func newUpgrader(allowedOrigins []string) websocket.Upgrader {
+	return websocket.Upgrader{
+		ReadBufferSize:  1024,
+		WriteBufferSize: 1024,
+		CheckOrigin: func(r *http.Request) bool {
+			origin := r.Header.Get("Origin")
+			if origin == "" {
+				// No origin header — same-origin request, allow it
+				return true
+			}
+
+			// If explicit origins are configured, check against them
+			for _, allowed := range allowedOrigins {
+				if allowed == "*" || strings.EqualFold(allowed, origin) {
+					return true
+				}
+			}
+
+			// If no CORS origins configured, allow same-origin only
+			if len(allowedOrigins) == 0 {
+				host := r.Host
+				return strings.HasSuffix(origin, "://"+host)
+			}
+
+			slog.Warn("WebSocket origin rejected", "origin", origin)
+			return false
+		},
+	}
 }
 
 // ExtendedStats contains both database stats and system stats
@@ -27,14 +54,15 @@ type ExtendedStats struct {
 
 // StatsSocketHandler handles WebSocket connections for real-time stats updates
 // It fetches fresh stats from the database and system on each interval and sends them to the client
-func StatsSocketHandler(sharedDir string) http.HandlerFunc {
+func StatsSocketHandler(sharedDir string, allowedOrigins []string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		handleStatsSocket(w, r, sharedDir)
+		handleStatsSocket(w, r, sharedDir, allowedOrigins)
 	}
 }
 
-func handleStatsSocket(w http.ResponseWriter, r *http.Request, sharedDir string) {
-	conn, err := upgrader.Upgrade(w, r, nil)
+func handleStatsSocket(w http.ResponseWriter, r *http.Request, sharedDir string, allowedOrigins []string) {
+	wsUpgrader := newUpgrader(allowedOrigins)
+	conn, err := wsUpgrader.Upgrade(w, r, nil)
 	if err != nil {
 		slog.Error("Failed to upgrade to WebSocket", "error", err)
 		http.Error(w, "Failed to upgrade to WebSocket", http.StatusInternalServerError)

@@ -50,16 +50,12 @@ function getPreviewType(contentType: string): PreviewType {
   return "unsupported";
 }
 
-function getInlineUrl(token: string, password?: string): string {
-  let url = `/api/shares/access/${token}?mode=inline`;
-  if (password) url += `&password=${encodeURIComponent(password)}`;
-  return url;
+function getInlineUrl(token: string): string {
+  return `/api/shares/access/${token}?mode=inline`;
 }
 
-function getDownloadUrl(token: string, password?: string): string {
-  let url = `/api/shares/access/${token}?mode=download`;
-  if (password) url += `&password=${encodeURIComponent(password)}`;
-  return url;
+function getDownloadUrl(token: string): string {
+  return `/api/shares/access/${token}?mode=download`;
 }
 
 function FilePreview({
@@ -72,8 +68,44 @@ function FilePreview({
   password?: string;
 }) {
   const previewType = getPreviewType(fileInfo.contentType || "");
-  const inlineUrl = getInlineUrl(token, password);
-  const downloadUrl = getDownloadUrl(token, password);
+  const [blobUrl, setBlobUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    const inlineUrl = getInlineUrl(token);
+    const headers: Record<string, string> = {};
+    if (password) headers["X-Share-Password"] = password;
+
+    fetch(inlineUrl, { headers })
+      .then((res) => res.blob())
+      .then((blob) => setBlobUrl(URL.createObjectURL(blob)))
+      .catch(() => {});
+
+    return () => {
+      if (blobUrl) URL.revokeObjectURL(blobUrl);
+    };
+  }, [token, password]);
+
+  const handleDownload = async () => {
+    const downloadUrl = getDownloadUrl(token);
+    const headers: Record<string, string> = {};
+    if (password) headers["X-Share-Password"] = password;
+
+    try {
+      const res = await fetch(downloadUrl, { headers });
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = fileInfo.name || "download";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch {
+      // fallback to direct link
+      window.location.href = downloadUrl;
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background p-4">
@@ -93,11 +125,9 @@ function FilePreview({
                   <CardDescription>{fileInfo.size}</CardDescription>
                 </div>
               </div>
-              <Button asChild>
-                <a href={downloadUrl} download>
-                  <Download className="w-4 h-4 mr-2" />
-                  Download
-                </a>
+              <Button onClick={handleDownload}>
+                <Download className="w-4 h-4 mr-2" />
+                Download
               </Button>
             </div>
           </CardHeader>
@@ -106,20 +136,20 @@ function FilePreview({
         {/* Preview area */}
         <Card>
           <CardContent className="p-0 overflow-hidden">
-            {previewType === "image" && (
+            {previewType === "image" && blobUrl && (
               <div className="flex items-center justify-center bg-muted/30 p-4">
                 <img
-                  src={inlineUrl}
+                  src={blobUrl}
                   alt={fileInfo.name}
                   className="max-w-full max-h-[70vh] object-contain rounded"
                 />
               </div>
             )}
 
-            {previewType === "video" && (
+            {previewType === "video" && blobUrl && (
               <div className="flex items-center justify-center bg-black">
                 <video
-                  src={inlineUrl}
+                  src={blobUrl}
                   controls
                   className="max-w-full max-h-[70vh]"
                   preload="metadata"
@@ -129,14 +159,14 @@ function FilePreview({
               </div>
             )}
 
-            {previewType === "audio" && (
+            {previewType === "audio" && blobUrl && (
               <div className="flex flex-col items-center justify-center gap-4 p-12 bg-muted/30">
                 <FileIcon className="w-16 h-16 text-muted-foreground" />
                 <p className="text-sm text-muted-foreground font-mono">
                   {fileInfo.name}
                 </p>
                 <audio
-                  src={inlineUrl}
+                  src={blobUrl}
                   controls
                   preload="metadata"
                   className="w-full max-w-md"
@@ -146,10 +176,10 @@ function FilePreview({
               </div>
             )}
 
-            {previewType === "pdf" && (
+            {previewType === "pdf" && blobUrl && (
               <div className="w-full" style={{ height: "80vh" }}>
                 <iframe
-                  src={inlineUrl}
+                  src={blobUrl}
                   className="w-full h-full border-0"
                   title={fileInfo.name}
                 />
@@ -168,11 +198,9 @@ function FilePreview({
                     be previewed. You can download it instead.
                   </p>
                 </div>
-                <Button asChild size="lg">
-                  <a href={downloadUrl} download>
-                    <Download className="w-5 h-5 mr-2" />
-                    Download File
-                  </a>
+                <Button size="lg" onClick={handleDownload}>
+                  <Download className="w-5 h-5 mr-2" />
+                  Download File
                 </Button>
               </div>
             )}
@@ -200,8 +228,10 @@ export default function ShareAccess() {
       setError(null);
 
       try {
-        const url = `/api/shares/access/${token}${pwd ? `?password=${encodeURIComponent(pwd)}` : ""}`;
-        const response = await fetch(url);
+        const url = `/api/shares/access/${token}`;
+        const headers: Record<string, string> = {};
+        if (pwd) headers["X-Share-Password"] = pwd;
+        const response = await fetch(url, { headers });
 
         if (response.status === 401) {
           const data = await response.json();
@@ -224,7 +254,7 @@ export default function ShareAccess() {
         setFileInfo(data);
         setRequiresPassword(false);
         setIsLoading(false);
-      } catch (error: any) {
+      } catch (error) {
         setError(error.message);
         setIsLoading(false);
         toast({
@@ -234,7 +264,7 @@ export default function ShareAccess() {
         });
       }
     },
-    [token]
+    [token],
   );
 
   useEffect(() => {
@@ -257,13 +287,19 @@ export default function ShareAccess() {
   const downloadFile = async (filePath: string) => {
     if (!token) return;
     try {
-      const url = getDownloadUrl(token, password);
+      const url = getDownloadUrl(token);
+      const headers: Record<string, string> = {};
+      if (password) headers["X-Share-Password"] = password;
+      const res = await fetch(url, { headers });
+      const blob = await res.blob();
+      const blobUrl = URL.createObjectURL(blob);
       const a = document.createElement("a");
-      a.href = url;
+      a.href = blobUrl;
       a.download = filePath.split("/").pop() || "download";
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
+      URL.revokeObjectURL(blobUrl);
       toast({
         title: "Download started",
         description: "Your file is being downloaded",

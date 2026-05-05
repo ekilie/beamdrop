@@ -80,7 +80,12 @@ func (h *FileHandler) Download(w http.ResponseWriter, r *http.Request) {
 	}
 
 	filename := r.URL.Query().Get("file")
-	filePath := h.sharedDir + "/" + filename
+	filePath, err := ResolvePath(h.sharedDir, filename)
+	if err != nil {
+		slog.Error("Invalid download path", "file", filename, "error", err)
+		http.Error(w, "Forbidden", http.StatusForbidden)
+		return
+	}
 
 	slog.Info("Download request", "file", filename)
 	f, err := os.Open(filePath)

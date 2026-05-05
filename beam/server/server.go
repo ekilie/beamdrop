@@ -284,3 +284,15 @@ func (s *Server) getCORSConfig() middleware.CORSConfig {
 
 	return config
 }
+
+// getAllowedOrigins returns the parsed list of allowed CORS origins
+func (s *Server) getAllowedOrigins() []string {
+	if s.flags.AllowedOrigins == "" {
+		return nil
+	}
+	origins := strings.Split(s.flags.AllowedOrigins, ",")
+	for i, origin := range origins {
+		origins[i] = strings.TrimSpace(origin)
+	}
+	return origins
+}

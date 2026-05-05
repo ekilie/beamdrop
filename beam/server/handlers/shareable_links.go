@@ -192,10 +192,11 @@ func (h *ShareableLinkHandler) Access(w http.ResponseWriter, r *http.Request) {
 
 	// Handle password-protected links
 	if link.PasswordHash != "" {
-		// Check if password is provided in query or via POST
-		password := r.URL.Query().Get("password")
+		var password string
 
-		// If no password in query, check request body for POST
+		// Accept password via header or POST body only (not query string to avoid logging)
+		password = r.Header.Get("X-Share-Password")
+
 		if password == "" && r.Method == http.MethodPost {
 			var req ValidateLinkRequest
 			if err := json.NewDecoder(r.Body).Decode(&req); err == nil {

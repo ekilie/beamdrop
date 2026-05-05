@@ -125,7 +125,7 @@ func main() {
 	tlsCert := flag.String("tls-cert", "", "Path to TLS certificate file for HTTPS")
 	tlsKey := flag.String("tls-key", "", "Path to TLS private key file for HTTPS")
 	allowedOrigins := flag.String("allowed-origins", "", "Comma-separated list of allowed CORS origins (empty = CORS disabled)")
-	apiAuth := flag.Bool("api-auth", false, "Enable API key authentication for S3-like API endpoints")
+	apiAuth := flag.Bool("api-auth", true, "Enable API key authentication for S3-like API endpoints (disable with -api-auth=false)")
 	logLevel := flag.String("log-level", "info", "Log level: debug, info, warn, error")
 	rateLimit := flag.Int("rate-limit", 100, "General rate limit in requests/min per IP (0 = disabled)")
 	shutdownTimeout := flag.Duration("shutdown-timeout", 30*time.Second, "Graceful shutdown timeout")

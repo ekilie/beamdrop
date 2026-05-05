@@ -23,9 +23,7 @@ func init() {
 	// Generate a random JWT secret on startup
 	jwtSecret = make([]byte, 32)
 	if _, err := rand.Read(jwtSecret); err != nil {
-		slog.Error("Failed to generate JWT secret", "error", err)
-		// Fallback to a default (not recommended for production)
-		jwtSecret = []byte("beamdrop-default-secret-change-me")
+		panic("CRITICAL: failed to generate JWT secret: " + err.Error())
 	}
 }
 

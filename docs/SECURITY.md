@@ -358,12 +358,12 @@ JWT tokens are stored exclusively in `HttpOnly`, `SameSite=Strict` cookies. The 
 
 ### Cookie Attributes
 
-| Attribute    | Value    | Purpose                           |
-| ------------ | -------- | --------------------------------- |
-| `HttpOnly`   | `true`   | Prevents JavaScript access        |
-| `SameSite`   | `Strict` | Prevents cross-site request usage |
-| `Path`       | `/`      | Available to all routes           |
-| `Secure`     | Auto     | Set when TLS is enabled           |
+| Attribute  | Value    | Purpose                           |
+| ---------- | -------- | --------------------------------- |
+| `HttpOnly` | `true`   | Prevents JavaScript access        |
+| `SameSite` | `Strict` | Prevents cross-site request usage |
+| `Path`     | `/`      | Available to all routes           |
+| `Secure`   | Auto     | Set when TLS is enabled           |
 
 ## Best Practices
 

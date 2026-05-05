@@ -19,7 +19,10 @@ func SecurityHeaders(enableHSTS bool) func(http.Handler) http.Handler {
 			w.Header().Set("Referrer-Policy", "strict-origin-when-cross-origin")
 			
 			// Content Security Policy
-			w.Header().Set("Content-Security-Policy", "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' ws: wss:")
+			w.Header().Set("Content-Security-Policy", "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' ws: wss:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'")
+
+			// Restrict browser features
+			w.Header().Set("Permissions-Policy", "geolocation=(), microphone=(), camera=()")
 			
 			// Only add HSTS if TLS is enabled
 			if enableHSTS && r.TLS != nil {

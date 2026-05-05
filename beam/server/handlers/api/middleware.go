@@ -90,8 +90,15 @@ func (m *APIAuthMiddleware) Middleware(next http.Handler) http.Handler {
 			return
 		}
 
-		// Verify signature using the stored secret key
-		if !crypto.VerifySignature(apiKey.SecretKey, r.Method, r.URL.Path, timestamp, signature) {
+		// Verify signature using the stored secret key (decrypt first)
+		secretKey, err := db.DecryptSecretKey(apiKey)
+		if err != nil {
+			slog.Error("Failed to decrypt API secret key", "error", err)
+			errors.InternalError("Authentication error").WriteHTTPResponse(w)
+			return
+		}
+
+		if !crypto.VerifySignature(secretKey, r.Method, r.URL.Path, timestamp, signature) {
 			errors.Forbidden("Invalid signature").WriteHTTPResponse(w)
 			return
 		}
@@ -157,6 +164,12 @@ func (m *APIAuthMiddleware) verifyPresignedToken(r *http.Request, token string) 
 		return false
 	}
 
+	// Decrypt secret key for verification
+	secretKey, err := db.DecryptSecretKey(apiKey)
+	if err != nil {
+		return false
+	}
+
 	// Verify token
-	return crypto.VerifyPresignedToken(apiKey.SecretKey, r.Method, bucket, key, expiresAt, token)
+	return crypto.VerifyPresignedToken(secretKey, r.Method, bucket, key, expiresAt, token)
 }

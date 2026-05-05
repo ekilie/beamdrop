@@ -27,6 +27,12 @@ func init() {
 	}
 }
 
+// EncryptionKey returns the 32-byte key used for encrypting secrets at rest.
+// This is derived from the JWT secret which is randomly generated per process.
+func EncryptionKey() []byte {
+	return jwtSecret
+}
+
 // Claims represents JWT claims
 type Claims struct {
 	jwt.RegisteredClaims

@@ -72,7 +72,7 @@ func CreateAPIKey(name string, permissions string, bucketScope string, expiresIn
 	apiKey := &APIKey{
 		Name:        name,
 		AccessKeyID: accessKeyID,
-		SecretKey:   encryptedSecret, // Store encrypted
+		SecretKey:   encryptedSecret, // We Store encrypted
 		Permissions: permissions,
 		BucketScope: bucketScope,
 		ExpiresAt:   expiresAt,

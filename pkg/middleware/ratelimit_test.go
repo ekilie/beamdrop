@@ -258,6 +258,9 @@ func TestExtractIP(t *testing.T) {
 		{"XFF takes priority over XRI", "127.0.0.1:80", "10.0.0.1", "172.16.0.1", "10.0.0.1"},
 	}
 
+	// Parse 127.0.0.1 as a trusted proxy for tests that use XFF/XRI headers
+	trustedProxies := ParseTrustedProxies("127.0.0.1/32")
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			req := httptest.NewRequest(http.MethodGet, "/", nil)
@@ -268,7 +271,11 @@ func TestExtractIP(t *testing.T) {
 			if tt.xri != "" {
 				req.Header.Set("X-Real-IP", tt.xri)
 			}
-			got := extractIP(req)
+			var proxies []*net.IPNet
+			if tt.xff != "" || tt.xri != "" {
+				proxies = trustedProxies
+			}
+			got := extractIP(req, proxies)
 			if got != tt.expected {
 				t.Errorf("extractIP() = %q, want %q", got, tt.expected)
 			}

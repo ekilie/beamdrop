@@ -7,7 +7,6 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/ekilie/beamdrop/pkg/auth"
 	"github.com/ekilie/beamdrop/pkg/crypto"
 	"gorm.io/gorm"
 )
@@ -64,7 +63,7 @@ func CreateAPIKey(name string, permissions string, bucketScope string, expiresIn
 	}
 
 	// Encrypt the secret key before storing
-	encryptedSecret, err := crypto.Encrypt(secretKey, auth.EncryptionKey())
+	encryptedSecret, err := crypto.Encrypt(secretKey, crypto.GetEncryptionKey())
 	if err != nil {
 		slog.Error("Failed to encrypt secret key", "error", err)
 		return nil, "", err
@@ -161,5 +160,5 @@ func DisableAPIKey(accessKeyID string) error {
 
 // DecryptSecretKey decrypts the stored encrypted secret key.
 func DecryptSecretKey(apiKey *APIKey) (string, error) {
-	return crypto.Decrypt(apiKey.SecretKey, auth.EncryptionKey())
+	return crypto.Decrypt(apiKey.SecretKey, crypto.GetEncryptionKey())
 }

@@ -9,6 +9,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/ekilie/beamdrop/pkg/crypto"
 	"github.com/ekilie/beamdrop/pkg/db"
 	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"
@@ -30,6 +31,8 @@ func init() {
 	if _, err := rand.Read(jwtSecret); err != nil {
 		panic("CRITICAL: failed to generate JWT secret: " + err.Error())
 	}
+	// Share the key with the crypto package for at-rest encryption
+	crypto.SetEncryptionKey(jwtSecret)
 }
 
 // EncryptionKey returns the 32-byte key used for encrypting secrets at rest.

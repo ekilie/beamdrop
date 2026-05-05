@@ -24,15 +24,15 @@ import (
 )
 
 type Server struct {
-	sharedDir            string
-	flags                config.Flags
-	mux                  *http.ServeMux
-	passwordService      *auth.PasswordService
-	authMiddleware       *auth.AuthMiddleware
-	rateLimiter          *middleware.RateLimiter
-	httpServer           *http.Server
-	orphanCleaner        *db.OrphanCleaner
-	metricsCollector     *metrics.Collector
+	sharedDir             string
+	flags                 config.Flags
+	mux                   *http.ServeMux
+	passwordService       *auth.PasswordService
+	authMiddleware        *auth.AuthMiddleware
+	rateLimiter           *middleware.RateLimiter
+	httpServer            *http.Server
+	orphanCleaner         *db.OrphanCleaner
+	metricsCollector      *metrics.Collector
 	stopRevocationCleanup func()
 }
 

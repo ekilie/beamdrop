@@ -75,6 +75,9 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// Apply auth middleware
 	handler = s.authMiddleware.Middleware(handler)
 
+	// Apply CSRF protection (after auth, before rate limiting)
+	handler = middleware.CSRFProtection()(handler)
+
 	// Apply rate limiting middleware
 	handler = s.rateLimiter.Middleware(handler)
 

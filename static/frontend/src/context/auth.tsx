@@ -48,10 +48,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             const data = await response.json();
 
             if (data.success) {
-                // Store token in localStorage as backup
-                if (data.token) {
-                    localStorage.setItem("beamdrop_token", data.token);
-                }
+                // Authentication is handled via HttpOnly cookie set by the server
                 setIsAuthenticated(true);
                 return true;
             }
@@ -71,7 +68,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         } catch (error) {
             console.error("Logout failed:", error);
         } finally {
-            localStorage.removeItem("beamdrop_token");
             setIsAuthenticated(false);
         }
     };

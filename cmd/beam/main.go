@@ -190,7 +190,7 @@ func main() {
 	logger.Init(*logLevel, *sharedDir)
 
 	// Initialize JWT secret (from flag, persisted file, or auto-generate)
-	if err := auth.InitJWTSecret(*jwtSecret, *sharedDir); err != nil {
+	if err := auth.InitJWTSecret(*jwtSecret); err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		os.Exit(1)
 	}

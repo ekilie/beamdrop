@@ -12,6 +12,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/ekilie/beamdrop/config"
 	"github.com/ekilie/beamdrop/pkg/crypto"
 	"github.com/ekilie/beamdrop/pkg/db"
 	"github.com/golang-jwt/jwt/v5"
@@ -29,17 +30,17 @@ var (
 )
 
 // InitJWTSecret initialises the JWT signing key. It accepts an explicit secret
-// (from -jwt-secret / BEAMDROP_JWT_SECRET) and the shared directory root.
+// (from -jwt-secret / BEAMDROP_JWT_SECRET).
 //
 // Resolution order:
 //  1. If `secret` is non-empty, use it (must be ≥ 32 bytes).
-//  2. Else, try to load from <sharedDir>/.beamdrop/jwt_secret.
+//  2. Else, try to load from <ConfigDir>/jwt_secret (~/.beamdrop/jwt_secret).
 //  3. Else, generate a random 32-byte key and persist it to that file.
 //
 // This must be called once during startup, before any JWT operations.
-func InitJWTSecret(secret string, sharedDir string) error {
+func InitJWTSecret(secret string) error {
 	const minLen = 32
-	secretFile := filepath.Join(sharedDir, ".beamdrop", "jwt_secret")
+	secretFile := filepath.Join(config.ConfigDir, "jwt_secret")
 
 	switch {
 	case secret != "":
@@ -62,11 +63,7 @@ func InitJWTSecret(secret string, sharedDir string) error {
 			if _, err := rand.Read(jwtSecret); err != nil {
 				return fmt.Errorf("failed to generate JWT secret: %w", err)
 			}
-			// Persist it
-			dir := filepath.Dir(secretFile)
-			if err := os.MkdirAll(dir, 0700); err != nil {
-				return fmt.Errorf("failed to create directory %s: %w", dir, err)
-			}
+			// Persist it (ConfigDir is already created by config.init())
 			if err := os.WriteFile(secretFile, jwtSecret, 0600); err != nil {
 				return fmt.Errorf("failed to persist JWT secret to %s: %w", secretFile, err)
 			}

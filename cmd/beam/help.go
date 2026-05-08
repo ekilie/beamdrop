@@ -37,6 +37,8 @@ Options:
 		Maximum total storage, e.g. 500MB, 10GB, 1TB (0 = unlimited)
   -shutdown-timeout duration
 		Graceful shutdown timeout for draining connections (default 30s)
+  -jwt-secret string
+		JWT signing secret (min 32 bytes; auto-generated and persisted if omitted)
   -qr
 		Enable QR code generation
   -h
@@ -60,6 +62,7 @@ Environment Variables:
     BEAMDROP_RATE_LIMIT       -rate-limit
     BEAMDROP_MAX_STORAGE      -max-storage
     BEAMDROP_SHUTDOWN_TIMEOUT -shutdown-timeout (Go duration, e.g. "30s")
+    BEAMDROP_JWT_SECRET        -jwt-secret
 
 S3-like API:
   When running, beamdrop exposes an S3-compatible API at /api/v1/

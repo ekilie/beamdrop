@@ -75,6 +75,7 @@ type Flags struct {
 	DBPath          string        // Path to database file (default: <sharedDir>/.beamdrop/beamdrop.db)
 	MaxStorage      int64         // Maximum total storage in bytes (0 = unlimited)
 	TrustedProxies  string        // Comma-separated list of trusted proxy IPs/CIDRs
+	JWTSecret       string        // Explicit JWT signing secret (min 32 bytes; empty = auto-generate and persist)
 }
 
 func GetDBPath() string {

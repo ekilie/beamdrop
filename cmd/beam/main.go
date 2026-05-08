@@ -15,6 +15,7 @@ import (
 
 	"github.com/ekilie/beamdrop/beam/server"
 	"github.com/ekilie/beamdrop/config"
+	"github.com/ekilie/beamdrop/pkg/auth"
 	"github.com/ekilie/beamdrop/pkg/db"
 	"github.com/ekilie/beamdrop/pkg/logger"
 	"github.com/ekilie/beamdrop/pkg/styles"
@@ -131,6 +132,7 @@ func main() {
 	shutdownTimeout := flag.Duration("shutdown-timeout", 30*time.Second, "Graceful shutdown timeout")
 	maxStorageStr := flag.String("max-storage", "0", "Maximum total storage, e.g. 500MB, 10GB, 1TB (0 = unlimited)")
 	trustedProxies := flag.String("trusted-proxies", "", "Comma-separated list of trusted proxy IPs/CIDRs for X-Forwarded-For (empty = trust direct connection only)")
+	jwtSecret := flag.String("jwt-secret", "", "JWT signing secret (min 32 bytes; empty = auto-generate and persist to <dir>/.beamdrop/jwt_secret)")
 
 	// NOTE:Here i default it to 0 so when it zero we know that the flag wasnt passed
 	// Since the flag is a non-boolean value
@@ -164,6 +166,7 @@ func main() {
 	envDuration("shutdown-timeout", "BEAMDROP_SHUTDOWN_TIMEOUT", shutdownTimeout)
 	envStr("max-storage", "BEAMDROP_MAX_STORAGE", maxStorageStr)
 	envStr("trusted-proxies", "BEAMDROP_TRUSTED_PROXIES", trustedProxies)
+	envStr("jwt-secret", "BEAMDROP_JWT_SECRET", jwtSecret)
 
 	// Parse max-storage from human-readable format
 	maxStorage, err := parseByteSize(*maxStorageStr)
@@ -185,6 +188,12 @@ func main() {
 	// Initialize structured logger before anything else.
 	// Terminal gets colored human-readable output; JSON logs go to <sharedDir>/.beamdrop/beamdrop.log
 	logger.Init(*logLevel, *sharedDir)
+
+	// Initialize JWT secret (from flag, persisted file, or auto-generate)
+	if err := auth.InitJWTSecret(*jwtSecret); err != nil {
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		os.Exit(1)
+	}
 
 	// Apply custom DB path if provided in the flag
 	if *dbPath != "" {
@@ -211,6 +220,7 @@ func main() {
 		DBPath:          *dbPath,
 		MaxStorage:      maxStorage,
 		TrustedProxies:  *trustedProxies,
+		JWTSecret:       *jwtSecret,
 	}
 
 	if flag.NArg() > 0 {

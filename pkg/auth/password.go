@@ -5,10 +5,14 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"errors"
+	"fmt"
 	"log/slog"
+	"os"
+	"path/filepath"
 	"sync"
 	"time"
 
+	"github.com/ekilie/beamdrop/config"
 	"github.com/ekilie/beamdrop/pkg/crypto"
 	"github.com/ekilie/beamdrop/pkg/db"
 	"github.com/golang-jwt/jwt/v5"
@@ -25,18 +29,54 @@ var (
 	revokedTokensMu sync.RWMutex
 )
 
-func init() {
-	// Generate a random JWT secret on startup
-	jwtSecret = make([]byte, 32)
-	if _, err := rand.Read(jwtSecret); err != nil {
-		panic("CRITICAL: failed to generate JWT secret: " + err.Error())
+// InitJWTSecret initialises the JWT signing key. It accepts an explicit secret
+// (from -jwt-secret / BEAMDROP_JWT_SECRET).
+//
+// Resolution order:
+//  1. If `secret` is non-empty, use it (must be ≥ 32 bytes).
+//  2. Else, try to load from <ConfigDir>/jwt_secret (~/.beamdrop/jwt_secret).
+//  3. Else, generate a random 32-byte key and persist it to that file.
+//
+// This must be called once during startup, before any JWT operations.
+func InitJWTSecret(secret string) error {
+	const minLen = 32
+	secretFile := filepath.Join(config.ConfigDir, "jwt_secret")
+
+	switch {
+	case secret != "":
+		// Explicit secret provided via flag/env var
+		if len(secret) < minLen {
+			return fmt.Errorf("jwt-secret must be at least %d bytes, got %d", minLen, len(secret))
+		}
+		jwtSecret = []byte(secret)
+		slog.Info("Using JWT secret from configuration")
+
+	default:
+		// Try to load from file
+		data, err := os.ReadFile(secretFile)
+		if err == nil && len(data) >= minLen {
+			jwtSecret = data
+			slog.Info("Loaded JWT secret from file", "path", secretFile)
+		} else {
+			// Generate a new random secret
+			jwtSecret = make([]byte, 32)
+			if _, err := rand.Read(jwtSecret); err != nil {
+				return fmt.Errorf("failed to generate JWT secret: %w", err)
+			}
+			// Persist it (ConfigDir is already created by config.init())
+			if err := os.WriteFile(secretFile, jwtSecret, 0600); err != nil {
+				return fmt.Errorf("failed to persist JWT secret to %s: %w", secretFile, err)
+			}
+			slog.Info("Generated and persisted new JWT secret", "path", secretFile)
+		}
 	}
+
 	// Share the key with the crypto package for at-rest encryption
 	crypto.SetEncryptionKey(jwtSecret)
+	return nil
 }
 
 // EncryptionKey returns the 32-byte key used for encrypting secrets at rest.
-// This is derived from the JWT secret which is randomly generated per process.
 func EncryptionKey() []byte {
 	return jwtSecret
 }

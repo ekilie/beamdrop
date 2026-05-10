@@ -16,6 +16,7 @@ import { Route as ShareTokenRouteImport } from './routes/share/$token'
 import { Route as AuthenticatedSharesRouteImport } from './routes/_authenticated/shares'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedLogsRouteImport } from './routes/_authenticated/logs'
+import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedApiKeysRouteImport } from './routes/_authenticated/api-keys'
 
 const AuthenticatedRoute = AuthenticatedRouteImport.update({
@@ -52,6 +53,11 @@ const AuthenticatedLogsRoute = AuthenticatedLogsRouteImport.update({
   path: '/logs',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedApiKeysRoute = AuthenticatedApiKeysRouteImport.update({
   id: '/api-keys',
   path: '/api-keys',
@@ -62,6 +68,7 @@ export interface FileRoutesByFullPath {
   '/$': typeof SplatRoute
   '/': typeof AuthenticatedIndexRoute
   '/api-keys': typeof AuthenticatedApiKeysRoute
+  '/dashboard': typeof AuthenticatedDashboardRoute
   '/logs': typeof AuthenticatedLogsRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/shares': typeof AuthenticatedSharesRoute
@@ -70,6 +77,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/$': typeof SplatRoute
   '/api-keys': typeof AuthenticatedApiKeysRoute
+  '/dashboard': typeof AuthenticatedDashboardRoute
   '/logs': typeof AuthenticatedLogsRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/shares': typeof AuthenticatedSharesRoute
@@ -81,6 +89,7 @@ export interface FileRoutesById {
   '/$': typeof SplatRoute
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/_authenticated/api-keys': typeof AuthenticatedApiKeysRoute
+  '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/logs': typeof AuthenticatedLogsRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/shares': typeof AuthenticatedSharesRoute
@@ -93,6 +102,7 @@ export interface FileRouteTypes {
     | '/$'
     | '/'
     | '/api-keys'
+    | '/dashboard'
     | '/logs'
     | '/settings'
     | '/shares'
@@ -101,6 +111,7 @@ export interface FileRouteTypes {
   to:
     | '/$'
     | '/api-keys'
+    | '/dashboard'
     | '/logs'
     | '/settings'
     | '/shares'
@@ -111,6 +122,7 @@ export interface FileRouteTypes {
     | '/$'
     | '/_authenticated'
     | '/_authenticated/api-keys'
+    | '/_authenticated/dashboard'
     | '/_authenticated/logs'
     | '/_authenticated/settings'
     | '/_authenticated/shares'
@@ -175,6 +187,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedLogsRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/dashboard': {
+      id: '/_authenticated/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof AuthenticatedDashboardRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/api-keys': {
       id: '/_authenticated/api-keys'
       path: '/api-keys'
@@ -187,6 +206,7 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedRouteChildren {
   AuthenticatedApiKeysRoute: typeof AuthenticatedApiKeysRoute
+  AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedLogsRoute: typeof AuthenticatedLogsRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedSharesRoute: typeof AuthenticatedSharesRoute
@@ -195,6 +215,7 @@ interface AuthenticatedRouteChildren {
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedApiKeysRoute: AuthenticatedApiKeysRoute,
+  AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedLogsRoute: AuthenticatedLogsRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedSharesRoute: AuthenticatedSharesRoute,

@@ -9,6 +9,8 @@ import {
   Lock,
   Calendar,
   FileIcon,
+  FolderIcon,
+  Clock,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -37,6 +39,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { toast } from "@/hooks/use-toast";
 
 interface ShareableLink {
@@ -47,6 +54,7 @@ interface ShareableLink {
   expiresAt?: string;
   accessCount: number;
   createdAt: string;
+  isDir?: boolean;
 }
 
 export function SharesManagementPage() {
@@ -136,6 +144,28 @@ export function SharesManagementPage() {
     return new Date(dateString).toLocaleString();
   };
 
+  const formatExpiry = (expiresAt?: string) => {
+    if (!expiresAt) return null;
+    const expDate = new Date(expiresAt);
+    const now = new Date();
+    if (expDate < now) return { label: "Expired", detail: formatDate(expiresAt), expired: true };
+
+    const diff = expDate.getTime() - now.getTime();
+    const hours = Math.floor(diff / 3600000);
+    const days = Math.floor(hours / 24);
+
+    let label: string;
+    if (days > 0) {
+      label = `${days}d ${hours % 24}h left`;
+    } else if (hours > 0) {
+      label = `${hours}h left`;
+    } else {
+      const mins = Math.floor(diff / 60000);
+      label = `${mins}m left`;
+    }
+    return { label, detail: formatDate(expiresAt), expired: false };
+  };
+
   const isExpired = (expiresAt?: string) => {
     if (!expiresAt) return false;
     return new Date(expiresAt) < new Date();
@@ -211,15 +241,28 @@ export function SharesManagementPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {links.map((link) => (
+                  {links.map((link) => {
+                    const expiry = formatExpiry(link.expiresAt);
+                    return (
                     <TableRow key={link.id}>
                       <TableCell>
-                        <div className="flex items-center gap-2">
-                          <FileIcon className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                          <span className="font-mono truncate max-w-[200px] sm:max-w-xs md:max-w-sm">
-                            {getFileName(link.path)}
-                          </span>
-                        </div>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <div className="flex items-center gap-2 cursor-default">
+                              {link.isDir ? (
+                                <FolderIcon className="w-4 h-4 text-primary flex-shrink-0" />
+                              ) : (
+                                <FileIcon className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                              )}
+                              <span className="font-mono truncate max-w-[200px] sm:max-w-xs md:max-w-sm">
+                                {getFileName(link.path)}
+                              </span>
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p className="font-mono text-xs">{link.path}</p>
+                          </TooltipContent>
+                        </Tooltip>
                       </TableCell>
                       <TableCell className="text-center">
                         <div className="flex flex-wrap gap-1 justify-center">
@@ -229,21 +272,31 @@ export function SharesManagementPage() {
                               <span className="hidden sm:inline">Password</span>
                             </Badge>
                           )}
-                          {link.expiresAt && (
-                            <Badge
-                              variant={
-                                isExpired(link.expiresAt)
-                                  ? "destructive"
-                                  : "default"
-                              }
-                              className="gap-1"
-                            >
-                              <Calendar className="w-3 h-3" />
-                              <span className="hidden sm:inline">
-                                {isExpired(link.expiresAt)
-                                  ? "Expired"
-                                  : "Expiring"}
-                              </span>
+                          {expiry && (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Badge
+                                  variant={expiry.expired ? "destructive" : "default"}
+                                  className="gap-1 cursor-default"
+                                >
+                                  {expiry.expired ? (
+                                    <Calendar className="w-3 h-3" />
+                                  ) : (
+                                    <Clock className="w-3 h-3" />
+                                  )}
+                                  <span className="hidden sm:inline">
+                                    {expiry.label}
+                                  </span>
+                                </Badge>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p className="text-xs">{expiry.detail}</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          )}
+                          {!link.hasPassword && !expiry && (
+                            <Badge variant="outline" className="gap-1 text-muted-foreground">
+                              Public
                             </Badge>
                           )}
                         </div>
@@ -290,7 +343,8 @@ export function SharesManagementPage() {
                         </div>
                       </TableCell>
                     </TableRow>
-                  ))}
+                    );
+                  })}
                 </TableBody>
               </Table>
             </div>

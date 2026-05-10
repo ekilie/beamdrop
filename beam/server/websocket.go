@@ -45,11 +45,13 @@ func newUpgrader(allowedOrigins []string) websocket.Upgrader {
 
 // ExtendedStats contains both database stats and system stats
 type ExtendedStats struct {
-	Downloads int                `json:"downloads"`
-	Requests  int                `json:"requests"`
-	Uploads   int                `json:"uploads"`
-	StartTime time.Time          `json:"startTime"`
-	System    system.SystemStats `json:"system"`
+	Downloads       int                `json:"downloads"`
+	Requests        int                `json:"requests"`
+	Uploads         int                `json:"uploads"`
+	BytesUploaded   int64              `json:"bytesUploaded"`
+	BytesDownloaded int64              `json:"bytesDownloaded"`
+	StartTime       time.Time          `json:"startTime"`
+	System          system.SystemStats `json:"system"`
 }
 
 // StatsSocketHandler handles WebSocket connections for real-time stats updates
@@ -87,11 +89,13 @@ func handleStatsSocket(w http.ResponseWriter, r *http.Request, sharedDir string,
 		}
 		sysStats := system.GetSystemStats(sharedDir)
 		return ExtendedStats{
-			Downloads: dbStats.Downloads,
-			Requests:  dbStats.Requests,
-			Uploads:   dbStats.Uploads,
-			StartTime: dbStats.StartTime,
-			System:    sysStats,
+			Downloads:       dbStats.Downloads,
+			Requests:        dbStats.Requests,
+			Uploads:         dbStats.Uploads,
+			BytesUploaded:   dbStats.BytesUploaded,
+			BytesDownloaded: dbStats.BytesDownloaded,
+			StartTime:       dbStats.StartTime,
+			System:          sysStats,
 		}, nil
 	}
 

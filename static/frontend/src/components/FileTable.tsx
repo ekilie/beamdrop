@@ -114,9 +114,11 @@ const FileTable: React.FC<FileTableProps> = ({
   const [shareDialog, setShareDialog] = useState<{
     open: boolean;
     fileName: string;
+    isDir: boolean;
   }>({
     open: false,
     fileName: "",
+    isDir: false,
   });
   const [deleteConfirm, setDeleteConfirm] = useState<{
     open: boolean;
@@ -488,6 +490,7 @@ const FileTable: React.FC<FileTableProps> = ({
                               setShareDialog({
                                 open: true,
                                 fileName: file.name,
+                                isDir: file.isDir,
                               });
                             }}
                           >
@@ -580,6 +583,7 @@ const FileTable: React.FC<FileTableProps> = ({
         onOpenChange={(open) => setShareDialog({ ...shareDialog, open })}
         fileName={shareDialog.fileName}
         currentPath={currentPath}
+        isDir={shareDialog.isDir}
       />
 
       <AlertDialog

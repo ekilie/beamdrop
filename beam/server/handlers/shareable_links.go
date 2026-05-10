@@ -46,6 +46,7 @@ type ShareableLinkInfo struct {
 	ExpiresAt   *time.Time `json:"expiresAt,omitempty"`
 	AccessCount int        `json:"accessCount"`
 	CreatedAt   time.Time  `json:"createdAt"`
+	IsDir       bool       `json:"isDir"`
 }
 
 // ValidateLinkRequest represents the request to validate a link with password
@@ -129,6 +130,9 @@ func (h *ShareableLinkHandler) List(w http.ResponseWriter, r *http.Request) {
 	// Convert to response format (hide sensitive data)
 	var response []ShareableLinkInfo
 	for _, link := range links {
+		fullPath := filepath.Join(h.sharedDir, link.Path)
+		info, statErr := os.Stat(fullPath)
+		isDir := statErr == nil && info.IsDir()
 		response = append(response, ShareableLinkInfo{
 			ID:          link.ID,
 			Path:        link.Path,
@@ -137,6 +141,7 @@ func (h *ShareableLinkHandler) List(w http.ResponseWriter, r *http.Request) {
 			ExpiresAt:   link.ExpiresAt,
 			AccessCount: link.AccessCount,
 			CreatedAt:   link.CreatedAt,
+			IsDir:       isDir,
 		})
 	}
 

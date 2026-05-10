@@ -9,11 +9,13 @@ import (
 )
 
 type ServerStats struct {
-	ID        uint      `gorm:"primaryKey" json:"id"`
-	Downloads int       `gorm:"column:downloads;default:0" json:"downloads"`
-	Requests  int       `gorm:"column:requests;default:0" json:"requests"`
-	Uploads   int       `gorm:"column:uploads;default:0" json:"uploads"`
-	StartTime time.Time `gorm:"column:start_time;default:CURRENT_TIMESTAMP" json:"startTime"`
+	ID             uint      `gorm:"primaryKey" json:"id"`
+	Downloads      int       `gorm:"column:downloads;default:0" json:"downloads"`
+	Requests       int       `gorm:"column:requests;default:0" json:"requests"`
+	Uploads        int       `gorm:"column:uploads;default:0" json:"uploads"`
+	BytesUploaded  int64     `gorm:"column:bytes_uploaded;default:0" json:"bytesUploaded"`
+	BytesDownloaded int64    `gorm:"column:bytes_downloaded;default:0" json:"bytesDownloaded"`
+	StartTime      time.Time `gorm:"column:start_time;default:CURRENT_TIMESTAMP" json:"startTime"`
 }
 
 func (ServerStats) TableName() string {
@@ -66,6 +68,8 @@ func ResetStats() {
 	stats.Downloads = 0
 	stats.Requests = 0
 	stats.Uploads = 0
+	stats.BytesUploaded = 0
+	stats.BytesDownloaded = 0
 	stats.StartTime = time.Now()
 	db.Save(&stats)
 }
@@ -107,6 +111,20 @@ func IncrementUploads() {
 	}
 	stats.Uploads++
 	db.Save(&stats)
+}
+
+// AddBytesUploaded adds n bytes to the total bytes uploaded counter
+func AddBytesUploaded(n int64) {
+	db := GetDB()
+	db.Model(&ServerStats{}).Where("id = 1").
+		UpdateColumn("bytes_uploaded", gorm.Expr("bytes_uploaded + ?", n))
+}
+
+// AddBytesDownloaded adds n bytes to the total bytes downloaded counter
+func AddBytesDownloaded(n int64) {
+	db := GetDB()
+	db.Model(&ServerStats{}).Where("id = 1").
+		UpdateColumn("bytes_downloaded", gorm.Expr("bytes_downloaded + ?", n))
 }
 
 // Increment increments the specified field by 1

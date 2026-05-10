@@ -18,24 +18,46 @@ import {
   Calendar,
   ExternalLink,
   Loader2,
+  FolderIcon,
+  FileIcon,
 } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface ShareLinkDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   fileName: string;
   currentPath: string;
+  isDir?: boolean;
 }
+
+const EXPIRY_PRESETS = [
+  { label: "No expiry", value: "" },
+  { label: "1 hour", value: "1" },
+  { label: "24 hours", value: "24" },
+  { label: "7 days", value: "168" },
+  { label: "30 days", value: "720" },
+  { label: "Custom...", value: "custom" },
+];
 
 export function ShareLinkDialog({
   open,
   onOpenChange,
   fileName,
   currentPath,
+  isDir = false,
 }: ShareLinkDialogProps) {
   const [shareLink, setShareLink] = useState<string>("");
+  const [expiresAt, setExpiresAt] = useState<string | null>(null);
   const [password, setPassword] = useState<string>("");
   const [expiresIn, setExpiresIn] = useState<string>(""); // in hours
+  const [expiryPreset, setExpiryPreset] = useState<string>("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [copied, setCopied] = useState(false);
 
@@ -57,11 +79,15 @@ export function ShareLinkDialog({
         requestBody.password = password;
       }
 
-      if (expiresIn) {
-        const hours = parseFloat(expiresIn);
-        if (!isNaN(hours) && hours > 0) {
-          requestBody.expiresIn = hours * 3600; // Convert hours to seconds
-        }
+      // Determine hours from preset or custom input
+      const hours = expiryPreset === "custom"
+        ? parseFloat(expiresIn)
+        : expiryPreset
+        ? parseFloat(expiryPreset)
+        : NaN;
+
+      if (!isNaN(hours) && hours > 0) {
+        requestBody.expiresIn = hours * 3600; // Convert hours to seconds
       }
 
       const response = await fetch("/api/shares", {
@@ -78,6 +104,7 @@ export function ShareLinkDialog({
 
       const data = await response.json();
       setShareLink(data.url);
+      setExpiresAt(data.expiresAt || null);
 
       toast({
         title: "Success",
@@ -120,6 +147,8 @@ export function ShareLinkDialog({
     setShareLink("");
     setPassword("");
     setExpiresIn("");
+    setExpiryPreset("");
+    setExpiresAt(null);
     setCopied(false);
     onOpenChange(false);
   };
@@ -130,8 +159,15 @@ export function ShareLinkDialog({
         <DialogHeader>
           <DialogTitle className="font-mono uppercase">Share Link</DialogTitle>
           <DialogDescription>
-            Create a shareable link for{" "}
-            <span className="font-semibold">{fileName}</span>
+            <span className="inline-flex items-center gap-1.5">
+              {isDir ? (
+                <FolderIcon className="w-4 h-4 text-primary" />
+              ) : (
+                <FileIcon className="w-4 h-4 text-muted-foreground" />
+              )}
+              Create a shareable link for{" "}
+              <span className="font-semibold">{fileName}</span>
+            </span>
           </DialogDescription>
         </DialogHeader>
 
@@ -155,21 +191,37 @@ export function ShareLinkDialog({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="expiresIn" className="flex items-center gap-2">
+              <Label htmlFor="expiryPreset" className="flex items-center gap-2">
                 <Calendar className="w-4 h-4" />
-                Expires in (hours, optional)
+                Expiry
               </Label>
-              <Input
-                id="expiresIn"
-                type="number"
-                placeholder="24"
-                min="1"
-                value={expiresIn}
-                onChange={(e) => setExpiresIn(e.target.value)}
-              />
-              <p className="text-xs text-muted-foreground">
-                Leave empty for permanent link
-              </p>
+              <Select value={expiryPreset} onValueChange={setExpiryPreset}>
+                <SelectTrigger id="expiryPreset">
+                  <SelectValue placeholder="No expiry" />
+                </SelectTrigger>
+                <SelectContent>
+                  {EXPIRY_PRESETS.map((preset) => (
+                    <SelectItem key={preset.value} value={preset.value}>
+                      {preset.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {expiryPreset === "custom" && (
+                <div className="pt-1">
+                  <Input
+                    id="expiresIn"
+                    type="number"
+                    placeholder="Hours until expiry"
+                    min="1"
+                    value={expiresIn}
+                    onChange={(e) => setExpiresIn(e.target.value)}
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Enter number of hours
+                  </p>
+                </div>
+              )}
             </div>
 
             <Button
@@ -233,12 +285,11 @@ export function ShareLinkDialog({
               </div>
             )}
 
-            {expiresIn && (
+            {expiresAt && (
               <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-md">
                 <p className="text-sm text-blue-700 dark:text-blue-400 flex items-center gap-2">
                   <Calendar className="w-4 h-4" />
-                  This link will expire in {expiresIn} hour
-                  {parseFloat(expiresIn) === 1 ? "" : "s"}
+                  Expires: {new Date(expiresAt).toLocaleString()}
                 </p>
               </div>
             )}

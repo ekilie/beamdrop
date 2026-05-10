@@ -1149,7 +1149,7 @@ GET /api/shares/access/{token}?mode=inline
 
 ## Usage Dashboard
 
-Beamdrop includes a built-in usage dashboard accessible at ` /usage` in the web UI. It provides real-time visibility into storage consumption, transfer activity, and system resource usage.
+Beamdrop includes a built-in usage dashboard accessible at `/usage` in the web UI. It provides real-time visibility into storage consumption, transfer activity, and system resource usage.
 
 ### Dashboard Metrics
 

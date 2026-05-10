@@ -38,7 +38,7 @@ interface ShareLinkDialogProps {
 }
 
 const EXPIRY_PRESETS = [
-  { label: "No expiry", value: "" },
+  { label: "No expiry", value: "none" },
   { label: "1 hour", value: "1" },
   { label: "24 hours", value: "24" },
   { label: "7 days", value: "168" },
@@ -57,13 +57,14 @@ export function ShareLinkDialog({
   const [expiresAt, setExpiresAt] = useState<string | null>(null);
   const [password, setPassword] = useState<string>("");
   const [expiresIn, setExpiresIn] = useState<string>(""); // in hours
-  const [expiryPreset, setExpiryPreset] = useState<string>("");
+  const [expiryPreset, setExpiryPreset] = useState<string>("none");
   const [isGenerating, setIsGenerating] = useState(false);
   const [copied, setCopied] = useState(false);
 
   const getExpiryHours = (): number => {
     if (expiryPreset === "custom") return parseFloat(expiresIn);
-    if (expiryPreset) return parseFloat(expiryPreset);
+    if (expiryPreset && expiryPreset !== "none")
+      return parseFloat(expiryPreset);
     return NaN;
   };
 
@@ -147,7 +148,7 @@ export function ShareLinkDialog({
     setShareLink("");
     setPassword("");
     setExpiresIn("");
-    setExpiryPreset("");
+    setExpiryPreset("none");
     setExpiresAt(null);
     setCopied(false);
     onOpenChange(false);

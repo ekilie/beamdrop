@@ -205,8 +205,8 @@ export function AppSidebar({ password = "" }: AppSidebarProps) {
               </SidebarMenuItem>
               <SidebarMenuItem>
                 <SidebarMenuButton
-                  onClick={() => navigate({ to: "/dashboard" })}
-                  className={`hover:bg-sidebar-accent ${pathname === "/dashboard" ? "bg-sidebar-accent" : ""}`}
+                  onClick={() => navigate({ to: " /usage" })}
+                  className={`hover:bg-sidebar-accent ${pathname === " /usage" ? "bg-sidebar-accent" : ""}`}
                 >
                   <BarChart3 className="w-4 h-4" />
                   {!isCollapsed && (

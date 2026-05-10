@@ -13,10 +13,10 @@ import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as SplatRouteImport } from './routes/$'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
 import { Route as ShareTokenRouteImport } from './routes/share/$token'
+import { Route as AuthenticatedUsageRouteImport } from './routes/_authenticated/usage'
 import { Route as AuthenticatedSharesRouteImport } from './routes/_authenticated/shares'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedLogsRouteImport } from './routes/_authenticated/logs'
-import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedApiKeysRouteImport } from './routes/_authenticated/api-keys'
 
 const AuthenticatedRoute = AuthenticatedRouteImport.update({
@@ -38,6 +38,11 @@ const ShareTokenRoute = ShareTokenRouteImport.update({
   path: '/share/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedUsageRoute = AuthenticatedUsageRouteImport.update({
+  id: '/usage',
+  path: '/usage',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedSharesRoute = AuthenticatedSharesRouteImport.update({
   id: '/shares',
   path: '/shares',
@@ -53,11 +58,6 @@ const AuthenticatedLogsRoute = AuthenticatedLogsRouteImport.update({
   path: '/logs',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
-const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
-  id: '/dashboard',
-  path: '/dashboard',
-  getParentRoute: () => AuthenticatedRoute,
-} as any)
 const AuthenticatedApiKeysRoute = AuthenticatedApiKeysRouteImport.update({
   id: '/api-keys',
   path: '/api-keys',
@@ -68,19 +68,19 @@ export interface FileRoutesByFullPath {
   '/$': typeof SplatRoute
   '/': typeof AuthenticatedIndexRoute
   '/api-keys': typeof AuthenticatedApiKeysRoute
-  '/dashboard': typeof AuthenticatedDashboardRoute
   '/logs': typeof AuthenticatedLogsRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/shares': typeof AuthenticatedSharesRoute
+  '/usage': typeof AuthenticatedUsageRoute
   '/share/$token': typeof ShareTokenRoute
 }
 export interface FileRoutesByTo {
   '/$': typeof SplatRoute
   '/api-keys': typeof AuthenticatedApiKeysRoute
-  '/dashboard': typeof AuthenticatedDashboardRoute
   '/logs': typeof AuthenticatedLogsRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/shares': typeof AuthenticatedSharesRoute
+  '/usage': typeof AuthenticatedUsageRoute
   '/share/$token': typeof ShareTokenRoute
   '/': typeof AuthenticatedIndexRoute
 }
@@ -89,10 +89,10 @@ export interface FileRoutesById {
   '/$': typeof SplatRoute
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/_authenticated/api-keys': typeof AuthenticatedApiKeysRoute
-  '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/logs': typeof AuthenticatedLogsRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/shares': typeof AuthenticatedSharesRoute
+  '/_authenticated/usage': typeof AuthenticatedUsageRoute
   '/share/$token': typeof ShareTokenRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
 }
@@ -102,19 +102,19 @@ export interface FileRouteTypes {
     | '/$'
     | '/'
     | '/api-keys'
-    | '/dashboard'
     | '/logs'
     | '/settings'
     | '/shares'
+    | '/usage'
     | '/share/$token'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/$'
     | '/api-keys'
-    | '/dashboard'
     | '/logs'
     | '/settings'
     | '/shares'
+    | '/usage'
     | '/share/$token'
     | '/'
   id:
@@ -122,10 +122,10 @@ export interface FileRouteTypes {
     | '/$'
     | '/_authenticated'
     | '/_authenticated/api-keys'
-    | '/_authenticated/dashboard'
     | '/_authenticated/logs'
     | '/_authenticated/settings'
     | '/_authenticated/shares'
+    | '/_authenticated/usage'
     | '/share/$token'
     | '/_authenticated/'
   fileRoutesById: FileRoutesById
@@ -166,6 +166,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ShareTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/usage': {
+      id: '/_authenticated/usage'
+      path: '/usage'
+      fullPath: '/usage'
+      preLoaderRoute: typeof AuthenticatedUsageRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/shares': {
       id: '/_authenticated/shares'
       path: '/shares'
@@ -187,13 +194,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedLogsRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
-    '/_authenticated/dashboard': {
-      id: '/_authenticated/dashboard'
-      path: '/dashboard'
-      fullPath: '/dashboard'
-      preLoaderRoute: typeof AuthenticatedDashboardRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
     '/_authenticated/api-keys': {
       id: '/_authenticated/api-keys'
       path: '/api-keys'
@@ -206,19 +206,19 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedRouteChildren {
   AuthenticatedApiKeysRoute: typeof AuthenticatedApiKeysRoute
-  AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedLogsRoute: typeof AuthenticatedLogsRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedSharesRoute: typeof AuthenticatedSharesRoute
+  AuthenticatedUsageRoute: typeof AuthenticatedUsageRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedApiKeysRoute: AuthenticatedApiKeysRoute,
-  AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedLogsRoute: AuthenticatedLogsRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedSharesRoute: AuthenticatedSharesRoute,
+  AuthenticatedUsageRoute: AuthenticatedUsageRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
 }
 

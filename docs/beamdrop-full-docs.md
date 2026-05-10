@@ -996,6 +996,7 @@ curl https://server/api/v1/presign \
 Shareable links allow sharing files **and folders** via unique URLs with optional password protection and expiry. They bypass normal authentication.
 
 The web UI provides polished management for share links:
+
 - **Folder icon** vs file icon to distinguish share types at a glance
 - **Live expiry countdown** (e.g. "2d 4h left" or "Expired") with tooltip showing exact date
 - **Full path tooltip** — hover over any item to see the complete path
@@ -1148,24 +1149,24 @@ GET /api/shares/access/{token}?mode=inline
 
 ## Usage Dashboard
 
-Beamdrop includes a built-in usage dashboard accessible at `/dashboard` in the web UI. It provides real-time visibility into storage consumption, transfer activity, and system resource usage.
+Beamdrop includes a built-in usage dashboard accessible at ` /usage` in the web UI. It provides real-time visibility into storage consumption, transfer activity, and system resource usage.
 
 ### Dashboard Metrics
 
 The dashboard is powered by the WebSocket stats endpoint (`/ws/stats`) and displays:
 
-| Metric | Description |
-|---|---|
-| **Total Requests** | Cumulative API requests since server start |
-| **Downloads** | Number of file download operations |
-| **Uploads** | Number of file upload operations |
-| **Server Uptime** | Time since last server start |
-| **Data Uploaded** | Total bytes received from clients |
-| **Data Downloaded** | Total bytes served to clients |
-| **Total Transfer** | Combined inbound + outbound bandwidth |
-| **Disk Storage** | Storage used vs total disk capacity (with percentage bar) |
-| **Memory Usage** | Go runtime memory in use vs allocated |
-| **CPU / Runtime** | CPU cores and active goroutines |
+| Metric              | Description                                               |
+| ------------------- | --------------------------------------------------------- |
+| **Total Requests**  | Cumulative API requests since server start                |
+| **Downloads**       | Number of file download operations                        |
+| **Uploads**         | Number of file upload operations                          |
+| **Server Uptime**   | Time since last server start                              |
+| **Data Uploaded**   | Total bytes received from clients                         |
+| **Data Downloaded** | Total bytes served to clients                             |
+| **Total Transfer**  | Combined inbound + outbound bandwidth                     |
+| **Disk Storage**    | Storage used vs total disk capacity (with percentage bar) |
+| **Memory Usage**    | Go runtime memory in use vs allocated                     |
+| **CPU / Runtime**   | CPU cores and active goroutines                           |
 
 ### Stats API
 
@@ -1208,9 +1209,19 @@ The server pushes a JSON message immediately on connect and then every minute:
   "bytesDownloaded": 1073741824,
   "startTime": "2024-01-15T10:00:00Z",
   "system": {
-    "memory": { "total": 8589934592, "available": 6442450944, "used": 2147483648, "percent": 25.0 },
-    "disk":   { "total": 107374182400, "free": 53687091200, "used": 53687091200, "percent": 50.0 },
-    "cpu":    { "cores": 4, "goroutines": 12 }
+    "memory": {
+      "total": 8589934592,
+      "available": 6442450944,
+      "used": 2147483648,
+      "percent": 25.0
+    },
+    "disk": {
+      "total": 107374182400,
+      "free": 53687091200,
+      "used": 53687091200,
+      "percent": 50.0
+    },
+    "cpu": { "cores": 4, "goroutines": 12 }
   }
 }
 ```

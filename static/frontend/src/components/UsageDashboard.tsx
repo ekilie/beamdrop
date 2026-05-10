@@ -170,7 +170,9 @@ export function UsageDashboard() {
       }
     };
 
-    ws.onerror = () => {};
+    ws.onerror = (err) => {
+      console.error("Dashboard WebSocket error:", err);
+    };
 
     return ws;
   };

@@ -61,6 +61,12 @@ export function ShareLinkDialog({
   const [isGenerating, setIsGenerating] = useState(false);
   const [copied, setCopied] = useState(false);
 
+  const getExpiryHours = (): number => {
+    if (expiryPreset === "custom") return parseFloat(expiresIn);
+    if (expiryPreset) return parseFloat(expiryPreset);
+    return NaN;
+  };
+
   const generateShareLink = async () => {
     setIsGenerating(true);
     try {
@@ -79,13 +85,7 @@ export function ShareLinkDialog({
         requestBody.password = password;
       }
 
-      // Determine hours from preset or custom input
-      const hours = expiryPreset === "custom"
-        ? parseFloat(expiresIn)
-        : expiryPreset
-        ? parseFloat(expiryPreset)
-        : NaN;
-
+      const hours = getExpiryHours();
       if (!isNaN(hours) && hours > 0) {
         requestBody.expiresIn = hours * 3600; // Convert hours to seconds
       }

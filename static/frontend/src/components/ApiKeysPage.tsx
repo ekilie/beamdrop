@@ -146,6 +146,13 @@ export function ApiKeysPage() {
     return new Date(expiresAt) < new Date();
   };
 
+  const formatPermissions = (permissions?: string) => {
+    const normalized = (permissions || "").trim().toLowerCase();
+    if (normalized === "read") return "Read Only";
+    if (normalized === "write") return "Write Only";
+    return "Read + Write";
+  };
+
   return (
     <div className="p-6 space-y-6 animate-fade-in">
       {/* Header */}
@@ -313,15 +320,20 @@ export function ApiKeysPage() {
                     </div>
                   </TableCell>
                   <TableCell className="hidden md:table-cell">
-                    {key.bucketScope ? (
-                      <Badge variant="outline" className="font-mono text-xs">
-                        {key.bucketScope}
+                    <div className="flex flex-col gap-1">
+                      <Badge variant="secondary" className="font-mono text-xs w-fit">
+                        {formatPermissions(key.permissions)}
                       </Badge>
-                    ) : (
-                      <span className="text-muted-foreground text-xs font-mono">
-                        All buckets
-                      </span>
-                    )}
+                      {key.bucketScope ? (
+                        <Badge variant="outline" className="font-mono text-xs w-fit">
+                          {key.bucketScope}
+                        </Badge>
+                      ) : (
+                        <span className="text-muted-foreground text-xs font-mono">
+                          All buckets
+                        </span>
+                      )}
+                    </div>
                   </TableCell>
                   <TableCell className="text-xs font-mono text-muted-foreground hidden lg:table-cell">
                     {formatDate(key.createdAt)}

@@ -1,7 +1,10 @@
 package api
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
+	"io"
 	"log/slog"
 	"net/http"
 	"strings"
@@ -103,14 +106,33 @@ func (m *APIAuthMiddleware) Middleware(next http.Handler) http.Handler {
 			return
 		}
 
+		if !isMethodAllowed(apiKey.Permissions, r.Method) {
+			errors.Forbidden("API key does not have permission for this operation").WriteHTTPResponse(w)
+			return
+		}
+
+		if apiKey.BucketScope != "" {
+			bucket, ok, err := bucketForRequest(r)
+			if err != nil {
+				errors.InvalidRequest("Invalid request body").WriteHTTPResponse(w)
+				return
+			}
+			if !ok {
+				errors.Forbidden("API key is restricted to a specific bucket").WriteHTTPResponse(w)
+				return
+			}
+			if bucket != apiKey.BucketScope {
+				errors.Forbidden("API key is not allowed for this bucket").WriteHTTPResponse(w)
+				return
+			}
+		}
+
 		// Update last used timestamp (async to not slow down request)
 		go func() {
 			if err := db.UpdateLastUsed(accessKeyID); err != nil {
 				slog.Error("Failed to update last used", "error", err)
 			}
 		}()
-
-		// TODO: Check permissions against requested action
 
 		// Store the authenticated access key ID in request context
 		ctx := context.WithValue(r.Context(), reqctx.AccessKeyIDKey, accessKeyID)
@@ -172,4 +194,71 @@ func (m *APIAuthMiddleware) verifyPresignedToken(r *http.Request, token string) 
 
 	// Verify token
 	return crypto.VerifyPresignedToken(secretKey, r.Method, bucket, key, expiresAt, token)
+}
+
+func isMethodAllowed(permissions, method string) bool {
+	canRead, canWrite := parsePermissions(permissions)
+	switch strings.ToUpper(method) {
+	case http.MethodGet, http.MethodHead, http.MethodOptions:
+		return canRead
+	case http.MethodPost, http.MethodPut, http.MethodPatch, http.MethodDelete:
+		return canWrite
+	default:
+		return false
+	}
+}
+
+func parsePermissions(raw string) (bool, bool) {
+	trimmed := strings.TrimSpace(raw)
+	if trimmed == "" {
+		return true, true
+	}
+
+	canRead := false
+	canWrite := false
+	for _, part := range strings.Split(trimmed, ",") {
+		switch strings.ToLower(strings.TrimSpace(part)) {
+		case "read":
+			canRead = true
+		case "write":
+			canWrite = true
+		}
+	}
+
+	return canRead, canWrite
+}
+
+func bucketForRequest(r *http.Request) (string, bool, error) {
+	if strings.HasPrefix(r.URL.Path, "/api/v1/buckets/") {
+		path := strings.TrimPrefix(r.URL.Path, "/api/v1/buckets/")
+		parts := strings.SplitN(path, "/", 2)
+		if len(parts) > 0 && strings.TrimSpace(parts[0]) != "" {
+			return parts[0], true, nil
+		}
+		return "", false, nil
+	}
+
+	if strings.HasPrefix(r.URL.Path, "/api/v1/presign") && r.Method == http.MethodPost {
+		body, err := io.ReadAll(r.Body)
+		if err != nil {
+			return "", false, err
+		}
+		r.Body = io.NopCloser(bytes.NewReader(body))
+
+		var req struct {
+			Bucket string `json:"bucket"`
+		}
+		if len(bytes.TrimSpace(body)) == 0 {
+			return "", false, nil
+		}
+		if err := json.Unmarshal(body, &req); err != nil {
+			return "", false, err
+		}
+		if strings.TrimSpace(req.Bucket) == "" {
+			return "", false, nil
+		}
+		return req.Bucket, true, nil
+	}
+
+	return "", false, nil
 }

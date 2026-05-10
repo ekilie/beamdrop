@@ -1,12 +1,16 @@
 package handlers
 
 import (
+	"archive/zip"
 	"encoding/json"
+	"fmt"
 	"io"
+	"io/fs"
 	"log/slog"
 	"net/http"
 	"os"
 	"path"
+	"path/filepath"
 	"slices"
 	"strings"
 	"time"
@@ -87,20 +91,38 @@ func (h *FileHandler) Download(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	info, err := os.Stat(filePath)
+	if err != nil {
+		slog.Error("Failed to stat path", "path", filePath, "error", err)
+		http.Error(w, "File not found", http.StatusNotFound)
+		return
+	}
+
 	slog.Info("Download request", "file", filename)
+
+	if info.IsDir() {
+		n, err := streamDirectoryAsZIP(w, filePath, filename)
+		if err != nil {
+			slog.Error("Failed to stream ZIP", "path", filePath, "error", err)
+			http.Error(w, "Failed to create ZIP", http.StatusInternalServerError)
+			return
+		}
+		recordDownloadMetrics(n)
+		slog.Info("ZIP download completed", "file", filename)
+		return
+	}
+
 	f, err := os.Open(filePath)
 	if err != nil {
 		slog.Error("Failed to open file", "path", filePath, "error", err)
-		http.Error(w, "File not found", 404)
+		http.Error(w, "File not found", http.StatusNotFound)
 		return
 	}
 	defer f.Close()
 
 	slog.Info("Serving download", "file", filename)
 	n, _ := io.Copy(w, f)
-	db.IncrementDownloads()
-	db.AddBytesDownloaded(n)
-	metrics.DownloadsTotal.Inc()
+	recordDownloadMetrics(n)
 	slog.Info("Download completed", "file", filename)
 }
 
@@ -196,4 +218,100 @@ func (h *FileHandler) Upload(w http.ResponseWriter, r *http.Request) {
 // Helper function - kept for backward compatibility with file_operations.go
 func sendJSONError(w http.ResponseWriter, message string, statusCode int) {
 	errors.New(errors.CodeInternalError, errors.CategoryInternal, message, statusCode).WriteHTTPResponse(w)
+}
+
+type countingWriter struct {
+	writer io.Writer
+	total  int64
+}
+
+func (c *countingWriter) Write(p []byte) (int, error) {
+	n, err := c.writer.Write(p)
+	c.total += int64(n)
+	return n, err
+}
+
+func streamDirectoryAsZIP(w http.ResponseWriter, dirPath, requestedPath string) (int64, error) {
+	zipName := strings.TrimSpace(filepath.Base(filepath.Clean(requestedPath)))
+	if zipName == "" || zipName == "." || zipName == string(filepath.Separator) {
+		zipName = "folder"
+	}
+	zipName += ".zip"
+
+	w.Header().Set("Content-Type", "application/zip")
+	w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="%s"`, zipName))
+
+	cw := &countingWriter{writer: w}
+	zw := zip.NewWriter(cw)
+
+	err := filepath.WalkDir(dirPath, func(current string, entry fs.DirEntry, walkErr error) error {
+		if walkErr != nil {
+			return walkErr
+		}
+
+		relPath, err := filepath.Rel(dirPath, current)
+		if err != nil {
+			return err
+		}
+		if relPath == "." {
+			return nil
+		}
+
+		zipPath := filepath.ToSlash(relPath)
+
+		if entry.IsDir() {
+			_, err := zw.Create(zipPath + "/")
+			return err
+		}
+
+		fileInfo, err := entry.Info()
+		if err != nil {
+			return err
+		}
+
+		header, err := zip.FileInfoHeader(fileInfo)
+		if err != nil {
+			return err
+		}
+		header.Name = zipPath
+		header.Method = zip.Deflate
+
+		writer, err := zw.CreateHeader(header)
+		if err != nil {
+			return err
+		}
+
+		file, err := os.Open(current)
+		if err != nil {
+			return err
+		}
+		_, err = io.Copy(writer, file)
+		closeErr := file.Close()
+		if err != nil {
+			return err
+		}
+		if closeErr != nil {
+			return closeErr
+		}
+		return nil
+	})
+	if err != nil {
+		_ = zw.Close()
+		return 0, err
+	}
+
+	if err := zw.Close(); err != nil {
+		return 0, err
+	}
+
+	return cw.total, nil
+}
+
+func recordDownloadMetrics(n int64) {
+	if db.GetDB() == nil {
+		return
+	}
+	db.IncrementDownloads()
+	db.AddBytesDownloaded(n)
+	metrics.DownloadsTotal.Inc()
 }

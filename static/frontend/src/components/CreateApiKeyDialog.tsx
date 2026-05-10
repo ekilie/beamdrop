@@ -40,6 +40,7 @@ export function CreateApiKeyDialog({
   onSuccess,
 }: CreateApiKeyDialogProps) {
   const [name, setName] = useState("");
+  const [permissions, setPermissions] = useState("read,write");
   const [bucketScope, setBucketScope] = useState("");
   const [expiresIn, setExpiresIn] = useState<string>("never");
   const [isCreating, setIsCreating] = useState(false);
@@ -60,6 +61,7 @@ export function CreateApiKeyDialog({
     setIsCreating(true);
     try {
       const body: Record<string, unknown> = { name: name.trim() };
+      body.permissions = permissions;
 
       if (bucketScope.trim()) {
         body.bucketScope = bucketScope.trim();
@@ -127,6 +129,7 @@ export function CreateApiKeyDialog({
 
   const handleClose = () => {
     setName("");
+    setPermissions("read,write");
     setBucketScope("");
     setExpiresIn("never");
     setCreatedKey(null);
@@ -141,6 +144,12 @@ export function CreateApiKeyDialog({
     { value: "2592000", label: "30 days" },
     { value: "7776000", label: "90 days" },
     { value: "31536000", label: "1 year" },
+  ];
+
+  const permissionOptions = [
+    { value: "read,write", label: "Read + Write (Full Access)" },
+    { value: "read", label: "Read Only" },
+    { value: "write", label: "Write Only" },
   ];
 
   return (
@@ -276,6 +285,26 @@ export function CreateApiKeyDialog({
               <p className="text-xs text-muted-foreground font-mono">
                 A descriptive name to identify this key
               </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="font-mono text-xs uppercase">Permissions</Label>
+              <Select value={permissions} onValueChange={setPermissions}>
+                <SelectTrigger className="font-mono">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {permissionOptions.map((opt) => (
+                    <SelectItem
+                      key={opt.value}
+                      value={opt.value}
+                      className="font-mono"
+                    >
+                      {opt.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-2">

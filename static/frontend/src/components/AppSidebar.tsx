@@ -14,6 +14,7 @@ import {
   Share2,
   FileText,
   Settings,
+  BarChart3,
 } from "lucide-react";
 import { useNavigate, useRouterState } from "@tanstack/react-router";
 import {
@@ -199,6 +200,17 @@ export function AppSidebar({ password = "" }: AppSidebarProps) {
                   <Share2 className="w-4 h-4" />
                   {!isCollapsed && (
                     <span className="font-mono text-sm">SHARES</span>
+                  )}
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  onClick={() => navigate({ to: "/dashboard" })}
+                  className={`hover:bg-sidebar-accent ${pathname === "/dashboard" ? "bg-sidebar-accent" : ""}`}
+                >
+                  <BarChart3 className="w-4 h-4" />
+                  {!isCollapsed && (
+                    <span className="font-mono text-sm">DASHBOARD</span>
                   )}
                 </SidebarMenuButton>
               </SidebarMenuItem>

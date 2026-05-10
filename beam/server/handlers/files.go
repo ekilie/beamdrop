@@ -97,8 +97,9 @@ func (h *FileHandler) Download(w http.ResponseWriter, r *http.Request) {
 	defer f.Close()
 
 	slog.Info("Serving download", "file", filename)
-	io.Copy(w, f)
+	n, _ := io.Copy(w, f)
 	db.IncrementDownloads()
+	db.AddBytesDownloaded(n)
 	metrics.DownloadsTotal.Inc()
 	slog.Info("Download completed", "file", filename)
 }
@@ -186,6 +187,7 @@ func (h *FileHandler) Upload(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	db.IncrementUploads()
+	db.AddBytesUploaded(n)
 	metrics.UploadsTotal.Inc()
 	metrics.UploadSizeBytes.Observe(float64(n))
 	json.NewEncoder(w).Encode(map[string]string{"message": "Uploaded", "file": header.Filename})

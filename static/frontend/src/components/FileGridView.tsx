@@ -91,9 +91,11 @@ export const FileGridView: React.FC<FileGridViewProps> = ({
   const [shareDialog, setShareDialog] = useState<{
     open: boolean;
     fileName: string;
+    isDir: boolean;
   }>({
     open: false,
     fileName: "",
+    isDir: false,
   });
   const [deleteConfirm, setDeleteConfirm] = useState<{
     open: boolean;
@@ -278,7 +280,7 @@ export const FileGridView: React.FC<FileGridViewProps> = ({
                     <DropdownMenuItem
                       onClick={(e) => {
                         e.stopPropagation();
-                        setShareDialog({ open: true, fileName: file.name });
+                        setShareDialog({ open: true, fileName: file.name, isDir: file.isDir });
                       }}
                     >
                       <Share2 className="w-4 h-4 mr-2" />
@@ -364,6 +366,7 @@ export const FileGridView: React.FC<FileGridViewProps> = ({
         onOpenChange={(open) => setShareDialog({ ...shareDialog, open })}
         fileName={shareDialog.fileName}
         currentPath={currentPath}
+        isDir={shareDialog.isDir}
       />
 
       <AlertDialog

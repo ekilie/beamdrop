@@ -36,16 +36,17 @@
    - [List Links](#list-links)
    - [Delete Link](#delete-link)
    - [Access Link](#access-link)
-8. [Health & Monitoring](#health--monitoring)
+8. [Usage Dashboard](#usage-dashboard)
+9. [Health & Monitoring](#health--monitoring)
    - [Health Endpoints](#health-endpoints)
    - [Stats](#stats)
    - [WebSocket Stats](#websocket-real-time-stats)
    - [Logs](#logs)
    - [Prometheus Metrics](#prometheus-metrics)
-9. [Full Usage Flow (TypeScript)](#full-usage-flow-typescript)
-10. [Error Codes Reference](#error-codes-reference)
-11. [Storage Structure](#storage-structure)
-12. [Docker & Deployment](#docker--deployment)
+10. [Full Usage Flow (TypeScript)](#full-usage-flow-typescript)
+11. [Error Codes Reference](#error-codes-reference)
+12. [Storage Structure](#storage-structure)
+13. [Docker & Deployment](#docker--deployment)
 
 ---
 
@@ -56,7 +57,8 @@ Beamdrop is a self-hosted file sharing server that provides:
 - **Web UI** A modern React-based file browser for interactive management
 - **File Management API** REST endpoints for uploading, downloading, moving, copying, renaming, and searching files
 - **S3-Compatible API** Bucket/object storage with HMAC-SHA256 signed authentication
-- **Shareable Links** Generate unique URLs to share files with optional password protection and expiry
+- **Shareable Links** Generate unique URLs to share files and folders with optional password protection, expiry presets, and access counters
+- **Usage Dashboard** Built-in dashboard showing storage used, bandwidth (bytes uploaded/downloaded), and requests made in real time
 - **Real-time Stats** WebSocket-powered live dashboard
 - **Health Probes** Kubernetes-compatible liveness, readiness, and startup probes
 - **Prometheus Metrics** Full observability with request counters, latency histograms, and storage gauges
@@ -991,7 +993,14 @@ curl https://server/api/v1/presign \
 
 ## Shareable Links
 
-Shareable links allow sharing files/folders via unique URLs with optional password protection and expiry. They bypass normal authentication.
+Shareable links allow sharing files **and folders** via unique URLs with optional password protection and expiry. They bypass normal authentication.
+
+The web UI provides polished management for share links:
+- **Folder icon** vs file icon to distinguish share types at a glance
+- **Live expiry countdown** (e.g. "2d 4h left" or "Expired") with tooltip showing exact date
+- **Full path tooltip** — hover over any item to see the complete path
+- **Public badge** — clearly shows links without any restrictions
+- **Preset expiry options** — 1 hour, 24 hours, 7 days, 30 days, or custom hours
 
 ### Create Link
 
@@ -1045,10 +1054,13 @@ GET /api/shares/list
     "hasPassword": true,
     "expiresAt": "2025-01-16T10:30:00Z",
     "accessCount": 5,
-    "createdAt": "2025-01-15T10:30:00Z"
+    "createdAt": "2025-01-15T10:30:00Z",
+    "isDir": false
   }
 ]
 ```
+
+> **Note:** `isDir` is `true` when the shared path is a folder. The web UI uses this to display a folder or file icon next to each share.
 
 ### Delete Link
 
@@ -1134,6 +1146,77 @@ GET /api/shares/access/{token}?mode=inline
 
 ---
 
+## Usage Dashboard
+
+Beamdrop includes a built-in usage dashboard accessible at `/dashboard` in the web UI. It provides real-time visibility into storage consumption, transfer activity, and system resource usage.
+
+### Dashboard Metrics
+
+The dashboard is powered by the WebSocket stats endpoint (`/ws/stats`) and displays:
+
+| Metric | Description |
+|---|---|
+| **Total Requests** | Cumulative API requests since server start |
+| **Downloads** | Number of file download operations |
+| **Uploads** | Number of file upload operations |
+| **Server Uptime** | Time since last server start |
+| **Data Uploaded** | Total bytes received from clients |
+| **Data Downloaded** | Total bytes served to clients |
+| **Total Transfer** | Combined inbound + outbound bandwidth |
+| **Disk Storage** | Storage used vs total disk capacity (with percentage bar) |
+| **Memory Usage** | Go runtime memory in use vs allocated |
+| **CPU / Runtime** | CPU cores and active goroutines |
+
+### Stats API
+
+The raw stats can also be retrieved via REST:
+
+```
+GET /stats
+```
+
+**Response:**
+
+```json
+{
+  "id": 1,
+  "downloads": 42,
+  "requests": 1024,
+  "uploads": 18,
+  "bytesUploaded": 524288000,
+  "bytesDownloaded": 1073741824,
+  "startTime": "2024-01-15T10:00:00Z"
+}
+```
+
+### WebSocket Stats (with bandwidth)
+
+Connect to the WebSocket endpoint to receive live updates including bandwidth data:
+
+```
+GET /ws/stats  (Upgrade: websocket)
+```
+
+The server pushes a JSON message immediately on connect and then every minute:
+
+```json
+{
+  "downloads": 42,
+  "requests": 1024,
+  "uploads": 18,
+  "bytesUploaded": 524288000,
+  "bytesDownloaded": 1073741824,
+  "startTime": "2024-01-15T10:00:00Z",
+  "system": {
+    "memory": { "total": 8589934592, "available": 6442450944, "used": 2147483648, "percent": 25.0 },
+    "disk":   { "total": 107374182400, "free": 53687091200, "used": 53687091200, "percent": 50.0 },
+    "cpu":    { "cores": 4, "goroutines": 12 }
+  }
+}
+```
+
+---
+
 ## Health & Monitoring
 
 ### Health Endpoints
@@ -1200,6 +1283,8 @@ ws://localhost:7777/ws/stats
   "downloads": 42,
   "requests": 1234,
   "uploads": 15,
+  "bytesUploaded": 524288000,
+  "bytesDownloaded": 1073741824,
   "startTime": "2025-01-15T08:00:00Z",
   "system": {
     "memory": { "total": 16000000000, "used": 8000000000, "percent": 50.0 },
@@ -1208,6 +1293,8 @@ ws://localhost:7777/ws/stats
   }
 }
 ```
+
+> The `bytesUploaded` and `bytesDownloaded` fields track cumulative transfer bytes since server start.
 
 ### Logs
 

@@ -225,10 +225,15 @@ const Index = () => {
             (image) =>
               new Promise<void>((resolve, reject) => {
                 const formData = new FormData();
+                const uniqueSuffix =
+                  typeof crypto !== "undefined" &&
+                  typeof crypto.randomUUID === "function"
+                    ? crypto.randomUUID()
+                    : `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
                 const fileName =
                   image.name && image.name.trim() !== ""
                     ? image.name
-                    : `clipboard-${Date.now()}.png`;
+                    : `clipboard-${uniqueSuffix}.png`;
                 formData.append("file", image, fileName);
                 if (currentPath !== ".") {
                   formData.append("path", currentPath);

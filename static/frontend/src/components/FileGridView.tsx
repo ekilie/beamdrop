@@ -35,6 +35,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { toast } from "@/hooks/use-toast";
 
 interface FileItem {
   name: string;
@@ -120,15 +121,27 @@ export const FileGridView: React.FC<FileGridViewProps> = ({
     event: React.MouseEvent,
   ) => {
     event.stopPropagation();
-    const folderPath =
-      currentPath === "." ? folderName : `${currentPath}/${folderName}`;
-    const link = document.createElement("a");
-    link.href = `/download?file=${encodeURIComponent(folderPath)}`;
-    link.download = `${folderName}.zip`;
-    link.style.display = "none";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    try {
+      const folderPath =
+        currentPath === "." ? folderName : `${currentPath}/${folderName}`;
+      const link = document.createElement("a");
+      link.href = `/download?file=${encodeURIComponent(folderPath)}`;
+      link.download = `${folderName}.zip`;
+      link.style.display = "none";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      toast({
+        title: "Download Started",
+        description: `${folderName}.zip download initiated.`,
+      });
+    } catch {
+      toast({
+        title: "Error",
+        description: "Failed to download folder as ZIP",
+        variant: "destructive",
+      });
+    }
   };
 
   const getFilePreviewBg = (fileName: string) => {

@@ -2,8 +2,10 @@ package api
 
 import (
 	"encoding/json"
+	"fmt"
 	"log/slog"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/ekilie/beamdrop/beam"
@@ -93,13 +95,19 @@ func (h *KeysHandler) createKey(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	permissions, err := normalizePermissions(req.Permissions)
+	if err != nil {
+		errors.InvalidRequest(err.Error()).WriteHTTPResponse(w)
+		return
+	}
+
 	var expiresIn *time.Duration
 	if req.ExpiresIn != nil {
 		d := time.Duration(*req.ExpiresIn) * time.Second
 		expiresIn = &d
 	}
 
-	apiKey, secretKey, err := db.CreateAPIKey(req.Name, req.Permissions, req.BucketScope, expiresIn)
+	apiKey, secretKey, err := db.CreateAPIKey(req.Name, permissions, req.BucketScope, expiresIn)
 	if err != nil {
 		slog.Error("Failed to create API key", "error", err)
 		errors.DatabaseError("Failed to create API key").WithCause(err).WriteHTTPResponse(w)
@@ -142,4 +150,38 @@ func (h *KeysHandler) deleteKey(w http.ResponseWriter, r *http.Request) {
 
 	slog.Info("API key deleted", "access_key_id", accessKeyID)
 	w.WriteHeader(http.StatusNoContent)
+}
+
+func normalizePermissions(raw string) (string, error) {
+	trimmed := strings.TrimSpace(raw)
+	if trimmed == "" {
+		return "read,write", nil
+	}
+
+	hasRead := false
+	hasWrite := false
+
+	for _, part := range strings.Split(trimmed, ",") {
+		switch strings.ToLower(strings.TrimSpace(part)) {
+		case "read":
+			hasRead = true
+		case "write":
+			hasWrite = true
+		case "":
+			// Ignore empty entries.
+		default:
+			return "", fmt.Errorf("permissions must only include read and/or write")
+		}
+	}
+
+	if !hasRead && !hasWrite {
+		return "", fmt.Errorf("permissions must include read and/or write")
+	}
+	if hasRead && hasWrite {
+		return "read,write", nil
+	}
+	if hasRead {
+		return "read", nil
+	}
+	return "write", nil
 }

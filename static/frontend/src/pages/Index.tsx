@@ -217,6 +217,87 @@ const Index = () => {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [fetchFiles, searchTerm]);
 
+  const uploadClipboardImages = useCallback(
+    async (images: File[]) => {
+      try {
+        await Promise.all(
+          images.map(
+            (image) =>
+              new Promise<void>((resolve, reject) => {
+                const formData = new FormData();
+                const fileName =
+                  image.name && image.name.trim() !== ""
+                    ? image.name
+                    : `clipboard-${Date.now()}.png`;
+                formData.append("file", image, fileName);
+                if (currentPath !== ".") {
+                  formData.append("path", currentPath);
+                }
+
+                const xhr = new XMLHttpRequest();
+                xhr.open("POST", "/upload");
+                xhr.onload = () => {
+                  if (xhr.status >= 200 && xhr.status < 300) {
+                    resolve();
+                  } else {
+                    reject(new Error("Upload failed"));
+                  }
+                };
+                xhr.onerror = () => reject(new Error("Upload failed"));
+                xhr.send(formData);
+              }),
+          ),
+        );
+
+        fetchFiles();
+        toast({
+          title: "Upload Complete",
+          description:
+            images.length === 1
+              ? "Clipboard image uploaded."
+              : `${images.length} clipboard images uploaded.`,
+        });
+      } catch {
+        toast({
+          title: "Error",
+          description: "Failed to upload clipboard image",
+          variant: "destructive",
+        });
+      }
+    },
+    [currentPath, fetchFiles],
+  );
+
+  useEffect(() => {
+    const isEditableTarget = (target: EventTarget | null) => {
+      const element = target as HTMLElement | null;
+      if (!element) return false;
+      return !!element.closest("input, textarea, [contenteditable='true']");
+    };
+
+    const handlePaste = (event: ClipboardEvent) => {
+      if (isEditableTarget(event.target)) {
+        return;
+      }
+
+      const items = Array.from(event.clipboardData?.items ?? []);
+      const images = items
+        .filter((item) => item.kind === "file" && item.type.startsWith("image/"))
+        .map((item) => item.getAsFile())
+        .filter((file): file is File => !!file);
+
+      if (images.length === 0) {
+        return;
+      }
+
+      event.preventDefault();
+      void uploadClipboardImages(images);
+    };
+
+    window.addEventListener("paste", handlePaste);
+    return () => window.removeEventListener("paste", handlePaste);
+  }, [uploadClipboardImages]);
+
   const handleUploadSuccess = () => {
     fetchFiles();
     toast({
@@ -537,6 +618,10 @@ const Index = () => {
                     <p>
                       <kbd className="px-1 bg-muted rounded">Esc</kbd> Clear
                       search
+                    </p>
+                    <p>
+                      <kbd className="px-1 bg-muted rounded">⌘/Ctrl+V</kbd>{" "}
+                      Upload image from clipboard
                     </p>
                   </TooltipContent>
                 </Tooltip>

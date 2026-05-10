@@ -115,6 +115,22 @@ export const FileGridView: React.FC<FileGridViewProps> = ({
     }
   };
 
+  const downloadFolderAsZip = (
+    folderName: string,
+    event: React.MouseEvent,
+  ) => {
+    event.stopPropagation();
+    const folderPath =
+      currentPath === "." ? folderName : `${currentPath}/${folderName}`;
+    const link = document.createElement("a");
+    link.href = `/download?file=${encodeURIComponent(folderPath)}`;
+    link.download = `${folderName}.zip`;
+    link.style.display = "none";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   const getFilePreviewBg = (fileName: string) => {
     const ext = fileName.split(".").pop()?.toLowerCase();
     const imageExts = ["jpg", "jpeg", "png", "gif", "webp", "svg"];
@@ -265,6 +281,14 @@ export const FileGridView: React.FC<FileGridViewProps> = ({
                       >
                         <Download className="w-4 h-4 mr-2" />
                         Download
+                      </DropdownMenuItem>
+                    )}
+                    {file.isDir && (
+                      <DropdownMenuItem
+                        onClick={(e) => downloadFolderAsZip(file.name, e)}
+                      >
+                        <Download className="w-4 h-4 mr-2" />
+                        Download as ZIP
                       </DropdownMenuItem>
                     )}
                     <DropdownMenuItem onClick={(e) => onStar(file.name, e)}>

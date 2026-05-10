@@ -247,6 +247,35 @@ const FileTable: React.FC<FileTableProps> = ({
     }
   };
 
+  const downloadFolderAsZip = async (
+    folderName: string,
+    event: React.MouseEvent,
+  ) => {
+    event.stopPropagation();
+    try {
+      const link = document.createElement("a");
+      const folderPath =
+        currentPath === "." ? folderName : `${currentPath}/${folderName}`;
+      link.href = `/download?file=${encodeURIComponent(folderPath)}`;
+      link.download = `${folderName}.zip`;
+      link.style.display = "none";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      toast({
+        title: "Download Started",
+        description: `${folderName}.zip download initiated.`,
+      });
+    } catch {
+      toast({
+        title: "Error",
+        description: "Failed to download folder as ZIP",
+        variant: "destructive",
+      });
+    }
+  };
+
   const getSortIcon = (field: SortField) => {
     if (sortField !== field) {
       return <ArrowUpDown className="w-3 h-3 text-muted-foreground" />;
@@ -470,6 +499,14 @@ const FileTable: React.FC<FileTableProps> = ({
                             >
                               <Download className="w-4 h-4 mr-2" />
                               Download
+                            </DropdownMenuItem>
+                          )}
+                          {file.isDir && (
+                            <DropdownMenuItem
+                              onClick={(e) => downloadFolderAsZip(file.name, e)}
+                            >
+                              <Download className="w-4 h-4 mr-2" />
+                              Download as ZIP
                             </DropdownMenuItem>
                           )}
                           <DropdownMenuItem

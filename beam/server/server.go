@@ -77,7 +77,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	handler = s.authMiddleware.Middleware(handler)
 
 	// Apply CSRF protection (after auth, before rate limiting)
-	handler = middleware.CSRFProtection()(handler)
+	handler = middleware.CSRFProtection(s.flags.DisableCSRF)(handler)
 
 	// Apply rate limiting middleware
 	handler = s.rateLimiter.Middleware(handler)
@@ -91,7 +91,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	// Apply security headers middleware
 	enableHSTS := s.flags.TLSCert != "" && s.flags.TLSKey != ""
-	handler = middleware.SecurityHeaders(enableHSTS)(handler)
+	handler = middleware.SecurityHeaders(enableHSTS, s.flags.DisableCSP)(handler)
 
 	// Apply request context middleware (outermost – sets X-Request-ID and enriches context)
 	handler = reqctx.Middleware()(handler)

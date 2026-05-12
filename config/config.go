@@ -60,22 +60,25 @@ type Config struct {
 }
 
 type Flags struct {
-	SharedDir       string
-	QR              bool
-	Port            int
-	Help            bool
-	Password        string
-	TLSCert         string
-	TLSKey          string
-	AllowedOrigins  string        // Comma-separated list of allowed CORS origins
-	APIAuth         bool          // Enable API key authentication for S3-like API
-	LogLevel        string        // "debug", "info", "warn", "error" (default "info")
-	RateLimit       int           // General rate limit in requests/min (0 = disabled)
-	ShutdownTimeout time.Duration // Graceful shutdown timeout (default 30s)
-	DBPath          string        // Path to database file (default: <sharedDir>/.beamdrop/beamdrop.db)
-	MaxStorage      int64         // Maximum total storage in bytes (0 = unlimited)
-	TrustedProxies  string        // Comma-separated list of trusted proxy IPs/CIDRs
-	JWTSecret       string        // Explicit JWT signing secret (min 32 bytes; empty = auto-generate and persist)
+	SharedDir          string
+	QR                 bool
+	Port               int
+	Help               bool
+	Password           string
+	TLSCert            string
+	TLSKey             string
+	AllowedOrigins     string        // Comma-separated list of allowed CORS origins
+	APIAuth            bool          // Enable API key authentication for S3-like API
+	LogLevel           string        // "debug", "info", "warn", "error" (default "info")
+	RateLimit          int           // General rate limit in requests/min (0 = disabled)
+	ShutdownTimeout    time.Duration // Graceful shutdown timeout (default 30s)
+	DBPath             string        // Path to database file (default: <sharedDir>/.beamdrop/beamdrop.db)
+	MaxStorage         int64         // Maximum total storage in bytes (0 = unlimited)
+	TrustedProxies     string        // Comma-separated list of trusted proxy IPs/CIDRs
+	JWTSecret          string        // Explicit JWT signing secret (min 32 bytes; empty = auto-generate and persist)
+	DisableCSP         bool          // Skip setting Content-Security-Policy header
+	DisableCSRF        bool          // Skip CSRF token validation
+	DisableSystemStats bool          // Hide server disk/memory/CPU stats from the usage dashboard
 }
 
 func GetDBPath() string {

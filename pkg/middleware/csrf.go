@@ -12,9 +12,15 @@ import (
 // requests to include that token in the X-CSRF-Token header.
 // Safe methods (GET, HEAD, OPTIONS) are exempt.
 // Requests with non-browser content types or API auth headers are exempt.
-func CSRFProtection() func(http.Handler) http.Handler {
+// When disabled is true, all requests pass through without CSRF validation.
+func CSRFProtection(disabled bool) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if disabled {
+				next.ServeHTTP(w, r)
+				return
+			}
+
 			// Safe methods are exempt
 			if r.Method == http.MethodGet || r.Method == http.MethodHead || r.Method == http.MethodOptions {
 				ensureCSRFCookie(w, r)

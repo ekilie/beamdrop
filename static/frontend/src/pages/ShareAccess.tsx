@@ -19,6 +19,7 @@ import {
   Loader2,
   AlertCircle,
   FileQuestion,
+  Zap,
 } from "lucide-react";
 import { getFileIcon } from "@/lib/utils";
 
@@ -110,6 +111,9 @@ function FilePreview({
   return (
     <div className="min-h-screen bg-background p-4">
       <div className="max-w-4xl mx-auto space-y-4">
+        {/* BeamDrop branding */}
+        <ShareBranding />
+
         {/* File info header */}
         <Card>
           <CardHeader>
@@ -206,7 +210,53 @@ function FilePreview({
             )}
           </CardContent>
         </Card>
+
+        {/* Footer branding */}
+        <ShareFooter />
       </div>
+    </div>
+  );
+}
+
+function ShareBranding() {
+  return (
+    <div className="flex items-center justify-center gap-2 py-2">
+      <div className="bg-gradient-to-br from-primary to-primary/80 p-1.5 rounded-lg">
+        <Zap className="w-4 h-4 text-primary-foreground" />
+      </div>
+      <span className="font-mono font-bold text-lg uppercase tracking-wider bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent">
+        BeamDrop
+      </span>
+    </div>
+  );
+}
+
+function ShareBrandingInline() {
+  return (
+    <div className="flex items-center gap-1.5 mt-2">
+      <Zap className="w-3 h-3 text-primary" />
+      <span className="font-mono text-xs uppercase tracking-wide text-muted-foreground">
+        BeamDrop
+      </span>
+    </div>
+  );
+}
+
+function ShareFooter() {
+  return (
+    <div className="flex items-center justify-center gap-2 py-4 mt-4">
+      <div className="w-1.5 h-1.5 rounded-full bg-primary/50 animate-pulse" />
+      <span className="text-xs font-mono text-muted-foreground uppercase tracking-wide">
+        Shared via{" "}
+        <a
+          href="https://github.com/ekilie/beamdrop"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-primary hover:underline"
+        >
+          BeamDrop
+        </a>
+      </span>
     </div>
   );
 }
@@ -321,6 +371,7 @@ export default function ShareAccess() {
           <p className="text-muted-foreground font-mono uppercase text-sm">
             Loading shared content...
           </p>
+          <ShareBrandingInline />
         </div>
       </div>
     );
@@ -329,24 +380,28 @@ export default function ShareAccess() {
   if (error && !requiresPassword) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background p-4">
-        <Card className="w-full max-w-md">
-          <CardHeader>
-            <div className="flex items-center gap-2 text-destructive">
-              <AlertCircle className="w-6 h-6" />
-              <CardTitle>Access Error</CardTitle>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground mb-4">{error}</p>
-            <Button
-              onClick={() => navigate({ to: "/" })}
-              variant="outline"
-              className="w-full"
-            >
-              Go to Home
-            </Button>
-          </CardContent>
-        </Card>
+        <div className="w-full max-w-md space-y-6">
+          <ShareBranding />
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-2 text-destructive">
+                <AlertCircle className="w-6 h-6" />
+                <CardTitle>Access Error</CardTitle>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <p className="text-muted-foreground mb-4">{error}</p>
+              <Button
+                onClick={() => navigate({ to: "/" })}
+                variant="outline"
+                className="w-full"
+              >
+                Go to Home
+              </Button>
+            </CardContent>
+          </Card>
+          <ShareFooter />
+        </div>
       </div>
     );
   }
@@ -354,36 +409,40 @@ export default function ShareAccess() {
   if (requiresPassword && !fileInfo?.files && !fileInfo?.isFile) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background p-4">
-        <Card className="w-full max-w-md">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Lock className="w-5 h-5" />
-              Password Required
-            </CardTitle>
-            <CardDescription>
-              This shared link is protected. Please enter the password to access
-              it.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handlePasswordSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Enter password"
-                  autoFocus
-                />
-              </div>
-              <Button type="submit" className="w-full">
-                Access Shared Content
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
+        <div className="w-full max-w-md space-y-6">
+          <ShareBranding />
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Lock className="w-5 h-5" />
+                Password Required
+              </CardTitle>
+              <CardDescription>
+                This shared link is protected. Please enter the password to
+                access it.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handlePasswordSubmit} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="password">Password</Label>
+                  <Input
+                    id="password"
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Enter password"
+                    autoFocus
+                  />
+                </div>
+                <Button type="submit" className="w-full">
+                  Access Shared Content
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
+          <ShareFooter />
+        </div>
       </div>
     );
   }
@@ -399,7 +458,8 @@ export default function ShareAccess() {
   if (fileInfo?.isDir && fileInfo.files) {
     return (
       <div className="min-h-screen bg-background p-4">
-        <div className="max-w-4xl mx-auto">
+        <div className="max-w-4xl mx-auto space-y-4">
+          <ShareBranding />
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -448,11 +508,7 @@ export default function ShareAccess() {
             </CardContent>
           </Card>
 
-          <div className="mt-4 text-center">
-            <Button onClick={() => navigate({ to: "/" })} variant="outline">
-              Go to Beamdrop
-            </Button>
-          </div>
+          <ShareFooter />
         </div>
       </div>
     );

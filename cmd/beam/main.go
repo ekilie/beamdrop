@@ -133,6 +133,9 @@ func main() {
 	maxStorageStr := flag.String("max-storage", "0", "Maximum total storage, e.g. 500MB, 10GB, 1TB (0 = unlimited)")
 	trustedProxies := flag.String("trusted-proxies", "", "Comma-separated list of trusted proxy IPs/CIDRs for X-Forwarded-For (empty = trust direct connection only)")
 	jwtSecret := flag.String("jwt-secret", "", "JWT signing secret (min 32 bytes; empty = auto-generate and persist to <dir>/.beamdrop/jwt_secret)")
+	disableCSP := flag.Bool("disable-csp", false, "Disable Content-Security-Policy header (useful behind CDN/proxy like Cloudflare)")
+	disableCSRF := flag.Bool("disable-csrf", false, "Disable CSRF token validation (useful behind CDN/proxy that modifies cookies)")
+	disableSystemStats := flag.Bool("disable-system-stats", false, "Hide server disk/memory/CPU stats from the usage dashboard")
 
 	// NOTE:Here i default it to 0 so when it zero we know that the flag wasnt passed
 	// Since the flag is a non-boolean value
@@ -167,6 +170,9 @@ func main() {
 	envStr("max-storage", "BEAMDROP_MAX_STORAGE", maxStorageStr)
 	envStr("trusted-proxies", "BEAMDROP_TRUSTED_PROXIES", trustedProxies)
 	envStr("jwt-secret", "BEAMDROP_JWT_SECRET", jwtSecret)
+	envBool("disable-csp", "BEAMDROP_DISABLE_CSP", disableCSP)
+	envBool("disable-csrf", "BEAMDROP_DISABLE_CSRF", disableCSRF)
+	envBool("disable-system-stats", "BEAMDROP_DISABLE_SYSTEM_STATS", disableSystemStats)
 
 	// Parse max-storage from human-readable format
 	maxStorage, err := parseByteSize(*maxStorageStr)
@@ -205,22 +211,25 @@ func main() {
 	db.AutoMigrate()
 
 	flags := config.Flags{
-		SharedDir:       *sharedDir,
-		QR:              *QR,
-		Help:            *help,
-		Password:        *password,
-		Port:            *port,
-		TLSCert:         *tlsCert,
-		TLSKey:          *tlsKey,
-		AllowedOrigins:  *allowedOrigins,
-		APIAuth:         *apiAuth,
-		LogLevel:        *logLevel,
-		RateLimit:       *rateLimit,
-		ShutdownTimeout: *shutdownTimeout,
-		DBPath:          *dbPath,
-		MaxStorage:      maxStorage,
-		TrustedProxies:  *trustedProxies,
-		JWTSecret:       *jwtSecret,
+		SharedDir:          *sharedDir,
+		QR:                 *QR,
+		Help:               *help,
+		Password:           *password,
+		Port:               *port,
+		TLSCert:            *tlsCert,
+		TLSKey:             *tlsKey,
+		AllowedOrigins:     *allowedOrigins,
+		APIAuth:            *apiAuth,
+		LogLevel:           *logLevel,
+		RateLimit:          *rateLimit,
+		ShutdownTimeout:    *shutdownTimeout,
+		DBPath:             *dbPath,
+		MaxStorage:         maxStorage,
+		TrustedProxies:     *trustedProxies,
+		JWTSecret:          *jwtSecret,
+		DisableCSP:         *disableCSP,
+		DisableCSRF:        *disableCSRF,
+		DisableSystemStats: *disableSystemStats,
 	}
 
 	if flag.NArg() > 0 {

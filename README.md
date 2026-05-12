@@ -76,6 +76,7 @@ beamdrop -dir /path/to/share -api-auth -tls-cert cert.pem -tls-key key.pem
   - **bcrypt password hashing** for shareable link passwords
   - **Cookie-only JWT storage** (no localStorage) with `HttpOnly` + `SameSite=Strict`
   - **Trusted proxy support** for accurate IP detection behind reverse proxies
+  - **CDN/proxy compatibility flags** — disable CSP and CSRF for deployments behind Cloudflare or similar proxies
 - **Structured logging**:
   - Colored, human-readable terminal output
   - Structured JSON log file at `<dir>/.beamdrop/beamdrop.log`

@@ -92,6 +92,9 @@ Restart=always
 RestartSec=5
 Environment=BEAMDROP_PORT=7777
 Environment=BEAMDROP_API_AUTH=true
+# Uncomment if running behind Cloudflare or similar CDN/proxy:
+# Environment=BEAMDROP_DISABLE_CSP=true
+# Environment=BEAMDROP_DISABLE_CSRF=true
 
 [Install]
 WantedBy=multi-user.target

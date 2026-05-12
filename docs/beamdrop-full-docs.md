@@ -109,41 +109,47 @@ docker compose up -d
 
 ### Command Line Flags
 
-| Flag                | Description                                                               | Default                    |
-| ------------------- | ------------------------------------------------------------------------- | -------------------------- |
-| `-dir`              | Directory to share                                                        | `.` (current)              |
-| `-port`             | Server port                                                               | Auto-detect (prefers 7777) |
-| `-p`                | Password for web authentication                                           | None (disabled)            |
-| `-api-auth`         | Enable API key authentication for S3 API                                  | `false`                    |
-| `-tls-cert`         | Path to TLS certificate file                                              | None                       |
-| `-tls-key`          | Path to TLS private key file                                              | None                       |
-| `-allowed-origins`  | Comma-separated CORS origins                                              | None (CORS disabled)       |
-| `-db-path`          | Path to database file or directory (directory auto-appends `beamdrop.db`) | `~/.beamdrop/beamdrop.db`  |
-| `-rate-limit`       | Requests/min per IP (0 = disabled)                                        | `100`                      |
-| `-trusted-proxies`  | Comma-separated CIDR ranges of trusted reverse proxies                    | None                       |
-| `-max-storage`      | Maximum total storage, e.g. 500MB, 10GB, 1TB (0 = unlimited)              | `0`                        |
-| `-log-level`        | `debug`, `info`, `warn`, `error`                                          | `info`                     |
-| `-qr`               | Enable QR code display                                                    | `false`                    |
-| `-shutdown-timeout` | Graceful shutdown timeout                                                 | `30s`                      |
-| `-v`                | Show version                                                              |                            |
-| `-h`                | Show help                                                                 |                            |
+| Flag                    | Description                                                               | Default                    |
+| ----------------------- | ------------------------------------------------------------------------- | -------------------------- |
+| `-dir`                  | Directory to share                                                        | `.` (current)              |
+| `-port`                 | Server port                                                               | Auto-detect (prefers 7777) |
+| `-p`                    | Password for web authentication                                           | None (disabled)            |
+| `-api-auth`             | Enable API key authentication for S3 API                                  | `false`                    |
+| `-tls-cert`             | Path to TLS certificate file                                              | None                       |
+| `-tls-key`              | Path to TLS private key file                                              | None                       |
+| `-allowed-origins`      | Comma-separated CORS origins                                              | None (CORS disabled)       |
+| `-db-path`              | Path to database file or directory (directory auto-appends `beamdrop.db`) | `~/.beamdrop/beamdrop.db`  |
+| `-rate-limit`           | Requests/min per IP (0 = disabled)                                        | `100`                      |
+| `-trusted-proxies`      | Comma-separated CIDR ranges of trusted reverse proxies                    | None                       |
+| `-max-storage`          | Maximum total storage, e.g. 500MB, 10GB, 1TB (0 = unlimited)              | `0`                        |
+| `-log-level`            | `debug`, `info`, `warn`, `error`                                          | `info`                     |
+| `-qr`                   | Enable QR code display                                                    | `false`                    |
+| `-shutdown-timeout`     | Graceful shutdown timeout                                                 | `30s`                      |
+| `-disable-csp`          | Disable Content-Security-Policy header (for CDN/proxy compatibility)      | `false`                    |
+| `-disable-csrf`         | Disable CSRF token validation (for CDN/proxy compatibility)               | `false`                    |
+| `-disable-system-stats` | Hide server disk/memory/CPU stats from the usage dashboard                | `false`                    |
+| `-v`                    | Show version                                                              |                            |
+| `-h`                    | Show help                                                                 |                            |
 
 ### Environment Variables (Docker)
 
-| Variable                   | Default | Description                                                               |
-| -------------------------- | ------- | ------------------------------------------------------------------------- |
-| `BEAMDROP_PORT`            | `7777`  | Server port                                                               |
-| `BEAMDROP_PASSWORD`        |         | Enable password auth                                                      |
-| `BEAMDROP_LOG_LEVEL`       | `info`  | Log level                                                                 |
-| `BEAMDROP_RATE_LIMIT`      | `100`   | Requests/min per IP                                                       |
-| `BEAMDROP_MAX_STORAGE`     | `0`     | Max storage, e.g. 500MB, 10GB, 1TB (0 = unlimited)                        |
-| `BEAMDROP_API_AUTH`        | `false` | Enable S3 API key auth                                                    |
-| `BEAMDROP_QR`              | `false` | Enable QR code display                                                    |
-| `BEAMDROP_ALLOWED_ORIGINS` |         | CORS origins                                                              |
-| `BEAMDROP_DB_PATH`         |         | Path to database file or directory (directory auto-appends `beamdrop.db`) |
-| `BEAMDROP_TLS_CERT`        |         | TLS certificate path                                                      |
-| `BEAMDROP_TLS_KEY`         |         | TLS private key path                                                      |
-| `BEAMDROP_TRUSTED_PROXIES` |         | Comma-separated CIDR ranges of trusted reverse proxies                    |
+| Variable                        | Default | Description                                                               |
+| ------------------------------- | ------- | ------------------------------------------------------------------------- |
+| `BEAMDROP_PORT`                 | `7777`  | Server port                                                               |
+| `BEAMDROP_PASSWORD`             |         | Enable password auth                                                      |
+| `BEAMDROP_LOG_LEVEL`            | `info`  | Log level                                                                 |
+| `BEAMDROP_RATE_LIMIT`           | `100`   | Requests/min per IP                                                       |
+| `BEAMDROP_MAX_STORAGE`          | `0`     | Max storage, e.g. 500MB, 10GB, 1TB (0 = unlimited)                        |
+| `BEAMDROP_API_AUTH`             | `false` | Enable S3 API key auth                                                    |
+| `BEAMDROP_QR`                   | `false` | Enable QR code display                                                    |
+| `BEAMDROP_ALLOWED_ORIGINS`      |         | CORS origins                                                              |
+| `BEAMDROP_DB_PATH`              |         | Path to database file or directory (directory auto-appends `beamdrop.db`) |
+| `BEAMDROP_TLS_CERT`             |         | TLS certificate path                                                      |
+| `BEAMDROP_TLS_KEY`              |         | TLS private key path                                                      |
+| `BEAMDROP_TRUSTED_PROXIES`      |         | Comma-separated CIDR ranges of trusted reverse proxies                    |
+| `BEAMDROP_DISABLE_CSP`          | `false` | Disable Content-Security-Policy header                                    |
+| `BEAMDROP_DISABLE_CSRF`         | `false` | Disable CSRF token validation                                             |
+| `BEAMDROP_DISABLE_SYSTEM_STATS` | `false` | Hide server disk/memory/CPU stats from usage dashboard                    |
 
 ### Quick Start Examples
 
@@ -159,6 +165,9 @@ beamdrop -dir /path/to/share -api-auth
 
 # Full production setup
 beamdrop -dir /data -p secret -api-auth -tls-cert cert.pem -tls-key key.pem -rate-limit 200
+
+# Behind Cloudflare (disable CSP and CSRF that conflict with proxy)
+beamdrop -dir /data -p secret -api-auth -disable-csp -disable-csrf
 ```
 
 ### Upload Limits

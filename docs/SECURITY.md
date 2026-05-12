@@ -272,6 +272,12 @@ beamdrop -dir /path/to/share -log-level debug
       Comma-separated CIDR ranges of trusted reverse proxies (e.g. "10.0.0.0/8,172.16.0.0/12")
 -log-level string
       Log level: debug, info, warn, error (default "info")
+-disable-csp
+      Disable Content-Security-Policy header (useful behind CDN/proxy like Cloudflare)
+-disable-csrf
+      Disable CSRF token validation (useful behind CDN/proxy that modifies cookies)
+-disable-system-stats
+      Hide server disk/memory/CPU stats from the usage dashboard
 -qr
       Enable QR code generation
 -h
@@ -279,6 +285,35 @@ beamdrop -dir /path/to/share -log-level debug
 -v
       Show version information
 ```
+
+## CDN / Reverse Proxy Compatibility
+
+When running behind a CDN or reverse proxy like Cloudflare, two issues commonly arise:
+
+1. **CSP blocks injected scripts** — Cloudflare injects analytics scripts (e.g. `beacon.min.js`) that violate BeamDrop's `script-src 'self'` Content-Security-Policy.
+2. **CSRF validation fails** — The proxy modifies request headers or cookies, breaking the double-submit cookie CSRF check and causing `403 invalid CSRF token` errors.
+
+Use these flags to work around these issues:
+
+```bash
+# Disable CSP header (allows CDN-injected scripts)
+beamdrop -dir /data -disable-csp
+
+# Disable CSRF validation (fixes 403 errors behind proxies that modify cookies)
+beamdrop -dir /data -disable-csrf
+
+# Both (typical Cloudflare deployment)
+beamdrop -dir /data -disable-csp -disable-csrf
+```
+
+Or via environment variables:
+
+```bash
+BEAMDROP_DISABLE_CSP=true
+BEAMDROP_DISABLE_CSRF=true
+```
+
+> **Warning:** Only disable these protections when running behind a trusted proxy that provides equivalent security. Disabling CSRF on a publicly exposed instance without proxy-level protection weakens security.
 
 ## CSRF Protection
 
@@ -370,14 +405,15 @@ JWT tokens are stored exclusively in `HttpOnly`, `SameSite=Strict` cookies. The 
 1. **Keep CORS disabled** unless you specifically need cross-origin access
 2. **Use TLS in production** to encrypt data in transit
 3. **Use strong passwords** with the `-p` flag for authentication
-4. **Restrict allowed origins** to only trusted domains when enabling CORS
-5. **Use valid TLS certificates** in production (e.g., from Let's Encrypt)
-6. **Keep rate limiting enabled** the default of 100 req/min is suitable for most use cases
-7. **Monitor logs** check `<dir>/.beamdrop/beamdrop.log` for rate limit warnings and suspicious activity
-8. **Keep the software updated** to get the latest security patches
-9. **Use short-lived presigned URLs** prefer 1–24 hour expiry for download links; never rely on very long expiry times as they break on API key rotation. For individually revocable links, use the server-side pretty presigned URL registry (`POST /api/v1/presign`)
-10. **Rotate API keys periodically** create a new key, update your application, then delete the old key; be aware this invalidates all client-side HMAC presigned URLs generated with the old key (server-side pretty URLs are not affected by key rotation)
-11. **Prefer server-side pretty presigned URLs for sensitive content** they support download limits, individual revocation, and download tracking, giving you more control than client-side HMAC URLs
+4. **Only use `-disable-csp` and `-disable-csrf` behind a trusted proxy** — these flags weaken browser-side protections and should only be used when a CDN/proxy like Cloudflare provides equivalent security
+5. **Restrict allowed origins** to only trusted domains when enabling CORS
+6. **Use valid TLS certificates** in production (e.g., from Let's Encrypt)
+7. **Keep rate limiting enabled** the default of 100 req/min is suitable for most use cases
+8. **Monitor logs** check `<dir>/.beamdrop/beamdrop.log` for rate limit warnings and suspicious activity
+9. **Keep the software updated** to get the latest security patches
+10. **Use short-lived presigned URLs** prefer 1–24 hour expiry for download links; never rely on very long expiry times as they break on API key rotation. For individually revocable links, use the server-side pretty presigned URL registry (`POST /api/v1/presign`)
+11. **Rotate API keys periodically** create a new key, update your application, then delete the old key; be aware this invalidates all client-side HMAC presigned URLs generated with the old key (server-side pretty URLs are not affected by key rotation)
+12. **Prefer server-side pretty presigned URLs for sensitive content** they support download limits, individual revocation, and download tracking, giving you more control than client-side HMAC URLs
 
 ## Examples
 

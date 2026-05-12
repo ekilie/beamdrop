@@ -45,24 +45,24 @@ func newUpgrader(allowedOrigins []string) websocket.Upgrader {
 
 // ExtendedStats contains both database stats and system stats
 type ExtendedStats struct {
-	Downloads       int                `json:"downloads"`
-	Requests        int                `json:"requests"`
-	Uploads         int                `json:"uploads"`
-	BytesUploaded   int64              `json:"bytesUploaded"`
-	BytesDownloaded int64              `json:"bytesDownloaded"`
-	StartTime       time.Time          `json:"startTime"`
-	System          system.SystemStats `json:"system"`
+	Downloads       int                 `json:"downloads"`
+	Requests        int                 `json:"requests"`
+	Uploads         int                 `json:"uploads"`
+	BytesUploaded   int64               `json:"bytesUploaded"`
+	BytesDownloaded int64               `json:"bytesDownloaded"`
+	StartTime       time.Time           `json:"startTime"`
+	System          *system.SystemStats `json:"system,omitempty"`
 }
 
 // StatsSocketHandler handles WebSocket connections for real-time stats updates
 // It fetches fresh stats from the database and system on each interval and sends them to the client
-func StatsSocketHandler(sharedDir string, allowedOrigins []string) http.HandlerFunc {
+func StatsSocketHandler(sharedDir string, allowedOrigins []string, disableSystemStats bool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		handleStatsSocket(w, r, sharedDir, allowedOrigins)
+		handleStatsSocket(w, r, sharedDir, allowedOrigins, disableSystemStats)
 	}
 }
 
-func handleStatsSocket(w http.ResponseWriter, r *http.Request, sharedDir string, allowedOrigins []string) {
+func handleStatsSocket(w http.ResponseWriter, r *http.Request, sharedDir string, allowedOrigins []string, disableSystemStats bool) {
 	wsUpgrader := newUpgrader(allowedOrigins)
 	conn, err := wsUpgrader.Upgrade(w, r, nil)
 	if err != nil {
@@ -87,16 +87,19 @@ func handleStatsSocket(w http.ResponseWriter, r *http.Request, sharedDir string,
 		if err != nil {
 			return ExtendedStats{}, err
 		}
-		sysStats := system.GetSystemStats(sharedDir)
-		return ExtendedStats{
+		ext := ExtendedStats{
 			Downloads:       dbStats.Downloads,
 			Requests:        dbStats.Requests,
 			Uploads:         dbStats.Uploads,
 			BytesUploaded:   dbStats.BytesUploaded,
 			BytesDownloaded: dbStats.BytesDownloaded,
 			StartTime:       dbStats.StartTime,
-			System:          sysStats,
-		}, nil
+		}
+		if !disableSystemStats {
+			sysStats := system.GetSystemStats(sharedDir)
+			ext.System = &sysStats
+		}
+		return ext, nil
 	}
 
 	// Sending initial stats immediately
@@ -172,9 +175,7 @@ func handleStatsSocket(w http.ResponseWriter, r *http.Request, sharedDir string,
 			slog.Debug("Sent updated stats via WebSocket",
 				"downloads", stats.Downloads,
 				"uploads", stats.Uploads,
-				"requests", stats.Requests,
-				"memory_pct", stats.System.Memory.Percent,
-				"disk_pct", stats.System.Disk.Percent)
+				"requests", stats.Requests)
 		}
 	}
 }

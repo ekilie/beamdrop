@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"archive/zip"
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -136,9 +137,7 @@ func (h *FileHandler) Upload(w http.ResponseWriter, r *http.Request) {
 
 	// Set max upload size limit on the request body
 	r.Body = http.MaxBytesReader(w, r.Body, config.MaxUploadSize)
-
-	file, header, err := r.FormFile("file")
-	if err != nil {
+	if err := r.ParseMultipartForm(config.MultipartFormMaxMemory); err != nil {
 		slog.Error("Invalid upload request", "error", err)
 		if err.Error() == "http: request body too large" {
 			errors.FileTooLarge(FormatFileSize(config.MaxUploadSize)).WriteHTTPResponse(w)
@@ -147,72 +146,111 @@ func (h *FileHandler) Upload(w http.ResponseWriter, r *http.Request) {
 		errors.InvalidRequest("Invalid upload").WriteHTTPResponse(w)
 		return
 	}
-	defer file.Close()
 
-	// Check file size against limit
-	if header.Size > config.MaxUploadSize {
-		slog.Error("File size exceeds limit", "size", header.Size, "limit", config.MaxUploadSize)
-		errors.FileTooLarge(FormatFileSize(config.MaxUploadSize)).WriteHTTPResponse(w)
-		return
+	uploadPath := strings.TrimSpace(r.FormValue("path"))
+	if uploadPath == "." {
+		uploadPath = ""
 	}
-
-	// Validate MIME type if restrictions are configured
-	if len(config.AllowedMIMETypes) > 0 {
-		// Read the first 512 bytes to detect content type
-		buffer := make([]byte, 512)
-		n, err := file.Read(buffer)
-		if err != nil && err != io.EOF {
-			slog.Error("Failed to read file for MIME detection", "error", err)
-			errors.IOError("Failed to process file").WithCause(err).WriteHTTPResponse(w)
-			return
-		}
-
-		// Detect MIME type
-		detectedMIME := http.DetectContentType(buffer[:n])
-		slog.Debug("Detected MIME type", "mime", detectedMIME, "file", header.Filename)
-
-		// Extract base MIME type (remove parameters like charset)
-		baseMIME := detectedMIME
-		if idx := strings.Index(detectedMIME, ";"); idx != -1 {
-			baseMIME = strings.TrimSpace(detectedMIME[:idx])
-		}
-
-		// Check if MIME type is allowed
-		allowed := slices.Contains(config.AllowedMIMETypes, baseMIME)
-
-		if !allowed {
-			slog.Error("File type not allowed", "mime", baseMIME, "file", header.Filename)
-			errors.InvalidMIMEType(baseMIME).WriteHTTPResponse(w)
-			return
-		}
-
-		// Reset file pointer to beginning after reading for MIME detection
-		if _, err := file.Seek(0, 0); err != nil {
-			slog.Error("Failed to reset file pointer", "error", err)
-			errors.IOError("Failed to process file").WithCause(err).WriteHTTPResponse(w)
-			return
-		}
-	}
-
-	filePath := h.sharedDir + "/" + header.Filename
-	slog.Info("Uploading file", "file", header.Filename, "size", FormatFileSize(header.Size))
-
-	// Use atomic write for crash safety
-	n, err := storage.AtomicWriteFile(filePath, file)
+	uploadDir, err := ResolvePath(h.sharedDir, uploadPath)
 	if err != nil {
-		slog.Error("Failed to write file", "path", filePath, "error", err)
-		errors.WriteFailed("Failed to save file").WithCause(err).WriteHTTPResponse(w)
+		errors.InvalidPath("Invalid upload path").WriteHTTPResponse(w)
+		return
+	}
+	if err := os.MkdirAll(uploadDir, 0755); err != nil {
+		slog.Error("Failed to create upload directory", "path", uploadDir, "error", err)
+		errors.IOError("Failed to prepare upload directory").WithCause(err).WriteHTTPResponse(w)
 		return
 	}
 
-	slog.Info("File uploaded successfully", "file", header.Filename, "bytes", n)
+	headers := append(r.MultipartForm.File["file"], r.MultipartForm.File["files"]...)
+	if len(headers) == 0 {
+		errors.InvalidRequest("Invalid upload").WriteHTTPResponse(w)
+		return
+	}
+
+	var totalUploaded int64
+	firstUploadedFile := ""
+	for _, header := range headers {
+		// Check file size against limit
+		if header.Size > config.MaxUploadSize {
+			slog.Error("File size exceeds limit", "size", header.Size, "limit", config.MaxUploadSize)
+			errors.FileTooLarge(FormatFileSize(config.MaxUploadSize)).WriteHTTPResponse(w)
+			return
+		}
+
+		file, err := header.Open()
+		if err != nil {
+			slog.Error("Failed to open uploaded file", "file", header.Filename, "error", err)
+			errors.InvalidRequest("Invalid upload").WriteHTTPResponse(w)
+			return
+		}
+
+		filename := filepath.Base(header.Filename)
+		filePath, err := ResolvePath(uploadDir, filename)
+		if err != nil {
+			file.Close()
+			errors.InvalidPath("Invalid file name").WriteHTTPResponse(w)
+			return
+		}
+
+		var reader io.Reader = file
+		// Validate MIME type if restrictions are configured
+		if len(config.AllowedMIMETypes) > 0 {
+			// Read the first 512 bytes to detect content type
+			buffer := make([]byte, 512)
+			n, err := file.Read(buffer)
+			if err != nil && err != io.EOF {
+				file.Close()
+				slog.Error("Failed to read file for MIME detection", "error", err)
+				errors.IOError("Failed to process file").WithCause(err).WriteHTTPResponse(w)
+				return
+			}
+
+			// Detect MIME type
+			detectedMIME := http.DetectContentType(buffer[:n])
+			slog.Debug("Detected MIME type", "mime", detectedMIME, "file", filename)
+
+			// Extract base MIME type (remove parameters like charset)
+			baseMIME := detectedMIME
+			if idx := strings.Index(detectedMIME, ";"); idx != -1 {
+				baseMIME = strings.TrimSpace(detectedMIME[:idx])
+			}
+
+			// Check if MIME type is allowed
+			if !slices.Contains(config.AllowedMIMETypes, baseMIME) {
+				file.Close()
+				slog.Error("File type not allowed", "mime", baseMIME, "file", filename)
+				errors.InvalidMIMEType(baseMIME).WriteHTTPResponse(w)
+				return
+			}
+
+			reader = io.MultiReader(bytes.NewReader(buffer[:n]), file)
+		}
+
+		slog.Info("Uploading file", "file", filename, "size", FormatFileSize(header.Size), "path", uploadPath)
+		// Use atomic write for crash safety
+		n, err := storage.AtomicWriteFile(filePath, reader)
+		file.Close()
+		if err != nil {
+			slog.Error("Failed to write file", "path", filePath, "error", err)
+			errors.WriteFailed("Failed to save file").WithCause(err).WriteHTTPResponse(w)
+			return
+		}
+
+		if firstUploadedFile == "" {
+			firstUploadedFile = filename
+		}
+		totalUploaded += n
+		slog.Info("File uploaded successfully", "file", filename, "bytes", n)
+	}
+
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	db.IncrementUploads()
-	db.AddBytesUploaded(n)
+	db.AddBytesUploaded(totalUploaded)
 	metrics.UploadsTotal.Inc()
-	metrics.UploadSizeBytes.Observe(float64(n))
-	json.NewEncoder(w).Encode(map[string]string{"message": "Uploaded", "file": header.Filename})
+	metrics.UploadSizeBytes.Observe(float64(totalUploaded))
+	json.NewEncoder(w).Encode(map[string]string{"message": "Uploaded", "file": firstUploadedFile})
 }
 
 // Helper function - kept for backward compatibility with file_operations.go

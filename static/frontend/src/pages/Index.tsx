@@ -314,9 +314,11 @@ const Index = () => {
   const handleDrop = async (droppedFiles: File[]) => {
     const formData = new FormData();
     droppedFiles.forEach((file) => {
-      formData.append("files", file);
+      formData.append("file", file);
     });
-    formData.append("path", currentPath);
+    if (currentPath !== ".") {
+      formData.append("path", currentPath);
+    }
 
     setDropUploadProgress(0);
 

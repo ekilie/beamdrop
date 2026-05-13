@@ -46,14 +46,14 @@ func (h *FileOperationsHandler) Move(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	targetPath, err := ResolvePath(h.sharedDir, req.TargetPath)
-	if err != nil {
-		errors.InvalidPath("Invalid target path").WriteHTTPResponse(w)
+	if _, err := os.Stat(sourcePath); os.IsNotExist(err) {
+		errors.FileNotFound(req.SourcePath).WriteHTTPResponse(w)
 		return
 	}
 
-	if _, err := os.Stat(sourcePath); os.IsNotExist(err) {
-		errors.FileNotFound(req.SourcePath).WriteHTTPResponse(w)
+	targetPath, err := resolveTargetPath(h.sharedDir, sourcePath, req.TargetPath)
+	if err != nil {
+		errors.InvalidPath("Invalid target path").WriteHTTPResponse(w)
 		return
 	}
 
@@ -94,11 +94,26 @@ func (h *FileOperationsHandler) Trash(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	targetPath := filepath.Join(trashBinPath, path.Base(req.SourcePath))
-	trashRelativePath := path.Join(".beamdrop_trash", path.Base(req.SourcePath))
+	targetPath, err := ResolvePath(trashBinPath, req.SourcePath)
+	if err != nil {
+		errors.InvalidPath("Invalid source path").WriteHTTPResponse(w)
+		return
+	}
+	trashRelativePath, err := filepath.Rel(h.sharedDir, targetPath)
+	if err != nil {
+		errors.InternalError("Failed to resolve trash path").WithCause(err).WriteHTTPResponse(w)
+		return
+	}
+	trashRelativePath = filepath.ToSlash(trashRelativePath)
 
 	if _, err := os.Stat(sourcePath); os.IsNotExist(err) {
 		errors.FileNotFound(req.SourcePath).WriteHTTPResponse(w)
+		return
+	}
+
+	if err := os.MkdirAll(filepath.Dir(targetPath), 0755); err != nil {
+		slog.Error("Failed to create trash directory", "path", filepath.Dir(targetPath), "error", err)
+		errors.IOError("Failed to move file to trash").WithCause(err).WriteHTTPResponse(w)
 		return
 	}
 
@@ -139,12 +154,6 @@ func (h *FileOperationsHandler) Copy(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	targetPath, err := ResolvePath(h.sharedDir, req.TargetPath)
-	if err != nil {
-		errors.InvalidPath("Invalid target path").WriteHTTPResponse(w)
-		return
-	}
-
 	sourceFile, err := os.Open(sourcePath)
 	if err != nil {
 		slog.Error("Failed to open source file", "path", sourcePath, "error", err)
@@ -152,6 +161,12 @@ func (h *FileOperationsHandler) Copy(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer sourceFile.Close()
+
+	targetPath, err := resolveTargetPath(h.sharedDir, sourcePath, req.TargetPath)
+	if err != nil {
+		errors.InvalidPath("Invalid target path").WriteHTTPResponse(w)
+		return
+	}
 
 	targetFile, err := os.Create(targetPath)
 	if err != nil {
@@ -495,4 +510,18 @@ func searchFiles(rootPath, query, relativePath string, results *[]File) error {
 
 		return nil
 	})
+}
+
+func resolveTargetPath(sharedDir, sourcePath, targetPath string) (string, error) {
+	resolvedTargetPath, err := ResolvePath(sharedDir, targetPath)
+	if err != nil {
+		return "", err
+	}
+
+	targetInfo, err := os.Stat(resolvedTargetPath)
+	if err == nil && targetInfo.IsDir() {
+		return filepath.Join(resolvedTargetPath, filepath.Base(sourcePath)), nil
+	}
+
+	return resolvedTargetPath, nil
 }

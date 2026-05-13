@@ -273,7 +273,9 @@ Content-Type: multipart/form-data
 **Form Fields:**
 | Field | Type | Description |
 |-------|------|-------------|
-| `file` | File | The file to upload (max 100 MB) |
+| `file` | File | The file to upload (max 100 MB). Can be repeated for multiple uploads. |
+| `files` | File | Alternate field name accepted for multi-file uploads. |
+| `path` | String | Optional destination folder path relative to the shared directory. |
 
 **Response:**
 

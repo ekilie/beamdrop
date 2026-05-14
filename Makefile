@@ -3,7 +3,9 @@
 # ── Variables ──────────────────────────────────────────────────────────────────
 APP_NAME    := beamdrop
 MODULE      := github.com/ekilie/beamdrop
-VERSION     ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo "dev")
+LATEST_TAG  := $(shell git tag --sort=-v:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$$' | head -1)
+NEXT_PATCH   = $(shell echo $(LATEST_TAG) | awk -F. '{printf "%s.%s.%d", $$1, $$2, $$3+1}')
+VERSION     ?= $(if $(LATEST_TAG),$(NEXT_PATCH),v0.1.0)
 COMMIT      := $(shell git rev-parse --short HEAD 2>/dev/null || echo "unknown")
 BUILD_DATE  := $(shell date -u '+%Y-%m-%dT%H:%M:%SZ')
 LDFLAGS     := -s -w \
@@ -99,15 +101,14 @@ checksums:
 
 # ── GitHub Release (requires gh CLI) ─────────────────────────────────────────
 # Usage:
-#   make release VERSION=v0.3.0          # create a new release (tags + pushes)
+#   make release                         # auto-bump patch version from latest tag (v0.2.1 → v0.2.2)
+#   make release VERSION=v0.3.0          # create a specific version release
 #   make release VERSION=v0.3.0 FORCE=1  # delete existing release first, then recreate
+
+# Auto-detect next patch version if VERSION is not set
+# (LATEST_TAG / NEXT_PATCH / VERSION are defined at the top of the Makefile)
+
 release: clean build-all checksums
-ifndef VERSION
-	$(error VERSION is not set. Usage: make release VERSION=v0.3.0)
-endif
-ifeq ($(VERSION),$(shell git describe --tags --always --dirty 2>/dev/null))
-	$(error VERSION looks auto-generated. Set an explicit semver tag, e.g. VERSION=v0.3.0)
-endif
 	@echo "==> Tagging $(VERSION)..."
 	git tag -f $(VERSION)
 	git push origin $(VERSION) --force

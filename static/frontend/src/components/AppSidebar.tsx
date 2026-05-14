@@ -15,6 +15,7 @@ import {
   FileText,
   Settings,
   BarChart3,
+  BookOpen,
 } from "lucide-react";
 import { useNavigate, useRouterState } from "@tanstack/react-router";
 import {
@@ -222,6 +223,17 @@ export function AppSidebar({ password = "" }: AppSidebarProps) {
                   <Key className="w-4 h-4" />
                   {!isCollapsed && (
                     <span className="font-mono text-sm">API KEYS</span>
+                  )}
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  onClick={() => navigate({ to: "/api-docs" })}
+                  className={`hover:bg-sidebar-accent ${pathname === "/api-docs" ? "bg-sidebar-accent" : ""}`}
+                >
+                  <BookOpen className="w-4 h-4" />
+                  {!isCollapsed && (
+                    <span className="font-mono text-sm">API DOCS</span>
                   )}
                 </SidebarMenuButton>
               </SidebarMenuItem>

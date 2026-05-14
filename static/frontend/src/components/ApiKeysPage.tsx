@@ -10,6 +10,7 @@ import {
   RefreshCw,
   BookOpen,
 } from "lucide-react";
+import { useNavigate } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -32,7 +33,6 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from "@/hooks/use-toast";
-import { ApiDocsDialog } from "./ApiDocsDialog";
 import { CreateApiKeyDialog } from "./CreateApiKeyDialog";
 
 interface ApiKey {
@@ -48,10 +48,10 @@ interface ApiKey {
 }
 
 export function ApiKeysPage() {
+  const navigate = useNavigate();
   const [keys, setKeys] = useState<ApiKey[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
-  const [docsDialogOpen, setDocsDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [keyToDelete, setKeyToDelete] = useState<ApiKey | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -170,7 +170,7 @@ export function ApiKeysPage() {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => setDocsDialogOpen(true)}
+            onClick={() => navigate({ to: "/api-docs" })}
             className="font-mono uppercase text-xs"
           >
             <BookOpen className="w-4 h-4 mr-2" />
@@ -321,11 +321,17 @@ export function ApiKeysPage() {
                   </TableCell>
                   <TableCell className="hidden md:table-cell">
                     <div className="flex flex-col gap-1">
-                      <Badge variant="secondary" className="font-mono text-xs w-fit">
+                      <Badge
+                        variant="secondary"
+                        className="font-mono text-xs w-fit"
+                      >
                         {formatPermissions(key.permissions)}
                       </Badge>
                       {key.bucketScope ? (
-                        <Badge variant="outline" className="font-mono text-xs w-fit">
+                        <Badge
+                          variant="outline"
+                          className="font-mono text-xs w-fit"
+                        >
                           {key.bucketScope}
                         </Badge>
                       ) : (
@@ -391,9 +397,6 @@ export function ApiKeysPage() {
         onOpenChange={setCreateDialogOpen}
         onSuccess={fetchKeys}
       />
-
-      {/* API Docs Dialog */}
-      <ApiDocsDialog open={docsDialogOpen} onOpenChange={setDocsDialogOpen} />
 
       {/* Delete Confirmation */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>

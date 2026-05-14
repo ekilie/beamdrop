@@ -524,7 +524,7 @@ export function AppSidebar({ password = "" }: AppSidebarProps) {
         {!isCollapsed ? (
           <div className="space-y-4 w-full">
             <div className="flex items-center justify-center gap-2 w-full">
-              <ThemeToggle />
+              {/* <ThemeToggle /> */}
             </div>
             <div className="text-center w-full">
               <p className="text-xs font-mono text-sidebar-foreground/60">
@@ -534,7 +534,7 @@ export function AppSidebar({ password = "" }: AppSidebarProps) {
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center gap-2 w-full">
-            <ThemeToggle />
+            {/* <ThemeToggle /> */}
           </div>
         )}
       </SidebarFooter>

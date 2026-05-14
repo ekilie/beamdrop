@@ -64,6 +64,9 @@ func (h *FileHandler) ListFiles(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			continue
 		}
+		if f.Name() == "beamdrop.db" {
+			continue
+		}
 		filePath := path.Join(reqPath, info.Name())
 		fileList = append(fileList, File{
 			Name:      info.Name(),

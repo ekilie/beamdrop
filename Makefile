@@ -98,7 +98,24 @@ checksums:
 	@cat $(BUILD_DIR)/checksums.txt
 
 # ── GitHub Release (requires gh CLI) ─────────────────────────────────────────
+# Usage:
+#   make release VERSION=v0.3.0          # create a new release (tags + pushes)
+#   make release VERSION=v0.3.0 FORCE=1  # delete existing release first, then recreate
 release: clean build-all checksums
+ifndef VERSION
+	$(error VERSION is not set. Usage: make release VERSION=v0.3.0)
+endif
+ifeq ($(VERSION),$(shell git describe --tags --always --dirty 2>/dev/null))
+	$(error VERSION looks auto-generated. Set an explicit semver tag, e.g. VERSION=v0.3.0)
+endif
+	@echo "==> Tagging $(VERSION)..."
+	git tag -f $(VERSION)
+	git push origin $(VERSION) --force
+ifdef FORCE
+	@echo "==> Deleting existing release $(VERSION) (FORCE=1)..."
+	-gh release delete $(VERSION) --yes --cleanup-tag 2>/dev/null || true
+	@sleep 2
+endif
 	@echo "==> Creating GitHub release $(VERSION)..."
 	gh release create $(VERSION) \
 		--title "Beamdrop $(VERSION)" \

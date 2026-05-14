@@ -58,7 +58,8 @@ const bucketEndpoints: Endpoint[] = [
     method: "PUT",
     path: "/api/v1/buckets/{bucket}",
     title: "Create Bucket",
-    description: "Creates a new storage bucket. Bucket names must be lowercase alphanumeric with hyphens.",
+    description:
+      "Creates a new storage bucket. Bucket names must be lowercase alphanumeric with hyphens.",
     status: "201 Created",
     response: `{
   "bucket": "my-bucket",
@@ -70,7 +71,8 @@ const bucketEndpoints: Endpoint[] = [
     method: "HEAD",
     path: "/api/v1/buckets/{bucket}",
     title: "Check Bucket",
-    description: "Check if a bucket exists. Returns 200 if it exists, 404 if not. No response body.",
+    description:
+      "Check if a bucket exists. Returns 200 if it exists, 404 if not. No response body.",
     status: "200 OK / 404 Not Found",
     response: "(No body — check status code)",
   },
@@ -78,7 +80,8 @@ const bucketEndpoints: Endpoint[] = [
     method: "DELETE",
     path: "/api/v1/buckets/{bucket}",
     title: "Delete Bucket",
-    description: "Deletes an empty bucket. Fails with 409 if the bucket contains objects.",
+    description:
+      "Deletes an empty bucket. Fails with 409 if the bucket contains objects.",
     status: "204 No Content",
     response: "(No body)",
   },
@@ -89,7 +92,8 @@ const objectEndpoints: Endpoint[] = [
     method: "PUT",
     path: "/api/v1/buckets/{bucket}/{key}",
     title: "Upload Object",
-    description: "Upload a file. Send the raw file bytes in the request body. The key can include path separators (e.g. photos/2026/img.jpg).",
+    description:
+      "Upload a file. Send the raw file bytes in the request body. The key can include path separators (e.g. photos/2026/img.jpg).",
     headers: "Content-Type: application/octet-stream",
     status: "200 OK",
     response: `{
@@ -104,7 +108,8 @@ const objectEndpoints: Endpoint[] = [
     method: "GET",
     path: "/api/v1/buckets/{bucket}/{key}",
     title: "Download Object",
-    description: "Downloads the file. Returns the raw binary content with appropriate Content-Type and Content-Disposition headers.",
+    description:
+      "Downloads the file. Returns the raw binary content with appropriate Content-Type and Content-Disposition headers.",
     status: "200 OK",
     response: "(Raw file bytes)",
   },
@@ -112,7 +117,8 @@ const objectEndpoints: Endpoint[] = [
     method: "HEAD",
     path: "/api/v1/buckets/{bucket}/{key}",
     title: "Object Metadata",
-    description: "Returns object metadata (size, content type, last modified) in response headers without downloading the file.",
+    description:
+      "Returns object metadata (size, content type, last modified) in response headers without downloading the file.",
     status: "200 OK",
     response: `(No body — metadata in headers)
 Content-Type: image/jpeg
@@ -124,7 +130,8 @@ ETag: "d41d8cd98f00b204e9800998ecf8427e"`,
     method: "GET",
     path: "/api/v1/buckets/{bucket}?prefix=...&delimiter=/",
     title: "List Objects",
-    description: "List objects in a bucket. Use prefix to filter by path and delimiter=/ to get folder-like grouping.",
+    description:
+      "List objects in a bucket. Use prefix to filter by path and delimiter=/ to get folder-like grouping.",
     status: "200 OK",
     response: `{
   "bucket": "my-bucket",
@@ -157,7 +164,8 @@ const presignEndpoints: Endpoint[] = [
     method: "POST",
     path: "/api/v1/presign",
     title: "Create Presigned URL",
-    description: "Generate a short, shareable download URL with optional expiry and download limit. The returned URL does not require authentication.",
+    description:
+      "Generate a short, shareable download URL with optional expiry and download limit. The returned URL does not require authentication.",
     headers: "Content-Type: application/json",
     request: `{
   "bucket": "my-bucket",
@@ -177,7 +185,8 @@ const presignEndpoints: Endpoint[] = [
     method: "GET",
     path: "/api/v1/presign",
     title: "List Presigned URLs",
-    description: "List all active presigned URLs with their download counts and expiry status.",
+    description:
+      "List all active presigned URLs with their download counts and expiry status.",
     status: "200 OK",
     response: `{
   "urls": [
@@ -197,7 +206,8 @@ const presignEndpoints: Endpoint[] = [
     method: "DELETE",
     path: "/api/v1/presign/{token}",
     title: "Revoke Presigned URL",
-    description: "Revoke a presigned URL so it can no longer be used for downloads.",
+    description:
+      "Revoke a presigned URL so it can no longer be used for downloads.",
     status: "204 No Content",
     response: "(No body)",
   },
@@ -208,7 +218,8 @@ const keyEndpoints: Endpoint[] = [
     method: "POST",
     path: "/api/v1/keys",
     title: "Create API Key",
-    description: "Create a new API key. The secret key is returned only once — save it immediately.",
+    description:
+      "Create a new API key. The secret key is returned only once — save it immediately.",
     headers: "Content-Type: application/json",
     request: `{
   "name": "my-app",
@@ -229,7 +240,8 @@ const keyEndpoints: Endpoint[] = [
     method: "GET",
     path: "/api/v1/keys",
     title: "List API Keys",
-    description: "List all API keys. Secret keys are never returned after creation.",
+    description:
+      "List all API keys. Secret keys are never returned after creation.",
     status: "200 OK",
     response: `{
   "keys": [
@@ -249,13 +261,24 @@ const keyEndpoints: Endpoint[] = [
     method: "DELETE",
     path: "/api/v1/keys?accessKeyId={id}",
     title: "Delete API Key",
-    description: "Permanently delete an API key. Any presigned URLs generated with this key's HMAC will stop working.",
+    description:
+      "Permanently delete an API key. Any presigned URLs generated with this key's HMAC will stop working.",
     status: "200 OK",
     response: `{ "message": "API key deleted" }`,
   },
 ];
 
-function CodeBlock({ code, id, onCopy, copiedId }: { code: string; id: string; onCopy: (text: string, id: string) => void; copiedId: string | null }) {
+function CodeBlock({
+  code,
+  id,
+  onCopy,
+  copiedId,
+}: {
+  code: string;
+  id: string;
+  onCopy: (text: string, id: string) => void;
+  copiedId: string | null;
+}) {
   return (
     <div className="relative">
       <Button
@@ -277,7 +300,15 @@ function CodeBlock({ code, id, onCopy, copiedId }: { code: string; id: string; o
   );
 }
 
-function EndpointSection({ title, endpoints, copiedId, onCopy, expandedId, onToggle, baseUrl }: {
+function EndpointSection({
+  title,
+  endpoints,
+  copiedId,
+  onCopy,
+  expandedId,
+  onToggle,
+  baseUrl,
+}: {
   title: string;
   endpoints: Endpoint[];
   copiedId: string | null;
@@ -302,48 +333,87 @@ function EndpointSection({ title, endpoints, copiedId, onCopy, expandedId, onTog
               <CollapsibleTrigger className="w-full">
                 <div className="flex items-center justify-between p-3 hover:bg-muted/50 transition-colors">
                   <div className="flex items-center gap-3">
-                    <Badge variant="outline" className={`font-mono text-xs min-w-[52px] ${methodColors[ep.method]}`}>
+                    <Badge
+                      variant="outline"
+                      className={`font-mono text-xs min-w-[52px] ${methodColors[ep.method]}`}
+                    >
                       {ep.method}
                     </Badge>
-                    <code className="text-sm font-mono text-left">{ep.path}</code>
+                    <code className="text-sm font-mono text-left">
+                      {ep.path}
+                    </code>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="text-xs text-muted-foreground font-mono hidden sm:block">{ep.title}</span>
-                    {isOpen ? <ChevronDown className="w-4 h-4 text-muted-foreground" /> : <ChevronRight className="w-4 h-4 text-muted-foreground" />}
+                    <span className="text-xs text-muted-foreground font-mono hidden sm:block">
+                      {ep.title}
+                    </span>
+                    {isOpen ? (
+                      <ChevronDown className="w-4 h-4 text-muted-foreground" />
+                    ) : (
+                      <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                    )}
                   </div>
                 </div>
               </CollapsibleTrigger>
               <CollapsibleContent>
                 <div className="px-3 pb-3 space-y-3 border-t pt-3">
-                  <p className="text-sm text-muted-foreground">{ep.description}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {ep.description}
+                  </p>
 
                   {ep.headers && (
                     <div>
-                      <span className="text-xs font-mono uppercase text-muted-foreground">Headers</span>
-                      <pre className="p-2 bg-muted rounded text-xs font-mono mt-1">{ep.headers}</pre>
+                      <span className="text-xs font-mono uppercase text-muted-foreground">
+                        Headers
+                      </span>
+                      <pre className="p-2 bg-muted rounded text-xs font-mono mt-1">
+                        {ep.headers}
+                      </pre>
                     </div>
                   )}
 
                   {ep.request && (
                     <div>
-                      <span className="text-xs font-mono uppercase text-muted-foreground">Request Body</span>
-                      <CodeBlock code={ep.request} id={`req-${id}`} onCopy={onCopy} copiedId={copiedId} />
+                      <span className="text-xs font-mono uppercase text-muted-foreground">
+                        Request Body
+                      </span>
+                      <CodeBlock
+                        code={ep.request}
+                        id={`req-${id}`}
+                        onCopy={onCopy}
+                        copiedId={copiedId}
+                      />
                     </div>
                   )}
 
                   <div>
-                    <span className="text-xs font-mono uppercase text-muted-foreground">Example Request</span>
-                    <CodeBlock code={curlCmd} id={`curl-${id}`} onCopy={onCopy} copiedId={copiedId} />
+                    <span className="text-xs font-mono uppercase text-muted-foreground">
+                      Example Request
+                    </span>
+                    <CodeBlock
+                      code={curlCmd}
+                      id={`curl-${id}`}
+                      onCopy={onCopy}
+                      copiedId={copiedId}
+                    />
                   </div>
 
                   <div className="flex items-center gap-2">
-                    <span className="text-xs font-mono uppercase text-muted-foreground">Status</span>
-                    <Badge variant="outline" className="font-mono text-xs">{ep.status}</Badge>
+                    <span className="text-xs font-mono uppercase text-muted-foreground">
+                      Status
+                    </span>
+                    <Badge variant="outline" className="font-mono text-xs">
+                      {ep.status}
+                    </Badge>
                   </div>
 
                   <div>
-                    <span className="text-xs font-mono uppercase text-muted-foreground">Response</span>
-                    <pre className="p-3 bg-muted rounded-lg text-xs font-mono overflow-x-auto whitespace-pre-wrap mt-1">{ep.response}</pre>
+                    <span className="text-xs font-mono uppercase text-muted-foreground">
+                      Response
+                    </span>
+                    <pre className="p-3 bg-muted rounded-lg text-xs font-mono overflow-x-auto whitespace-pre-wrap mt-1">
+                      {ep.response}
+                    </pre>
                   </div>
                 </div>
               </CollapsibleContent>
@@ -387,7 +457,10 @@ export default function ApiDocsPage() {
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
-  const baseUrl = typeof window !== "undefined" ? window.location.origin : "http://localhost:7777";
+  const baseUrl =
+    typeof window !== "undefined"
+      ? window.location.origin
+      : "http://localhost:7777";
 
   const handleCopy = async (text: string, id: string) => {
     try {
@@ -395,7 +468,11 @@ export default function ApiDocsPage() {
       setCopiedId(id);
       setTimeout(() => setCopiedId(null), 2000);
     } catch {
-      toast({ title: "Error", description: "Failed to copy", variant: "destructive" });
+      toast({
+        title: "Error",
+        description: "Failed to copy",
+        variant: "destructive",
+      });
     }
   };
 
@@ -404,7 +481,7 @@ export default function ApiDocsPage() {
   };
 
   return (
-    <div className="p-6 space-y-6 animate-fade-in max-w-4xl">
+    <div className="p-6 space-y-6 animate-fade-in w-full">
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold font-mono uppercase tracking-wide flex items-center gap-2">
@@ -412,23 +489,68 @@ export default function ApiDocsPage() {
           API Documentation
         </h1>
         <p className="text-sm text-muted-foreground font-mono mt-1">
-          S3-compatible REST API — all examples use curl (adapt to any HTTP client)
+          S3-compatible REST API — all examples use curl (adapt to any HTTP
+          client)
         </p>
       </div>
 
       <Tabs defaultValue="endpoints" className="w-full">
         <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="endpoints" className="font-mono text-xs uppercase">Endpoints</TabsTrigger>
-          <TabsTrigger value="quickstart" className="font-mono text-xs uppercase">Quick Start</TabsTrigger>
-          <TabsTrigger value="auth" className="font-mono text-xs uppercase">Authentication</TabsTrigger>
+          <TabsTrigger
+            value="endpoints"
+            className="font-mono text-xs uppercase"
+          >
+            Endpoints
+          </TabsTrigger>
+          <TabsTrigger
+            value="quickstart"
+            className="font-mono text-xs uppercase"
+          >
+            Quick Start
+          </TabsTrigger>
+          <TabsTrigger value="auth" className="font-mono text-xs uppercase">
+            Authentication
+          </TabsTrigger>
         </TabsList>
 
         {/* ── Endpoints ── */}
         <TabsContent value="endpoints" className="space-y-8 mt-6">
-          <EndpointSection title="Buckets" endpoints={bucketEndpoints} copiedId={copiedId} onCopy={handleCopy} expandedId={expandedId} onToggle={handleToggle} baseUrl={baseUrl} />
-          <EndpointSection title="Objects" endpoints={objectEndpoints} copiedId={copiedId} onCopy={handleCopy} expandedId={expandedId} onToggle={handleToggle} baseUrl={baseUrl} />
-          <EndpointSection title="Presigned URLs" endpoints={presignEndpoints} copiedId={copiedId} onCopy={handleCopy} expandedId={expandedId} onToggle={handleToggle} baseUrl={baseUrl} />
-          <EndpointSection title="API Key Management" endpoints={keyEndpoints} copiedId={copiedId} onCopy={handleCopy} expandedId={expandedId} onToggle={handleToggle} baseUrl={baseUrl} />
+          <EndpointSection
+            title="Buckets"
+            endpoints={bucketEndpoints}
+            copiedId={copiedId}
+            onCopy={handleCopy}
+            expandedId={expandedId}
+            onToggle={handleToggle}
+            baseUrl={baseUrl}
+          />
+          <EndpointSection
+            title="Objects"
+            endpoints={objectEndpoints}
+            copiedId={copiedId}
+            onCopy={handleCopy}
+            expandedId={expandedId}
+            onToggle={handleToggle}
+            baseUrl={baseUrl}
+          />
+          <EndpointSection
+            title="Presigned URLs"
+            endpoints={presignEndpoints}
+            copiedId={copiedId}
+            onCopy={handleCopy}
+            expandedId={expandedId}
+            onToggle={handleToggle}
+            baseUrl={baseUrl}
+          />
+          <EndpointSection
+            title="API Key Management"
+            endpoints={keyEndpoints}
+            copiedId={copiedId}
+            onCopy={handleCopy}
+            expandedId={expandedId}
+            onToggle={handleToggle}
+            baseUrl={baseUrl}
+          />
         </TabsContent>
 
         {/* ── Quick Start ── */}
@@ -442,38 +564,74 @@ export default function ApiDocsPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <p className="text-sm text-muted-foreground mb-2">1. Create a bucket</p>
-                <CodeBlock code={`curl -X PUT "${baseUrl}/api/v1/buckets/my-files" \\
+                <p className="text-sm text-muted-foreground mb-2">
+                  1. Create a bucket
+                </p>
+                <CodeBlock
+                  code={`curl -X PUT "${baseUrl}/api/v1/buckets/my-files" \\
   -H "Authorization: Bearer <KEY>:<SIG>" \\
-  -H "X-Beamdrop-Date: <TIMESTAMP>"`} id="qs-1" onCopy={handleCopy} copiedId={copiedId} />
+  -H "X-Beamdrop-Date: <TIMESTAMP>"`}
+                  id="qs-1"
+                  onCopy={handleCopy}
+                  copiedId={copiedId}
+                />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground mb-2">2. Upload a file</p>
-                <CodeBlock code={`curl -X PUT "${baseUrl}/api/v1/buckets/my-files/photo.jpg" \\
-  -H "Authorization: Bearer <KEY>:<SIG>" \\
-  -H "X-Beamdrop-Date: <TIMESTAMP>" \\
-  --data-binary @photo.jpg`} id="qs-2" onCopy={handleCopy} copiedId={copiedId} />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground mb-2">3. List objects</p>
-                <CodeBlock code={`curl "${baseUrl}/api/v1/buckets/my-files" \\
-  -H "Authorization: Bearer <KEY>:<SIG>" \\
-  -H "X-Beamdrop-Date: <TIMESTAMP>"`} id="qs-3" onCopy={handleCopy} copiedId={copiedId} />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground mb-2">4. Download a file</p>
-                <CodeBlock code={`curl "${baseUrl}/api/v1/buckets/my-files/photo.jpg" \\
+                <p className="text-sm text-muted-foreground mb-2">
+                  2. Upload a file
+                </p>
+                <CodeBlock
+                  code={`curl -X PUT "${baseUrl}/api/v1/buckets/my-files/photo.jpg" \\
   -H "Authorization: Bearer <KEY>:<SIG>" \\
   -H "X-Beamdrop-Date: <TIMESTAMP>" \\
-  -o photo.jpg`} id="qs-4" onCopy={handleCopy} copiedId={copiedId} />
+  --data-binary @photo.jpg`}
+                  id="qs-2"
+                  onCopy={handleCopy}
+                  copiedId={copiedId}
+                />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground mb-2">5. Create a presigned download link (no auth needed to download)</p>
-                <CodeBlock code={`curl -X POST "${baseUrl}/api/v1/presign" \\
+                <p className="text-sm text-muted-foreground mb-2">
+                  3. List objects
+                </p>
+                <CodeBlock
+                  code={`curl "${baseUrl}/api/v1/buckets/my-files" \\
+  -H "Authorization: Bearer <KEY>:<SIG>" \\
+  -H "X-Beamdrop-Date: <TIMESTAMP>"`}
+                  id="qs-3"
+                  onCopy={handleCopy}
+                  copiedId={copiedId}
+                />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground mb-2">
+                  4. Download a file
+                </p>
+                <CodeBlock
+                  code={`curl "${baseUrl}/api/v1/buckets/my-files/photo.jpg" \\
+  -H "Authorization: Bearer <KEY>:<SIG>" \\
+  -H "X-Beamdrop-Date: <TIMESTAMP>" \\
+  -o photo.jpg`}
+                  id="qs-4"
+                  onCopy={handleCopy}
+                  copiedId={copiedId}
+                />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground mb-2">
+                  5. Create a presigned download link (no auth needed to
+                  download)
+                </p>
+                <CodeBlock
+                  code={`curl -X POST "${baseUrl}/api/v1/presign" \\
   -H "Authorization: Bearer <KEY>:<SIG>" \\
   -H "X-Beamdrop-Date: <TIMESTAMP>" \\
   -H "Content-Type: application/json" \\
-  -d '{"bucket":"my-files","key":"photo.jpg","expiresIn":"24h"}'`} id="qs-5" onCopy={handleCopy} copiedId={copiedId} />
+  -d '{"bucket":"my-files","key":"photo.jpg","expiresIn":"24h"}'`}
+                  id="qs-5"
+                  onCopy={handleCopy}
+                  copiedId={copiedId}
+                />
               </div>
             </CardContent>
           </Card>
@@ -489,7 +647,9 @@ export default function ApiDocsPage() {
               <p className="text-sm text-muted-foreground mb-2">
                 All API endpoints are relative to your BeamDrop server:
               </p>
-              <code className="px-3 py-2 bg-muted rounded font-mono text-sm block">{baseUrl}</code>
+              <code className="px-3 py-2 bg-muted rounded font-mono text-sm block">
+                {baseUrl}
+              </code>
             </CardContent>
           </Card>
         </TabsContent>
@@ -522,17 +682,30 @@ export default function ApiDocsPage() {
               </div>
 
               <div className="space-y-2">
-                <h4 className="text-sm font-bold font-mono">How to compute the signature</h4>
+                <h4 className="text-sm font-bold font-mono">
+                  How to compute the signature
+                </h4>
                 <ol className="text-sm text-muted-foreground space-y-2 list-decimal list-inside">
-                  <li>Build the string to sign: <code className="bg-muted px-1 rounded text-xs">METHOD\nPATH\nTIMESTAMP</code></li>
-                  <li>Compute HMAC-SHA256 of that string using your <strong>secret key</strong></li>
+                  <li>
+                    Build the string to sign:{" "}
+                    <code className="bg-muted px-1 rounded text-xs">
+                      METHOD\nPATH\nTIMESTAMP
+                    </code>
+                  </li>
+                  <li>
+                    Compute HMAC-SHA256 of that string using your{" "}
+                    <strong>secret key</strong>
+                  </li>
                   <li>Hex-encode the result — that's your signature</li>
                 </ol>
               </div>
 
               <div>
-                <span className="text-xs font-mono uppercase text-muted-foreground">Example — signing a GET request</span>
-                <CodeBlock code={`# String to sign:
+                <span className="text-xs font-mono uppercase text-muted-foreground">
+                  Example — signing a GET request
+                </span>
+                <CodeBlock
+                  code={`# String to sign:
 #   GET\n/api/v1/buckets\n2026-05-14T10:00:00Z
 
 # Pseudocode (any language):
@@ -542,18 +715,29 @@ signature = hex(hmac_sha256(secret_key, string_to_sign))
 # Then send:
 curl "${baseUrl}/api/v1/buckets" \\
   -H "Authorization: Bearer BDK_abc123:$signature" \\
-  -H "X-Beamdrop-Date: 2026-05-14T10:00:00Z"`} id="auth-example" onCopy={handleCopy} copiedId={copiedId} />
+  -H "X-Beamdrop-Date: 2026-05-14T10:00:00Z"`}
+                  id="auth-example"
+                  onCopy={handleCopy}
+                  copiedId={copiedId}
+                />
               </div>
 
               <div className="p-3 border rounded-lg bg-yellow-500/5 border-yellow-500/20">
                 <p className="text-sm text-muted-foreground">
-                  <strong>Clock skew:</strong> The timestamp must be within <strong>15 minutes</strong> of the server time. Use UTC ISO 8601 format.
+                  <strong>Clock skew:</strong> The timestamp must be within{" "}
+                  <strong>15 minutes</strong> of the server time. Use UTC ISO
+                  8601 format.
                 </p>
               </div>
 
               <div className="p-3 border rounded-lg bg-blue-500/5 border-blue-500/20">
                 <p className="text-sm text-muted-foreground">
-                  <strong>Tip:</strong> When API auth is disabled (<code className="bg-muted px-1 rounded text-xs">-api-auth=false</code>), the Authorization header is not required and all S3 API endpoints are open.
+                  <strong>Tip:</strong> When API auth is disabled (
+                  <code className="bg-muted px-1 rounded text-xs">
+                    -api-auth=false
+                  </code>
+                  ), the Authorization header is not required and all S3 API
+                  endpoints are open.
                 </p>
               </div>
             </CardContent>

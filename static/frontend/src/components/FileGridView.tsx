@@ -23,6 +23,63 @@ import {
 import { getFileIcon } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 import { RenameDialog } from "./RenameDialog";
+
+/** Returns [iconColorClass, bgGradientClass] based on file extension category */
+function getFileIconStyle(filename: string): [string, string] {
+  const ext = filename.split(".").pop()?.toLowerCase() || "";
+  // Images
+  if (["jpg", "jpeg", "png", "gif", "webp", "svg", "bmp", "ico"].includes(ext))
+    return ["text-pink-500", "from-pink-500/10 to-pink-500/5"];
+  // Videos
+  if (["mp4", "mkv", "avi", "mov", "wmv", "flv", "webm"].includes(ext))
+    return ["text-purple-500", "from-purple-500/10 to-purple-500/5"];
+  // Audio
+  if (["mp3", "wav", "ogg", "flac", "aac"].includes(ext))
+    return ["text-amber-500", "from-amber-500/10 to-amber-500/5"];
+  // Documents
+  if (["pdf"].includes(ext))
+    return ["text-red-500", "from-red-500/10 to-red-500/5"];
+  if (["doc", "docx"].includes(ext))
+    return ["text-blue-500", "from-blue-500/10 to-blue-500/5"];
+  if (["xls", "xlsx", "csv"].includes(ext))
+    return ["text-green-500", "from-green-500/10 to-green-500/5"];
+  if (["txt", "md"].includes(ext))
+    return ["text-slate-500", "from-slate-500/10 to-slate-500/5"];
+  // Archives
+  if (["zip", "rar", "tar", "gz", "7z", "bz2", "xz"].includes(ext))
+    return ["text-yellow-600", "from-yellow-600/10 to-yellow-600/5"];
+  // Code
+  if (["js", "jsx"].includes(ext))
+    return ["text-yellow-500", "from-yellow-500/10 to-yellow-500/5"];
+  if (["ts", "tsx"].includes(ext))
+    return ["text-blue-500", "from-blue-500/10 to-blue-500/5"];
+  if (["py"].includes(ext))
+    return ["text-sky-500", "from-sky-500/10 to-sky-500/5"];
+  if (["go"].includes(ext))
+    return ["text-cyan-500", "from-cyan-500/10 to-cyan-500/5"];
+  if (["rs"].includes(ext))
+    return ["text-orange-500", "from-orange-500/10 to-orange-500/5"];
+  if (["html"].includes(ext))
+    return ["text-orange-500", "from-orange-500/10 to-orange-500/5"];
+  if (["css", "scss", "sass"].includes(ext))
+    return ["text-blue-400", "from-blue-400/10 to-blue-400/5"];
+  if (["json", "xml", "yml", "yaml"].includes(ext))
+    return ["text-emerald-500", "from-emerald-500/10 to-emerald-500/5"];
+  if (["java", "kt", "kts"].includes(ext))
+    return ["text-orange-600", "from-orange-600/10 to-orange-600/5"];
+  if (["swift"].includes(ext))
+    return ["text-orange-500", "from-orange-500/10 to-orange-500/5"];
+  if (["c", "cpp", "cc", "cxx", "hpp", "h"].includes(ext))
+    return ["text-blue-600", "from-blue-600/10 to-blue-600/5"];
+  if (["php", "rb", "vue", "svelte"].includes(ext))
+    return ["text-indigo-500", "from-indigo-500/10 to-indigo-500/5"];
+  if (["sql", "db", "sqlite"].includes(ext))
+    return ["text-sky-600", "from-sky-600/10 to-sky-600/5"];
+  if (["dockerfile"].includes(ext))
+    return ["text-blue-500", "from-blue-500/10 to-blue-500/5"];
+  // Default
+  return ["text-muted-foreground", "from-muted/50 to-muted/30"];
+}
 import { MoveDialog } from "./MoveDialog";
 import { ShareLinkDialog } from "./ShareLinkDialog";
 import {
@@ -116,10 +173,7 @@ export const FileGridView: React.FC<FileGridViewProps> = ({
     }
   };
 
-  const downloadFolderAsZip = (
-    folderName: string,
-    event: React.MouseEvent,
-  ) => {
+  const downloadFolderAsZip = (folderName: string, event: React.MouseEvent) => {
     event.stopPropagation();
     try {
       const folderPath =
@@ -212,11 +266,16 @@ export const FileGridView: React.FC<FileGridViewProps> = ({
                   loading="lazy"
                 />
               ) : (
-                <div className="w-full h-full flex items-center justify-center">
-                  <div className="w-12 h-12 text-muted-foreground">
-                    {getFileIcon(file.name, "w-12 h-12")}
-                  </div>
-                </div>
+                (() => {
+                  const [iconColor, bgGradient] = getFileIconStyle(file.name);
+                  return (
+                    <div
+                      className={`w-full h-full flex items-center justify-center bg-gradient-to-br ${bgGradient}`}
+                    >
+                      {getFileIcon(file.name, `w-12 h-12 ${iconColor}`)}
+                    </div>
+                  );
+                })()
               )}
 
               {/* Star Badge */}
@@ -317,7 +376,11 @@ export const FileGridView: React.FC<FileGridViewProps> = ({
                     <DropdownMenuItem
                       onClick={(e) => {
                         e.stopPropagation();
-                        setShareDialog({ open: true, fileName: file.name, isDir: file.isDir });
+                        setShareDialog({
+                          open: true,
+                          fileName: file.name,
+                          isDir: file.isDir,
+                        });
                       }}
                     >
                       <Share2 className="w-4 h-4 mr-2" />

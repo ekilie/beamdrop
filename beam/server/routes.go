@@ -105,7 +105,7 @@ func (s *Server) setupS3APIRoutes() {
 		})).ServeHTTP(w, r)
 	})
 
-	// API key management endpoint (no auth required - managed via web UI with session auth)
+	// API key management endpoint (requires session auth via AuthMiddleware)
 	s.mux.HandleFunc("/api/v1/keys", keysHandler.Handle)
 
 	// Presigned URL management

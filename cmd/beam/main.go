@@ -201,7 +201,10 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Apply custom DB path if provided in the flag
+	// Set default DB path to <sharedDir>/.beamdrop/beamdrop.db
+	config.InitDataDir(*sharedDir)
+
+	// Override DB path if explicitly provided
 	if *dbPath != "" {
 		config.SetDBPath(*dbPath)
 	}

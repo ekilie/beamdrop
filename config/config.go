@@ -27,10 +27,8 @@ var (
 )
 
 var (
-	ConfigDir  string
-	ConfigPath string
-	DBName     = "beamdrop.db"
-	DBPath     string
+	DBName = "beamdrop.db"
+	DBPath string
 	// AllowedMIMETypes defines the allowed MIME types for uploads
 	// Empty list means all types are allowed
 	AllowedMIMETypes = []string{
@@ -81,36 +79,20 @@ type Flags struct {
 	DisableSystemStats bool          // Hide server disk/memory/CPU stats from the usage dashboard
 }
 
-func GetDBPath() string {
-	return filepath.Join(ConfigDir, DBName)
-}
-
 func GetConfig() Config {
 	return Config{
 		PORT: PORT,
 	}
 }
 
-func init() {
-	homeDir, err := os.UserHomeDir()
-	if err != nil {
-		log.Fatalf("failed to get home directory: %v", err)
+// InitDataDir sets DBPath to <sharedDir>/.beamdrop/beamdrop.db and ensures
+// the directory exists. Must be called after flags are parsed.
+func InitDataDir(sharedDir string) {
+	dataDir := filepath.Join(sharedDir, ConfigDirName)
+	if err := os.MkdirAll(dataDir, 0755); err != nil {
+		log.Fatalf("failed to create data directory %s: %v", dataDir, err)
 	}
-	ConfigDir = filepath.Join(homeDir, ConfigDirName)
-	ConfigPath = filepath.Join(ConfigDir, "beamdrop.db") //FIXME: will fix this
-	DBPath = GetDBPath()
-
-	createConfigDir()
-
-	if _, err := os.Stat(ConfigPath); os.IsNotExist(err) {
-		createConfigDb()
-	}
-}
-
-func createConfigDir() {
-	if err := os.MkdirAll(ConfigDir, 0755); err != nil {
-		log.Fatalf("failed to create config directory: %v", err)
-	}
+	DBPath = filepath.Join(dataDir, DBName)
 }
 
 // CreateTrashBin creates the trash bin directory if it doesn't exist
@@ -121,14 +103,4 @@ func CreateTrashBin(sharedDir string) error {
 		return err
 	}
 	return nil
-}
-
-func createConfigDb() {
-	file, err := os.Create(ConfigPath)
-	if err != nil {
-		log.Fatalf("failed to create config file: %v", err)
-	}
-	defer file.Close()
-	// TODO: Load initial settings
-	log.Printf("Created default config file at: %s", ConfigPath)
 }

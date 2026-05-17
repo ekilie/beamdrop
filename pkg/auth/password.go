@@ -67,7 +67,7 @@ func InitJWTSecret(secret string, sharedDir string) error {
 			if _, err := rand.Read(jwtSecret); err != nil {
 				return fmt.Errorf("failed to generate JWT secret: %w", err)
 			}
-			// Persist it (ConfigDir is already created by config.init())
+			// Persist it (persistDir was created above)
 			if err := os.WriteFile(secretFile, jwtSecret, 0600); err != nil {
 				return fmt.Errorf("failed to persist JWT secret to %s: %w", secretFile, err)
 			}

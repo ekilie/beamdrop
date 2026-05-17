@@ -29,7 +29,7 @@ var StaticPrefixes = []string{
 	"/share/",             // Shareable link frontend pages (public SPA routes)
 	"/api/shares/access/", // Shareable link access API (has its own password protection)
 	"/api/v1/",            // S3-compatible API (has its own HMAC-SHA256 auth middleware)
-	"/dl/",                  // Presigned URL downloads (public but token-protected)
+	"/dl/",                // Presigned URL downloads (public but token-protected)
 }
 
 // AuthMiddleware handles authentication for protected routes

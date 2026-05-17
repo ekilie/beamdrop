@@ -34,13 +34,17 @@ var (
 //
 // Resolution order:
 //  1. If `secret` is non-empty, use it (must be ≥ 32 bytes).
-//  2. Else, try to load from <ConfigDir>/jwt_secret (~/.beamdrop/jwt_secret).
+//  2. Else, try to load from <sharedDir>/.beamdrop/jwt_secret.
 //  3. Else, generate a random 32-byte key and persist it to that file.
 //
 // This must be called once during startup, before any JWT operations.
-func InitJWTSecret(secret string) error {
+func InitJWTSecret(secret string, sharedDir string) error {
 	const minLen = 32
-	secretFile := filepath.Join(config.ConfigDir, "jwt_secret")
+	persistDir := filepath.Join(sharedDir, config.ConfigDirName)
+	if err := os.MkdirAll(persistDir, 0755); err != nil {
+		return fmt.Errorf("failed to create jwt secret directory %s: %w", persistDir, err)
+	}
+	secretFile := filepath.Join(persistDir, "jwt_secret")
 
 	switch {
 	case secret != "":

@@ -1,3 +1,38 @@
+// Package client provides a typed Go client for the Beamdrop S3-compatible API.
+//
+// The client handles HMAC-SHA256 request signing, bucket and object operations,
+// and both client-side and server-side presigned URL generation.
+//
+// Example usage:
+//
+//	ctx := context.Background()
+//	client, err := client.New(client.Config{
+//		BaseURL:     "http://localhost:7777",
+//		AccessKeyID: "BDK_abc123",
+//		SecretKey:   "sk_secret",
+//	})
+//	if err != nil {
+//		log.Fatal(err)
+//	}
+//
+//	// Create or reuse a bucket
+//	_, err = client.CreateBucketIfNotExists(ctx, "my-bucket")
+//	if err != nil {
+//		log.Fatal(err)
+//	}
+//
+//	// Upload an object
+//	_, err = client.PutObject(ctx, "my-bucket", "path/to/file.txt", []byte("hello world"))
+//	if err != nil {
+//		log.Fatal(err)
+//	}
+//
+//	// Download an object
+//	obj, err := client.GetObject(ctx, "my-bucket", "path/to/file.txt")
+//	if err != nil {
+//		log.Fatal(err)
+//	}
+//	fmt.Println(string(obj.Body))
 package client
 
 import (
@@ -16,15 +51,37 @@ import (
 
 const defaultUserAgent = "beamdrop-go-client/0.1"
 
+// Config holds the configuration for creating a new Beamdrop API client.
 type Config struct {
-	BaseURL     string
+	// BaseURL is the base URL of the Beamdrop server (required).
+	// Example: "http://localhost:7777" or "https://files.example.com".
+	BaseURL string
+
+	// AccessKeyID is the public API access key identifier (optional for anonymous access).
+	// Format: "BDK_xxxx" where xxxx is the key ID.
 	AccessKeyID string
-	SecretKey   string
-	HTTPClient  *http.Client
-	Now         func() time.Time
-	UserAgent   string
+
+	// SecretKey is the private API secret key (required if AccessKeyID is set).
+	// Format: "sk_xxxx" where xxxx is the secret key material.
+	SecretKey string
+
+	// HTTPClient is the underlying HTTP client used for requests (optional).
+	// If nil, a default client with 2-minute timeout is used.
+	HTTPClient *http.Client
+
+	// Now is a function that returns the current time in UTC (optional).
+	// Used for generating request timestamps. If nil, time.Now().UTC() is used.
+	// Primarily for testing and time mocking.
+	Now func() time.Time
+
+	// UserAgent is the User-Agent header sent with requests (optional).
+	// If empty, defaults to "beamdrop-go-client/0.1".
+	UserAgent string
 }
 
+// Client is a typed Beamdrop S3-compatible API client.
+// It handles HMAC-SHA256 request signing, response decoding, and error handling.
+// All methods accept a context for cancellation and timeouts.
 type Client struct {
 	baseURL     *url.URL
 	httpClient  *http.Client
@@ -34,6 +91,10 @@ type Client struct {
 	userAgent   string
 }
 
+// New creates and returns a new Beamdrop API client configured with the provided Config.
+// It validates the base URL and initializes default values for HTTPClient, Now, and UserAgent if not provided.
+//
+// Returns an error if the base URL is invalid or empty.
 func New(config Config) (*Client, error) {
 	if strings.TrimSpace(config.BaseURL) == "" {
 		return nil, ErrInvalidBaseURL
@@ -69,6 +130,8 @@ func New(config Config) (*Client, error) {
 	}, nil
 }
 
+// ListBuckets returns a list of all buckets accessible with the configured credentials.
+// Returns BucketList containing bucket names and creation timestamps.
 func (c *Client) ListBuckets(ctx context.Context) (*BucketList, error) {
 	var response BucketList
 	if err := c.doJSON(ctx, http.MethodGet, "/api/v1/buckets", nil, nil, &response); err != nil {
@@ -77,6 +140,9 @@ func (c *Client) ListBuckets(ctx context.Context) (*BucketList, error) {
 	return &response, nil
 }
 
+// CreateBucket creates a new bucket with the given name.
+// Returns an error if the bucket already exists (status 409) or if the name is invalid.
+// See CreateBucketIfNotExists for an idempotent variant.
 func (c *Client) CreateBucket(ctx context.Context, name string) (*BucketCreated, error) {
 	var response BucketCreated
 	if err := c.doJSON(ctx, http.MethodPut, bucketPath(name), nil, nil, &response); err != nil {
@@ -85,6 +151,9 @@ func (c *Client) CreateBucket(ctx context.Context, name string) (*BucketCreated,
 	return &response, nil
 }
 
+// CreateBucketIfNotExists creates a bucket if it does not already exist, returning an idempotent operation.
+// Returns 201 Created if the bucket was newly created, or 200 OK with exists=true if it already existed.
+// Recommended for initialization and bootstrap use cases.
 func (c *Client) CreateBucketIfNotExists(ctx context.Context, name string) (*BucketCreated, error) {
 	var response BucketCreated
 	query := url.Values{"createIfNotExists": []string{"true"}}
@@ -94,10 +163,15 @@ func (c *Client) CreateBucketIfNotExists(ctx context.Context, name string) (*Buc
 	return &response, nil
 }
 
+// DeleteBucket deletes an empty bucket.
+// Returns an error if the bucket is not found (404) or if it contains objects (409).
+// Delete all objects in the bucket before calling this method.
 func (c *Client) DeleteBucket(ctx context.Context, name string) error {
 	return c.doNoContent(ctx, http.MethodDelete, bucketPath(name), nil)
 }
 
+// BucketExists checks whether a bucket exists using a HEAD request.
+// Returns true if the bucket exists, false if it returns a 404, or an error for other failures.
 func (c *Client) BucketExists(ctx context.Context, name string) (bool, error) {
 	err := c.doNoContent(ctx, http.MethodHead, bucketPath(name), nil)
 	if err == nil {
@@ -109,6 +183,9 @@ func (c *Client) BucketExists(ctx context.Context, name string) (bool, error) {
 	return false, err
 }
 
+// ListObjects lists objects in a bucket with optional prefix, delimiter, and max key limit.
+// Supports S3-style hierarchical listing with delimiters and common prefixes.
+// MaxKeys defaults to 1000 if not specified.
 func (c *Client) ListObjects(ctx context.Context, bucket string, options ListObjectsOptions) (*ObjectList, error) {
 	query := url.Values{}
 	if options.Prefix != "" {
@@ -128,10 +205,16 @@ func (c *Client) ListObjects(ctx context.Context, bucket string, options ListObj
 	return &response, nil
 }
 
+// PutObject uploads an object (file) to a bucket with the given key (path).
+// The body is provided as a byte slice. For streaming uploads, use PutObjectReader.
+// Returns object metadata including ETag and size on success.
 func (c *Client) PutObject(ctx context.Context, bucket, key string, body []byte) (*ObjectCreated, error) {
 	return c.PutObjectReader(ctx, bucket, key, bytes.NewReader(body))
 }
 
+// PutObjectReader uploads an object from an io.Reader, supporting streaming for large files.
+// The reader is consumed completely during upload. Provide a buffered or seekable reader for retries.
+// Returns object metadata including ETag and size on success.
 func (c *Client) PutObjectReader(ctx context.Context, bucket, key string, body io.Reader) (*ObjectCreated, error) {
 	var response ObjectCreated
 	if err := c.doJSON(ctx, http.MethodPut, objectPath(bucket, key), nil, body, &response); err != nil {
@@ -140,6 +223,9 @@ func (c *Client) PutObjectReader(ctx context.Context, bucket, key string, body i
 	return &response, nil
 }
 
+// GetObject downloads an object from a bucket with the given key.
+// The entire object is read into memory and returned in ObjectBody.Body.
+// For very large objects, consider using a presigned URL and a standard HTTP client instead.
 func (c *Client) GetObject(ctx context.Context, bucket, key string) (*ObjectBody, error) {
 	response, err := c.doRaw(ctx, http.MethodGet, objectPath(bucket, key), nil, nil)
 	if err != nil {
@@ -148,6 +234,8 @@ func (c *Client) GetObject(ctx context.Context, bucket, key string) (*ObjectBody
 	return response, nil
 }
 
+// HeadObject retrieves metadata about an object without downloading the body.
+// Returns content type, length, ETag, and last modified timestamp.
 func (c *Client) HeadObject(ctx context.Context, bucket, key string) (*ObjectMetadata, error) {
 	response, err := c.doRaw(ctx, http.MethodHead, objectPath(bucket, key), nil, nil)
 	if err != nil {
@@ -156,10 +244,14 @@ func (c *Client) HeadObject(ctx context.Context, bucket, key string) (*ObjectMet
 	return &response.ObjectMetadata, nil
 }
 
+// DeleteObject deletes an object from a bucket.
+// Returns an error if the object is not found (404) or if the deletion fails.
 func (c *Client) DeleteObject(ctx context.Context, bucket, key string) error {
 	return c.doNoContent(ctx, http.MethodDelete, objectPath(bucket, key), nil)
 }
 
+// ObjectExists checks whether an object exists using a HEAD request.
+// Returns true if the object exists, false if it returns a 404, or an error for other failures.
 func (c *Client) ObjectExists(ctx context.Context, bucket, key string) (bool, error) {
 	err := c.doNoContent(ctx, http.MethodHead, objectPath(bucket, key), nil)
 	if err == nil {
@@ -171,6 +263,11 @@ func (c *Client) ObjectExists(ctx context.Context, bucket, key string) (bool, er
 	return false, err
 }
 
+// PresignObjectURL generates a client-side presigned URL for direct access to an object.
+// The URL is self-contained, signed using your secret key, and does not require server involvement.
+// Method should be "GET" or "PUT". The expiresAt timestamp is in UTC.
+// Note: key rotation will invalidate existing presigned URLs generated this way.
+// For more control over expiration and revocation, use CreatePresignedURL (server-side).
 func (c *Client) PresignObjectURL(method, bucket, key string, expiresAt time.Time) (string, error) {
 	if c.accessKeyID == "" || c.secretKey == "" {
 		return "", ErrMissingCredentials
@@ -188,6 +285,11 @@ func (c *Client) PresignObjectURL(method, bucket, key string, expiresAt time.Tim
 	return presignedURL.String(), nil
 }
 
+// CreatePresignedURL creates a server-side presigned URL with optional download limits and revocation support.
+// The URL is stored in Beamdrop's presigned URL registry and can be revoked at any time.
+// ExpiresIn is specified in seconds; if nil, the URL never expires (depends on server policy).
+// MaxDownloads limits the number of times the presigned URL can be used; if nil, unlimited.
+// Returns a PresignedURL containing the token and the full URL.
 func (c *Client) CreatePresignedURL(ctx context.Context, request CreatePresignedURLRequest) (*PresignedURL, error) {
 	body, err := json.Marshal(request)
 	if err != nil {
@@ -218,6 +320,8 @@ func (c *Client) CreatePresignedURL(ctx context.Context, request CreatePresigned
 	return &response, nil
 }
 
+// ListPresignedURLs lists all server-side presigned URLs created with this API key.
+// Returns a PresignedURLList containing all tokens, buckets, keys, and metadata.
 func (c *Client) ListPresignedURLs(ctx context.Context) (*PresignedURLList, error) {
 	var response PresignedURLList
 	if err := c.doJSON(ctx, http.MethodGet, "/api/v1/presign", nil, nil, &response); err != nil {
@@ -226,6 +330,8 @@ func (c *Client) ListPresignedURLs(ctx context.Context) (*PresignedURLList, erro
 	return &response, nil
 }
 
+// GetPresignedURL retrieves a single server-side presigned URL by its token.
+// Returns an error if the token is not found or has expired.
 func (c *Client) GetPresignedURL(ctx context.Context, token string) (*PresignedURL, error) {
 	var response PresignedURL
 	if err := c.doJSON(ctx, http.MethodGet, "/api/v1/presign/"+url.PathEscape(token), nil, nil, &response); err != nil {
@@ -234,6 +340,8 @@ func (c *Client) GetPresignedURL(ctx context.Context, token string) (*PresignedU
 	return &response, nil
 }
 
+// DeletePresignedURL revokes a server-side presigned URL by its token.
+// The URL becomes invalid immediately and cannot be used for access.
 func (c *Client) DeletePresignedURL(ctx context.Context, token string) error {
 	return c.doNoContent(ctx, http.MethodDelete, "/api/v1/presign/"+url.PathEscape(token), nil)
 }

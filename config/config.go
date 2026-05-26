@@ -13,15 +13,15 @@ const (
 	ConfigDirName = ".beamdrop"
 
 	// MaxUploadSize defines the maximum upload file size (500MB by default)
-	MaxUploadSize int64 = 500 * 1024 * 1024 // 500MB in bytes //TODO: Will fix this,
+	MaxUploadSize int64 = 5000 * 1024 * 1024 // 5GB in bytes //TODO: Will fix this,
 	//  probably also should user should set this via a flag
 
 	MultipartFormMaxMemory int64 = 10 << 30 // 10GB in bytes, for parsing multipart forms
 )
 
-// Set via -ldflags at build time
+// These are set via -ldflags at build time
 var (
-	VERSION   = "0.0.1" // All these are set during the build
+	VERSION   = "0.0.1"
 	Commit    = "unknown"
 	BuildDate = "unknown"
 )

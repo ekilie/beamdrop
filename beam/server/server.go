@@ -110,8 +110,8 @@ func (s *Server) Start() error {
 		slog.Warn("Failed to clean up orphaned temp files", "error", err)
 	}
 
-	if s.flags.Password != "" {
-		slog.Info("Password is enabled")
+	if s.flags.Password == "" {
+		slog.Warn("Password is disabled")
 	}
 
 	// Log rate limiting status

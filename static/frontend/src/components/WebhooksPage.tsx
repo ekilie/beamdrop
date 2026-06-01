@@ -83,7 +83,7 @@ export function WebhooksPage() {
   const fetchWebhooks = useCallback(async () => {
     try {
       setIsLoading(true);
-      const res = await fetch("/api/v1/webhooks");
+      const res = await fetch("/webhooks");
       if (!res.ok) throw new Error("Failed to fetch webhooks");
       const data = await res.json();
       setWebhooks(data.webhooks || []);
@@ -105,7 +105,7 @@ export function WebhooksPage() {
   const fetchDeliveries = async (id: number) => {
     setDeliveriesLoading(true);
     try {
-      const res = await fetch(`/api/v1/webhooks/${id}/deliveries`);
+      const res = await fetch(`/webhooks/${id}/deliveries`);
       if (!res.ok) throw new Error("Failed to fetch deliveries");
       const data = await res.json();
       setDeliveries(data.deliveries || []);
@@ -132,7 +132,7 @@ export function WebhooksPage() {
 
   const handleToggleEnabled = async (wh: Webhook) => {
     try {
-      const res = await fetch(`/api/v1/webhooks/${wh.id}`, {
+      const res = await fetch(`/webhooks/${wh.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ enabled: !wh.enabled }),
@@ -154,7 +154,7 @@ export function WebhooksPage() {
 
   const handleSendTest = async (wh: Webhook) => {
     try {
-      const res = await fetch(`/api/v1/webhooks/${wh.id}/test`, {
+      const res = await fetch(`/webhooks/${wh.id}/test`, {
         method: "POST",
       });
       if (!res.ok) throw new Error("Failed to send test event");
@@ -176,7 +176,7 @@ export function WebhooksPage() {
 
   const handleRotateSecret = async (wh: Webhook) => {
     try {
-      const res = await fetch(`/api/v1/webhooks/${wh.id}`, {
+      const res = await fetch(`/webhooks/${wh.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ rotate_secret: true }),
@@ -200,7 +200,7 @@ export function WebhooksPage() {
   const handleDelete = async () => {
     if (!webhookToDelete) return;
     try {
-      const res = await fetch(`/api/v1/webhooks/${webhookToDelete.id}`, {
+      const res = await fetch(`/webhooks/${webhookToDelete.id}`, {
         method: "DELETE",
       });
       if (res.ok || res.status === 204) {

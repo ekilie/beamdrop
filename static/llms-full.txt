@@ -1,0 +1,396 @@
+# Beamdrop
+
+> Beamdrop is a self-hosted, single-binary file storage server with an S3-compatible API built in Go. It replaces cloud storage services with a lightweight, secure solution you run on your own infrastructure.
+
+## Overview
+
+Beamdrop runs as a single binary (~39MB Docker image) with zero external dependencies on Linux, macOS, and Windows (Intel + ARM). It provides:
+
+- **Web UI**: React-based file manager with drag-and-drop, search, move, copy, rename
+- **S3-Compatible API**: Full REST API for buckets and objects at `/api/v1/`
+- **Shareable Links**: Unique URLs with optional password protection and expiry
+- **Real-time Dashboard**: WebSocket-powered storage stats and bandwidth metrics
+- **Security**: HMAC-SHA256 API auth, JWT web auth, rate limiting, CSRF protection, TLS
+- **Observability**: Structured JSON logging, Prometheus metrics, Grafana dashboard
+
+## Quick Start
+
+```bash
+# Share current directory
+beamdrop
+
+# With password and API auth
+beamdrop -dir /path/to/share -p mysecretpassword -api-auth
+
+# Create an API key
+curl -X POST http://localhost:7777/api/v1/keys
+
+# Use the returned access_key_id and secret_key for API calls
+```
+
+## CLI Flags
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `-dir` | `.` | Directory to share |
+| `-port` | auto (prefers 7777) | Server port |
+| `-p` | none | Password for web authentication |
+| `-api-auth` | false | Enable HMAC API key authentication |
+| `-qr` | false | Generate QR code for mobile access |
+| `-tls-cert` | none | TLS certificate path |
+| `-tls-key` | none | TLS private key path |
+| `-rate-limit` | 100 | Requests/min per IP (0 = disabled) |
+| `-max-storage` | unlimited | Max storage (e.g. "10GB") |
+| `-db-path` | `~/.beamdrop/beamdrop.db` | SQLite database path |
+| `-log-level` | info | Log level: debug, info, warn, error |
+| `-allowed-origins` | none | CORS origins (comma-separated) |
+| `-shutdown-timeout` | 30s | Graceful shutdown timeout |
+| `-jwt-secret` | auto-generated | JWT signing secret (min 32 bytes) |
+| `-trusted-proxies` | none | CIDR ranges for reverse proxy |
+| `-disable-csp` | false | Disable Content-Security-Policy |
+| `-disable-csrf` | false | Disable CSRF validation |
+| `-disable-system-stats` | false | Hide system metrics from dashboard |
+
+All flags can be set via `BEAMDROP_*` environment variables (e.g. `BEAMDROP_DIR`, `BEAMDROP_PASSWORD`).
+
+## Authentication
+
+### HMAC-SHA256 API Authentication
+
+All S3 API requests require HMAC-SHA256 signing when `-api-auth` is enabled:
+
+```
+StringToSign = METHOD + "\n" + PATH + "\n" + TIMESTAMP
+Signature = Base64(HMAC-SHA256(StringToSign, SecretKey))
+```
+
+Headers:
+```
+Authorization: Bearer ACCESS_KEY_ID:SIGNATURE
+X-Beamdrop-Date: 2024-01-15T10:30:00Z  (ISO 8601 UTC)
+```
+
+- AccessKeyID format: `BDK_*`
+- SecretKey format: `sk_*` (shown once at creation, encrypted at rest with AES-256-GCM)
+- Timestamps must be within 15 minutes of server time
+- API keys can be scoped to specific buckets and actions
+
+### Web Authentication
+
+When `-p <password>` is set:
+- `POST /auth/login` with `{"password": "..."}` returns JWT in HttpOnly cookie
+- JWT stored in `beamdrop_token` cookie (SameSite=Strict)
+- `POST /auth/logout` revokes token immediately
+
+## S3-Compatible API Reference
+
+Base path: `/api/v1/`
+
+### API Keys
+
+**Create API Key**
+```
+POST /api/v1/keys
+Content-Type: application/json
+
+{"name": "my-key", "bucketScope": "optional-bucket", "permissions": ["GetObject", "PutObject"]}
+
+Response 201:
+{
+  "id": 1,
+  "name": "my-key",
+  "access_key_id": "BDK_abc123",
+  "secret_key": "sk_secret456",  // shown ONCE
+  "bucket_scope": "optional-bucket",
+  "permissions": ["GetObject", "PutObject"],
+  "created_at": "2024-01-15T10:30:00Z"
+}
+```
+
+**List API Keys**
+```
+GET /api/v1/keys
+
+Response 200:
+{
+  "keys": [{"id": 1, "name": "my-key", "access_key_id": "BDK_abc123", ...}],
+  "count": 1
+}
+```
+
+**Delete API Key**
+```
+DELETE /api/v1/keys/{id}
+
+Response 204 (no content)
+```
+
+### Buckets
+
+**List Buckets**
+```
+GET /api/v1/buckets
+
+Response 200:
+{
+  "buckets": [{"name": "my-bucket", "created_at": "2024-01-15T10:30:00Z"}],
+  "count": 1
+}
+```
+
+**Create Bucket**
+```
+PUT /api/v1/buckets/{bucket}
+
+Response 201:
+{"bucket": "my-bucket", "created": true, "location": "/api/v1/buckets/my-bucket"}
+
+# Idempotent variant:
+PUT /api/v1/buckets/{bucket}?createIfNotExists=true
+
+Response 200 (if exists):
+{"bucket": "my-bucket", "created": false, "exists": true, "location": "/api/v1/buckets/my-bucket"}
+```
+
+Bucket name rules: 3-63 chars, lowercase alphanumeric + hyphens/dots, must start/end with letter/number, no IP-like names.
+
+**Check Bucket Existence**
+```
+HEAD /api/v1/buckets/{bucket}
+
+Response 200 (exists) or 404 (not found)
+```
+
+**Delete Bucket**
+```
+DELETE /api/v1/buckets/{bucket}
+
+Response 204 (no content) — bucket must be empty
+Response 409 if bucket contains objects
+```
+
+### Objects
+
+**List Objects**
+```
+GET /api/v1/buckets/{bucket}?list=true&prefix=folder/&delimiter=/&max-keys=100
+
+Response 200:
+{
+  "bucket": "my-bucket",
+  "prefix": "folder/",
+  "delimiter": "/",
+  "max_keys": 100,
+  "is_truncated": false,
+  "contents": [
+    {"key": "folder/file.txt", "size": 1234, "last_modified": "2024-01-15T10:30:00Z", "etag": "d41d8cd98f00b204e9800998ecf8427e", "content_type": "text/plain"}
+  ],
+  "common_prefixes": ["folder/subfolder/"]
+}
+```
+
+**Upload Object**
+```
+PUT /api/v1/buckets/{bucket}/{key}
+Content-Type: application/octet-stream
+Body: <file content>
+
+Response 201:
+{"bucket": "my-bucket", "key": "path/to/file.txt", "etag": "d41d8cd98f00b204e9800998ecf8427e", "size": 1234, "url": "/api/v1/buckets/my-bucket/path/to/file.txt"}
+```
+
+**Download Object**
+```
+GET /api/v1/buckets/{bucket}/{key}
+
+Response 200:
+Headers: Content-Type, Content-Length, ETag, Last-Modified
+Body: <file content>
+
+Supports Range header for partial downloads.
+```
+
+**Get Object Metadata**
+```
+HEAD /api/v1/buckets/{bucket}/{key}
+
+Response 200:
+Headers: Content-Type, Content-Length, ETag, Last-Modified
+(no body)
+```
+
+**Delete Object**
+```
+DELETE /api/v1/buckets/{bucket}/{key}
+
+Response 204 (no content)
+```
+
+### Presigned URLs
+
+Two types of presigned URLs:
+
+**1. Client-side (HMAC)**
+Generated locally using your secret key. Self-contained, no server call needed.
+```
+Token = Base64URL(HMAC-SHA256("METHOD\nBUCKET\nKEY\nUNIX_TIMESTAMP", SecretKey))
+URL = https://server/api/v1/buckets/{bucket}/{key}?access_key=BDK_xxx&expires=2024-01-16T10:30:00Z&token=TOKEN
+```
+
+**2. Server-side (Pretty URLs)**
+Stored in database, revocable, with download tracking.
+
+**Create Presigned URL**
+```
+POST /api/v1/presign
+Content-Type: application/json
+
+{
+  "bucket": "my-bucket",
+  "key": "path/to/file.txt",
+  "method": "GET",
+  "expires_in": 3600,       // seconds (optional)
+  "max_downloads": 10       // optional
+}
+
+Response 201:
+{
+  "id": 1,
+  "token": "abc123",
+  "url": "https://server/dl/abc123",
+  "bucket": "my-bucket",
+  "key": "path/to/file.txt",
+  "method": "GET",
+  "expires_at": "2024-01-15T11:30:00Z",
+  "max_downloads": 10,
+  "download_count": 0,
+  "created_at": "2024-01-15T10:30:00Z"
+}
+```
+
+**List Presigned URLs**
+```
+GET /api/v1/presign
+
+Response 200:
+{"urls": [...], "count": 5}
+```
+
+**Get Presigned URL Details**
+```
+GET /api/v1/presign/{token}
+
+Response 200: (same structure as create response)
+```
+
+**Revoke Presigned URL**
+```
+DELETE /api/v1/presign/{token}
+
+Response 204 (no content) — URL returns 404 immediately after revocation
+```
+
+**Download via Presigned URL**
+```
+GET /dl/{token}
+
+Response 200: file download (public, no auth required)
+Response 404: expired, revoked, or max downloads reached
+```
+
+## Error Responses
+
+All errors follow a consistent JSON structure:
+```json
+{
+  "error": "BUCKET_NOT_FOUND",
+  "category": "NOT_FOUND",
+  "message": "The specified bucket does not exist",
+  "details": {},
+  "retryable": false,
+  "retry_after": 0
+}
+```
+
+Common error codes:
+| HTTP Status | Error Code | Category | Retryable |
+|-------------|-----------|----------|-----------|
+| 400 | INVALID_BUCKET_NAME | VALIDATION | No |
+| 400 | INVALID_OBJECT_KEY | VALIDATION | No |
+| 401 | UNAUTHORIZED | AUTH | No |
+| 403 | FORBIDDEN | AUTH | No |
+| 404 | BUCKET_NOT_FOUND | NOT_FOUND | No |
+| 404 | OBJECT_NOT_FOUND | NOT_FOUND | No |
+| 409 | BUCKET_ALREADY_EXISTS | CONFLICT | No |
+| 409 | BUCKET_NOT_EMPTY | CONFLICT | No |
+| 423 | OBJECT_LOCKED | LOCKED | Yes |
+| 429 | RATE_LIMIT_EXCEEDED | RATE_LIMIT | Yes |
+
+Rate limit responses include `Retry-After` header (seconds) and `X-Retryable: true`.
+
+## Rate Limiting
+
+Three independent tiers per IP:
+
+| Tier | Endpoints | Default |
+|------|-----------|---------|
+| General | All endpoints | 100 req/min |
+| Auth | `/auth/login` | 5 req/min |
+| Upload | PUT objects, `/upload` | 10 req/min |
+
+Configure with `-rate-limit N` (sets general tier; auth = 5%, upload = 10%).
+Disable with `-rate-limit 0`.
+
+## Health Endpoints
+
+- `GET /health` — Health index with component status (JSON)
+- `GET /health/live` — Kubernetes liveness probe
+- `GET /health/ready` — Kubernetes readiness probe
+- `GET /health/startup` — Kubernetes startup probe
+- `GET /metrics` — Prometheus metrics
+
+## Go Client SDK
+
+```go
+import "github.com/ekilie/beamdrop/pkg/client"
+
+c, err := client.New(client.Config{
+    BaseURL:     "http://localhost:7777",
+    AccessKeyID: "BDK_abc123",
+    SecretKey:   "sk_secret",
+})
+
+// Buckets
+buckets, _ := c.ListBuckets(ctx)
+created, _ := c.CreateBucketIfNotExists(ctx, "my-bucket")
+exists, _ := c.BucketExists(ctx, "my-bucket")
+_ = c.DeleteBucket(ctx, "my-bucket")
+
+// Objects
+uploaded, _ := c.PutObject(ctx, "my-bucket", "file.txt", []byte("hello"))
+uploaded, _ = c.PutObjectReader(ctx, "my-bucket", "file.txt", reader)
+obj, _ := c.GetObject(ctx, "my-bucket", "file.txt")      // obj.Body is []byte
+meta, _ := c.HeadObject(ctx, "my-bucket", "file.txt")     // metadata only
+_ = c.DeleteObject(ctx, "my-bucket", "file.txt")
+list, _ := c.ListObjects(ctx, "my-bucket", client.ListObjectsOptions{Prefix: "folder/"})
+
+// Presigned URLs (client-side)
+url, _ := c.PresignObjectURL("GET", "my-bucket", "file.txt", time.Now().Add(24*time.Hour))
+
+// Presigned URLs (server-side)
+presigned, _ := c.CreatePresignedURL(ctx, client.CreatePresignedURLRequest{
+    Bucket:       "my-bucket",
+    Key:          "file.txt",
+    Method:       "GET",
+    ExpiresIn:    intPtr(3600),
+    MaxDownloads: intPtr(10),
+})
+urls, _ := c.ListPresignedURLs(ctx)
+_ = c.DeletePresignedURL(ctx, "token123")
+```
+
+## MCP Server
+
+A TypeScript MCP server is available in the `mcp/` directory for AI agent integration. See `mcp/README.md` for setup instructions.
+
+Available tools: `list_buckets`, `create_bucket`, `delete_bucket`, `bucket_exists`, `list_objects`, `put_object`, `get_object`, `head_object`, `delete_object`, `create_presigned_url`, `list_presigned_urls`, `get_presigned_url`, `delete_presigned_url`, `list_api_keys`, `create_api_key`, `delete_api_key`.

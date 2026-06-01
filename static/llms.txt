@@ -1,0 +1,73 @@
+# Beamdrop
+
+> Beamdrop is a self-hosted, single-binary file storage server with an S3-compatible API built in Go. It replaces cloud storage services with a lightweight, secure solution you run on your own infrastructure. Features include web UI file management, HMAC-SHA256 API authentication, presigned URLs, shareable links, real-time stats, and Prometheus metrics.
+
+Key facts:
+
+- Single binary (~39MB Docker image), zero external dependencies, runs on Linux/macOS/Windows (Intel + ARM)
+- S3-compatible REST API at `/api/v1/` for programmatic bucket and object operations
+- HMAC-SHA256 request signing: `Authorization: Bearer ACCESS_KEY_ID:SIGNATURE` with `X-Beamdrop-Date` header
+- Signature formula: `Base64(HMAC-SHA256("METHOD\nPATH\nTIMESTAMP", SecretKey))`
+- Two presigned URL types: client-side (HMAC, self-contained) and server-side (pretty `/dl/{token}` URLs, revocable)
+- API keys: `POST /api/v1/keys` to create, `GET /api/v1/keys` to list, `DELETE /api/v1/keys/{id}` to delete
+- Bucket names: 3-63 chars, lowercase alphanumeric + hyphens/dots, no IP-like names
+- Object keys: max 1024 bytes, no `..` or leading `/`
+- Rate limiting: 3 tiers (general 100/min, auth 5/min, upload 10/min per IP)
+- Official Go client SDK in `pkg/client/`, Laravel integration in `docs/laravel/`
+- MCP server available in `mcp/` for AI agent integration
+
+## Docs
+
+- [Full documentation](https://github.com/ekilie/beamdrop/blob/main/docs/beamdrop-full-docs.md): Complete reference covering all features, configuration, and deployment
+- [OpenAPI specification](https://github.com/ekilie/beamdrop/blob/main/docs/openapi.yaml): Machine-readable API specification for the S3-compatible API
+- [Developer guide](https://github.com/ekilie/beamdrop/blob/main/docs/DEVELOPER-GUIDE.md): Architecture overview, contributing guidelines, and development setup
+- [S3 API design](https://github.com/ekilie/beamdrop/blob/main/docs/s3-api-design.md): Design document for the S3-compatible API layer
+- [S3 API walkthrough](https://github.com/ekilie/beamdrop/blob/main/docs/s3-api-walkthrough.md): Step-by-step tutorial for using the S3-compatible API
+
+## SDK & Integrations
+
+- [Go client SDK](https://github.com/ekilie/beamdrop/tree/main/pkg/client): Official typed Go client with HMAC signing, bucket/object operations, and presigned URLs
+- [Go usage examples](https://github.com/ekilie/beamdrop/tree/main/examples/go-usage): Working Go examples demonstrating common SDK patterns
+- [Laravel integration](https://github.com/ekilie/beamdrop/tree/main/docs/laravel): PHP service class for Laravel with HMAC auth and presigned URL support
+
+## AI & Agents
+
+- [MCP server](https://github.com/ekilie/beamdrop/tree/main/mcp): Model Context Protocol server exposing Beamdrop as tools for AI agents (TypeScript)
+- [Agent instructions](https://github.com/ekilie/beamdrop/blob/main/docs/ai/agent-instructions.md): Language-agnostic guide for AI agents to interact with Beamdrop's HTTP API
+- [VS Code Copilot skill](https://github.com/ekilie/beamdrop/blob/main/docs/ai/SKILL.md): AI skill definition for GitHub Copilot integration
+
+## API Quick Reference
+
+Buckets:
+- `GET /api/v1/buckets` — List all buckets
+- `PUT /api/v1/buckets/{bucket}` — Create bucket (add `?createIfNotExists=true` for idempotent)
+- `HEAD /api/v1/buckets/{bucket}` — Check bucket existence
+- `DELETE /api/v1/buckets/{bucket}` — Delete empty bucket
+
+Objects:
+- `GET /api/v1/buckets/{bucket}?list=true&prefix=...&delimiter=...` — List objects
+- `PUT /api/v1/buckets/{bucket}/{key}` — Upload object (body = file content)
+- `GET /api/v1/buckets/{bucket}/{key}` — Download object (supports Range header)
+- `HEAD /api/v1/buckets/{bucket}/{key}` — Get object metadata
+- `DELETE /api/v1/buckets/{bucket}/{key}` — Delete object
+
+Presigned URLs:
+- `POST /api/v1/presign` — Create server-side presigned URL (JSON body: bucket, key, method, expiresIn, maxDownloads)
+- `GET /api/v1/presign` — List all presigned URLs
+- `GET /api/v1/presign/{token}` — Get presigned URL details
+- `DELETE /api/v1/presign/{token}` — Revoke presigned URL
+- `GET /dl/{token}` — Public download via presigned URL
+
+API Keys:
+- `POST /api/v1/keys` — Create API key (secret shown once in response)
+- `GET /api/v1/keys` — List API keys (no secrets)
+- `DELETE /api/v1/keys/{id}` — Delete API key
+
+## Optional
+
+- [Security documentation](https://github.com/ekilie/beamdrop/blob/main/docs/SECURITY.md): Security architecture and reporting guidelines
+- [Threat model](https://github.com/ekilie/beamdrop/blob/main/docs/THREAT-MODEL.md): Threat analysis and security mitigations
+- [Operations runbook](https://github.com/ekilie/beamdrop/blob/main/docs/OPERATIONS-RUNBOOK.md): Production operations procedures and troubleshooting
+- [Failure scenarios](https://github.com/ekilie/beamdrop/blob/main/docs/FAILURE-SCENARIOS.md): Known failure modes and recovery procedures
+- [VPS installation](https://github.com/ekilie/beamdrop/blob/main/docs/VPS-installation.md): Guide for deploying Beamdrop on a VPS
+- [Password auth design](https://github.com/ekilie/beamdrop/blob/main/docs/password-authentication-design.md): Design document for password-based authentication

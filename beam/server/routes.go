@@ -21,6 +21,9 @@ func (s *Server) setupRoutes() {
 	// Prometheus metrics
 	s.mux.Handle("/metrics", promhttp.Handler())
 
+	// LLM discoverability
+	s.mux.HandleFunc("/llms.txt", handlers.LLMsTxtHandler)
+
 	// Static files
 	s.mux.HandleFunc("/", handlers.StaticHandler)
 

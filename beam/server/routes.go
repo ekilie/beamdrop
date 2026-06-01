@@ -24,6 +24,19 @@ func (s *Server) setupRoutes() {
 	// LLM discoverability
 	s.mux.HandleFunc("/llms.txt", handlers.LLMsTxtHandler)
 
+	// MCP endpoint (Model Context Protocol) — requires API key auth
+	mcpHandler := handlers.NewMCPHandler(s.sharedDir)
+	apiAuthForMCP := api.NewAPIAuthMiddleware(s.flags.APIAuth)
+	s.mux.HandleFunc("/mcp", func(w http.ResponseWriter, r *http.Request) {
+		// GET /mcp is public (discovery info)
+		if r.Method == http.MethodGet || r.Method == http.MethodOptions {
+			mcpHandler.ServeHTTP(w, r)
+			return
+		}
+		// POST /mcp requires API key authentication
+		apiAuthForMCP.Middleware(mcpHandler).ServeHTTP(w, r)
+	})
+
 	// Static files
 	s.mux.HandleFunc("/", handlers.StaticHandler)
 

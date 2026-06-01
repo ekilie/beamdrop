@@ -127,6 +127,9 @@ func (s *Server) setupS3APIRoutes() {
 	// Presigned URL management
 	presignHandler := api.NewPresignHandler(s.sharedDir)
 
+	// Webhook management
+	webhookHandler := api.NewWebhookHandler()
+
 	// We support both /api/v1/presign and /api/v1/presign/ for convenience
 	// (some clients may add trailing slash)
 	s.mux.HandleFunc("/api/v1/presign/", func(w http.ResponseWriter, r *http.Request) {
@@ -134,5 +137,13 @@ func (s *Server) setupS3APIRoutes() {
 	})
 	s.mux.HandleFunc("/api/v1/presign", func(w http.ResponseWriter, r *http.Request) {
 		apiAuth.Middleware(http.HandlerFunc(presignHandler.Handle)).ServeHTTP(w, r)
+	})
+
+	// Webhook management endpoints
+	s.mux.HandleFunc("/api/v1/webhooks/", func(w http.ResponseWriter, r *http.Request) {
+		apiAuth.Middleware(http.HandlerFunc(webhookHandler.Handle)).ServeHTTP(w, r)
+	})
+	s.mux.HandleFunc("/api/v1/webhooks", func(w http.ResponseWriter, r *http.Request) {
+		apiAuth.Middleware(http.HandlerFunc(webhookHandler.Handle)).ServeHTTP(w, r)
 	})
 }

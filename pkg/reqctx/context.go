@@ -136,6 +136,14 @@ func GetUserAgent(ctx context.Context) string {
 	return ""
 }
 
+// GetAccessKeyID retrieves the authenticated API access key ID from context
+func GetAccessKeyID(ctx context.Context) string {
+	if id, ok := ctx.Value(AccessKeyIDKey).(string); ok {
+		return id
+	}
+	return ""
+}
+
 // WithUploadTimeout returns a context with the upload timeout applied
 func WithUploadTimeout(ctx context.Context) (context.Context, context.CancelFunc) {
 	return context.WithTimeout(ctx, globalConfig.UploadTimeout)

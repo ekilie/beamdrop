@@ -231,7 +231,7 @@ func (h *WebhookHandler) delete(w http.ResponseWriter, _ *http.Request, id uint)
 func (h *WebhookHandler) test(w http.ResponseWriter, _ *http.Request, id uint) {
 	wh, err := db.GetWebhook(id)
 	if err != nil || wh == nil {
-		errors.New(errors.CodeNotFound, errors.CategoryNotFound, "Webhook not found", http.StatusNotFound).WriteHTTPResponse(w)
+		errors.New(errors.CodePathNotFound, errors.CategoryNotFound, "Webhook not found", http.StatusNotFound).WriteHTTPResponse(w)
 		return
 	}
 

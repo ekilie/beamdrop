@@ -1,73 +1,85 @@
 # Beamdrop
 
-> Beamdrop is a self-hosted, single-binary file storage server with an S3-compatible API built in Go. It replaces cloud storage services with a lightweight, secure solution you run on your own infrastructure. Features include web UI file management, HMAC-SHA256 API authentication, presigned URLs, shareable links, real-time stats, and Prometheus metrics.
+> Beamdrop is a self-hosted, single-binary file storage server with an S3-compatible REST API built in Go. It replaces cloud storage with a lightweight, zero-dependency solution you run on your own infrastructure — a web file manager, programmable storage API, presigned URLs, shareable links, real-time stats, and Prometheus metrics in one ~39MB binary.
 
-Key facts:
+Important facts for working with Beamdrop:
 
-- Single binary (~39MB Docker image), zero external dependencies, runs on Linux/macOS/Windows (Intel + ARM)
-- S3-compatible REST API at `/api/v1/` for programmatic bucket and object operations
-- HMAC-SHA256 request signing: `Authorization: Bearer ACCESS_KEY_ID:SIGNATURE` with `X-Beamdrop-Date` header
-- Signature formula: `Base64(HMAC-SHA256("METHOD\nPATH\nTIMESTAMP", SecretKey))`
-- Two presigned URL types: client-side (HMAC, self-contained) and server-side (pretty `/dl/{token}` URLs, revocable)
-- API keys: `POST /api/v1/keys` to create, `GET /api/v1/keys` to list, `DELETE /api/v1/keys/{id}` to delete
-- Bucket names: 3-63 chars, lowercase alphanumeric + hyphens/dots, no IP-like names
-- Object keys: max 1024 bytes, no `..` or leading `/`
-- Rate limiting: 3 tiers (general 100/min, auth 5/min, upload 10/min per IP)
-- Official Go client SDK in `pkg/client/`, Laravel integration in `docs/laravel/`
-- MCP server available in `mcp/` for AI agent integration
+- Single binary, zero external dependencies. Runs on Linux, macOS, Windows (Intel + ARM). Docker image is ~39MB.
+- S3-compatible REST API at `/api/v1/` with HMAC-SHA256 authentication for all programmatic operations.
+- Two authentication systems: password-based JWT for the web UI (`-p` flag), and HMAC-SHA256 API keys for the S3 API (`-api-auth` flag). They are independent.
+- API key format: AccessKeyID = `BDK_` + 16 hex chars (8 random bytes). SecretKey = `sk_` + 40 hex chars (20 random bytes). Secret is encrypted at rest with AES-256-GCM. Shown only once at creation.
+- Request signing: `StringToSign = METHOD + "\n" + PATH + "\n" + RFC3339_TIMESTAMP`. Signature = `Base64(HMAC-SHA256(StringToSign, SecretKey))`. Header: `Authorization: Bearer ACCESS_KEY_ID:SIGNATURE`. Timestamp header: `X-Beamdrop-Date`. Clock skew tolerance: ±15 minutes.
+- Two presigned URL types: (1) Client-side HMAC — self-contained URL with token, no server call needed, but cannot be revoked and invalidated by key rotation. (2) Server-side pretty URLs — stored in DB as `/dl/{token}`, revocable, supports download counting and max download limits. Prefer server-side when you need revocation, tracking, or download limits. Prefer client-side for ephemeral links that don't need server overhead.
+- Bucket name validation regex: `^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$`. Length 3-63. No IP-like names (e.g., `192.168.1.1` rejected). Must start and end with lowercase letter or digit.
+- Object key rules: max 1024 bytes, cannot be empty, cannot contain `..`, cannot start with `/`.
+- Max upload size: 5GB per file. Atomic writes via temp file + fsync + rename for crash safety. ETag is MD5 hex hash of content.
+- Per-IP rate limiting with 3 tiers: General = 100 req/min, Auth (`/auth/login`) = 5 req/min, Upload (PUT objects) = 10 req/min. Token bucket algorithm with burst = 1 minute of requests. 429 responses include `Retry-After` header and `X-Retryable: true`.
+- API keys support `permissions` field (JSON: `"read"`, `"write"`, or `"read,write"`), optional `bucketScope` to restrict to one bucket, optional `expiresAt`, and `disabled` flag. `lastUsedAt` is tracked.
+- Object locking: per-object read/write locks with 30-second timeout. Deadlock detection runs every 10 seconds. Stale lock warning at 5 minutes. Lock key format: `{bucket}/{key}`.
+- Health endpoints: `/health` (component status JSON), `/health/live` (K8s liveness), `/health/ready` (K8s readiness), `/health/startup` (K8s startup). Prometheus metrics at `/metrics`.
+- Allowed MIME types for upload: images (jpeg, png, gif, webp, svg+xml, bmp), documents (pdf, docx, xlsx, pptx, txt, csv, html, css, js), archives (zip, rar, 7z, tar, gzip), audio (mpeg, wav, ogg, mp4, webm, flac), video (mp4, mpeg, webm, ogg, avi, quicktime), code (json, xml, javascript), and application/octet-stream.
+- Official Go client SDK in `pkg/client/`, Laravel integration in `docs/laravel/`, TypeScript MCP server in `mcp/`.
 
 ## Docs
 
 - [Full documentation](https://github.com/ekilie/beamdrop/blob/main/docs/beamdrop-full-docs.md): Complete reference covering all features, configuration, and deployment
 - [OpenAPI specification](https://github.com/ekilie/beamdrop/blob/main/docs/openapi.yaml): Machine-readable API specification for the S3-compatible API
-- [Developer guide](https://github.com/ekilie/beamdrop/blob/main/docs/DEVELOPER-GUIDE.md): Architecture overview, contributing guidelines, and development setup
+- [Developer guide](https://github.com/ekilie/beamdrop/blob/main/docs/DEVELOPER-GUIDE.md): Architecture overview, codebase structure, and contributing guidelines
 - [S3 API design](https://github.com/ekilie/beamdrop/blob/main/docs/s3-api-design.md): Design document for the S3-compatible API layer
-- [S3 API walkthrough](https://github.com/ekilie/beamdrop/blob/main/docs/s3-api-walkthrough.md): Step-by-step tutorial for using the S3-compatible API
+- [S3 API walkthrough](https://github.com/ekilie/beamdrop/blob/main/docs/s3-api-walkthrough.md): Step-by-step tutorial using curl to exercise all S3 API endpoints
 
 ## SDK & Integrations
 
-- [Go client SDK](https://github.com/ekilie/beamdrop/tree/main/pkg/client): Official typed Go client with HMAC signing, bucket/object operations, and presigned URLs
-- [Go usage examples](https://github.com/ekilie/beamdrop/tree/main/examples/go-usage): Working Go examples demonstrating common SDK patterns
-- [Laravel integration](https://github.com/ekilie/beamdrop/tree/main/docs/laravel): PHP service class for Laravel with HMAC auth and presigned URL support
+- [Go client SDK](https://github.com/ekilie/beamdrop/tree/main/pkg/client): Official typed Go client — `client.New(Config{BaseURL, AccessKeyID, SecretKey})` with methods for all bucket, object, and presigned URL operations. Handles HMAC signing, response decoding, and structured `APIError` types. Supports `io.Reader` streaming uploads via `PutObjectReader`.
+- [Go usage examples](https://github.com/ekilie/beamdrop/tree/main/examples/go-usage): Working Go examples: create buckets, upload objects, list with prefix/delimiter, generate presigned URLs
+- [Laravel integration](https://github.com/ekilie/beamdrop/tree/main/docs/laravel): PHP `Beamdrop` service class with native cURL (no Composer deps). HMAC signing, bucket/object CRUD, client-side and server-side presigned URLs, structured exception handling
 
 ## AI & Agents
 
-- [MCP server](https://github.com/ekilie/beamdrop/tree/main/mcp): Model Context Protocol server exposing Beamdrop as tools for AI agents (TypeScript)
-- [Agent instructions](https://github.com/ekilie/beamdrop/blob/main/docs/ai/agent-instructions.md): Language-agnostic guide for AI agents to interact with Beamdrop's HTTP API
-- [VS Code Copilot skill](https://github.com/ekilie/beamdrop/blob/main/docs/ai/SKILL.md): AI skill definition for GitHub Copilot integration
+- [MCP server](https://github.com/ekilie/beamdrop/tree/main/mcp): TypeScript Model Context Protocol server exposing 16 tools (bucket CRUD, object CRUD, presigned URL management, API key management). Connects via stdio. Config via `BEAMDROP_BASE_URL`, `BEAMDROP_ACCESS_KEY_ID`, `BEAMDROP_SECRET_KEY` env vars
+- [Agent instructions](https://github.com/ekilie/beamdrop/blob/main/docs/ai/agent-instructions.md): Complete HTTP API guide for AI agents with HMAC signing examples in curl, Python, and JavaScript, all endpoints, response schemas, error codes, and step-by-step workflows
+- [VS Code Copilot skill](https://github.com/ekilie/beamdrop/blob/main/docs/ai/SKILL.md): AI skill for GitHub Copilot with Go client code templates, presigned URL decision guide, error handling patterns, and common agentic workflows
 
 ## API Quick Reference
 
+Authentication — include on every S3 API request:
+- `Authorization: Bearer BDK_xxxx:BASE64_HMAC_SIGNATURE`
+- `X-Beamdrop-Date: 2024-01-15T10:30:00Z` (RFC3339 UTC, within ±15 min of server time)
+
 Buckets:
-- `GET /api/v1/buckets` — List all buckets
-- `PUT /api/v1/buckets/{bucket}` — Create bucket (add `?createIfNotExists=true` for idempotent)
-- `HEAD /api/v1/buckets/{bucket}` — Check bucket existence
-- `DELETE /api/v1/buckets/{bucket}` — Delete empty bucket
+- `GET /api/v1/buckets` → `{"buckets": [{"name":"...", "createdAt":"..."}], "count": N}`
+- `PUT /api/v1/buckets/{bucket}` → 201 `{"bucket":"...", "created":"RFC3339", "location":"..."}` | 409 if exists
+- `PUT /api/v1/buckets/{bucket}?createIfNotExists=true` → 201 (new) or 200 `{"exists":true}` (already existed)
+- `HEAD /api/v1/buckets/{bucket}` → 200 (exists) or 404
+- `DELETE /api/v1/buckets/{bucket}` → 204 | 409 BUCKET_NOT_EMPTY | 404
 
 Objects:
-- `GET /api/v1/buckets/{bucket}?list=true&prefix=...&delimiter=...` — List objects
-- `PUT /api/v1/buckets/{bucket}/{key}` — Upload object (body = file content)
-- `GET /api/v1/buckets/{bucket}/{key}` — Download object (supports Range header)
-- `HEAD /api/v1/buckets/{bucket}/{key}` — Get object metadata
-- `DELETE /api/v1/buckets/{bucket}/{key}` — Delete object
+- `GET /api/v1/buckets/{bucket}?list=true&prefix=...&delimiter=/&max-keys=N` → `{"contents":[{key,size,lastModified,etag,contentType}], "commonPrefixes":[...], "isTruncated":bool}`
+- `PUT /api/v1/buckets/{bucket}/{key}` (body = raw bytes) → 200 `{"bucket","key","etag","size","url"}`
+- `GET /api/v1/buckets/{bucket}/{key}` → raw file bytes, headers: Content-Type, Content-Length, ETag, Last-Modified. Supports HTTP Range for partial downloads
+- `HEAD /api/v1/buckets/{bucket}/{key}` → same headers, no body
+- `DELETE /api/v1/buckets/{bucket}/{key}` → 204
 
 Presigned URLs:
-- `POST /api/v1/presign` — Create server-side presigned URL (JSON body: bucket, key, method, expiresIn, maxDownloads)
-- `GET /api/v1/presign` — List all presigned URLs
-- `GET /api/v1/presign/{token}` — Get presigned URL details
-- `DELETE /api/v1/presign/{token}` — Revoke presigned URL
-- `GET /dl/{token}` — Public download via presigned URL
+- `POST /api/v1/presign` (JSON: `{bucket, key, method, expires_in, max_downloads}`) → 201 `{token, url, expiresAt, ...}`
+- `GET /api/v1/presign` → `{"urls":[...], "count":N}`
+- `GET /api/v1/presign/{token}` → single presigned URL record
+- `DELETE /api/v1/presign/{token}` → 200 `{"message":"..."}` (immediate 404 on subsequent `/dl/{token}` access)
+- `GET /dl/{token}` → public file download (no auth), 404 if expired/revoked/max-downloads-reached
 
 API Keys:
-- `POST /api/v1/keys` — Create API key (secret shown once in response)
-- `GET /api/v1/keys` — List API keys (no secrets)
-- `DELETE /api/v1/keys/{id}` — Delete API key
+- `POST /api/v1/keys` (JSON: `{name, permissions, bucket_scope, expires_in}`) → 201 `{id, accessKeyId, secretKey, ...}` — secretKey shown ONCE
+- `GET /api/v1/keys` → `{"keys":[...], "count":N}` — no secrets in response
+- `DELETE /api/v1/keys?accessKeyId=BDK_xxxx` → 204
+
+Error response format: `{"error":{"code":"BUCKET_NOT_FOUND","category":"NOT_FOUND","message":"...","details":{}}}`
+Key error codes: INVALID_BUCKET_NAME, INVALID_OBJECT_KEY, UNAUTHORIZED, BUCKET_NOT_FOUND, OBJECT_NOT_FOUND, BUCKET_EXISTS, BUCKET_NOT_EMPTY, OBJECT_LOCKED (423, retryable), RATE_LIMIT_EXCEEDED (429, retryable), FILE_TOO_LARGE (413), STORAGE_FULL (507)
 
 ## Optional
 
-- [Security documentation](https://github.com/ekilie/beamdrop/blob/main/docs/SECURITY.md): Security architecture and reporting guidelines
-- [Threat model](https://github.com/ekilie/beamdrop/blob/main/docs/THREAT-MODEL.md): Threat analysis and security mitigations
-- [Operations runbook](https://github.com/ekilie/beamdrop/blob/main/docs/OPERATIONS-RUNBOOK.md): Production operations procedures and troubleshooting
-- [Failure scenarios](https://github.com/ekilie/beamdrop/blob/main/docs/FAILURE-SCENARIOS.md): Known failure modes and recovery procedures
-- [VPS installation](https://github.com/ekilie/beamdrop/blob/main/docs/VPS-installation.md): Guide for deploying Beamdrop on a VPS
-- [Password auth design](https://github.com/ekilie/beamdrop/blob/main/docs/password-authentication-design.md): Design document for password-based authentication
+- [Security documentation](https://github.com/ekilie/beamdrop/blob/main/docs/SECURITY.md): Security architecture, TLS configuration, and vulnerability reporting
+- [Threat model](https://github.com/ekilie/beamdrop/blob/main/docs/THREAT-MODEL.md): Threat analysis covering authentication bypass, path traversal, DoS, and data exfiltration mitigations
+- [Operations runbook](https://github.com/ekilie/beamdrop/blob/main/docs/OPERATIONS-RUNBOOK.md): Production deployment, backup, monitoring, scaling, and troubleshooting procedures
+- [Failure scenarios](https://github.com/ekilie/beamdrop/blob/main/docs/FAILURE-SCENARIOS.md): Known failure modes (disk full, DB corruption, lock contention) and recovery procedures
+- [VPS installation](https://github.com/ekilie/beamdrop/blob/main/docs/VPS-installation.md): Step-by-step guide for deploying Beamdrop on a VPS with systemd, Caddy, and firewall config
+- [Password auth design](https://github.com/ekilie/beamdrop/blob/main/docs/password-authentication-design.md): JWT authentication design with token revocation, cookie security, and bcrypt password hashing

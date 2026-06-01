@@ -23,14 +23,14 @@ func NewWebhookHandler() *WebhookHandler {
 // Handle routes webhook requests based on path and method.
 func (h *WebhookHandler) Handle(w http.ResponseWriter, r *http.Request) {
 	// /api/v1/webhooks          → list or create (S3 API auth)
-	// /webhooks                 → list or create (session auth / dashboard)
+	// /api/webhooks             → list or create (session auth / dashboard)
 	// .../webhooks/{id}         → update or delete
 	// .../webhooks/{id}/test    → send test event
 	// .../webhooks/{id}/deliveries → list deliveries
 
 	path := r.URL.Path
 	path = strings.TrimPrefix(path, "/api/v1/webhooks")
-	path = strings.TrimPrefix(path, "/webhooks")
+	path = strings.TrimPrefix(path, "/api/webhooks")
 	path = strings.TrimPrefix(path, "/")
 
 	if path == "" {

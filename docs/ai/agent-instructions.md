@@ -27,6 +27,7 @@ Every `/api/v1/` request must be signed with HMAC-SHA256 when `-api-auth` is ena
    ```
    StringToSign = HTTP_METHOD + "\n" + REQUEST_PATH + "\n" + TIMESTAMP
    ```
+
    - **REQUEST_PATH** is the URL path only — no query string. Example: `/api/v1/buckets/my-bucket`
    - Example: `GET\n/api/v1/buckets\n2024-01-15T10:30:00Z`
 3. Compute the signature:
@@ -44,16 +45,16 @@ Every `/api/v1/` request must be signed with HMAC-SHA256 when `-api-auth` is ena
 
 ### API Key Properties
 
-| Property | Type | Description |
-|----------|------|-------------|
+| Property      | Type   | Description                                                           |
+| ------------- | ------ | --------------------------------------------------------------------- |
 | `accessKeyId` | string | `BDK_` + 16 hex chars. Public identifier used in Authorization header |
-| `secretKey` | string | `sk_` + 40 hex chars. Shown only at creation. Used for HMAC signing |
-| `permissions` | string | `"read"`, `"write"`, or `"read,write"` |
-| `bucketScope` | string | Optional. Restricts key to operations on a single bucket |
-| `expiresAt` | string | Optional. RFC3339 timestamp. Key auto-expires |
-| `disabled` | bool | Can be set to temporarily disable without deleting |
-| `lastUsedAt` | string | Auto-tracked. Last time this key was used |
-| `name` | string | Optional human-readable label |
+| `secretKey`   | string | `sk_` + 40 hex chars. Shown only at creation. Used for HMAC signing   |
+| `permissions` | string | `"read"`, `"write"`, or `"read,write"`                                |
+| `bucketScope` | string | Optional. Restricts key to operations on a single bucket              |
+| `expiresAt`   | string | Optional. RFC3339 timestamp. Key auto-expires                         |
+| `disabled`    | bool   | Can be set to temporarily disable without deleting                    |
+| `lastUsedAt`  | string | Auto-tracked. Last time this key was used                             |
+| `name`        | string | Optional human-readable label                                         |
 
 ### Signing Examples
 
@@ -129,6 +130,7 @@ const response = await fetch(`${baseUrl}${path}`, {
 | `DELETE` | `/api/v1/buckets/{name}`                        | Delete empty bucket        |
 
 **Bucket name validation (exact rules):**
+
 - Length: 3-63 characters
 - Regex: `^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$`
 - Characters: lowercase a-z, digits 0-9, hyphens `-`, dots `.`
@@ -139,15 +141,16 @@ const response = await fetch(`${baseUrl}${path}`, {
 
 ### Objects
 
-| Method   | Path                                                      | Description                         |
-| -------- | --------------------------------------------------------- | ----------------------------------- |
-| `PUT`    | `/api/v1/buckets/{bucket}/{key}`                          | Upload object (body = raw bytes)    |
-| `GET`    | `/api/v1/buckets/{bucket}/{key}`                          | Download object                     |
-| `HEAD`   | `/api/v1/buckets/{bucket}/{key}`                          | Get object metadata (no body)       |
-| `DELETE` | `/api/v1/buckets/{bucket}/{key}`                          | Delete object                       |
-| `GET`    | `/api/v1/buckets/{bucket}?list=true&prefix=X&delimiter=/` | List objects                        |
+| Method   | Path                                                      | Description                      |
+| -------- | --------------------------------------------------------- | -------------------------------- |
+| `PUT`    | `/api/v1/buckets/{bucket}/{key}`                          | Upload object (body = raw bytes) |
+| `GET`    | `/api/v1/buckets/{bucket}/{key}`                          | Download object                  |
+| `HEAD`   | `/api/v1/buckets/{bucket}/{key}`                          | Get object metadata (no body)    |
+| `DELETE` | `/api/v1/buckets/{bucket}/{key}`                          | Delete object                    |
+| `GET`    | `/api/v1/buckets/{bucket}?list=true&prefix=X&delimiter=/` | List objects                     |
 
 **Object key validation:**
+
 - Cannot be empty
 - Cannot contain `..` (path traversal prevention)
 - Cannot start with `/`
@@ -157,12 +160,14 @@ const response = await fetch(`${baseUrl}${path}`, {
 - Invalid: `../etc/passwd`, `/absolute`, empty string
 
 **Upload limits:**
+
 - Maximum file size: 5GB (5,242,880,000 bytes)
 - Writes are atomic: temp file (`.beamdrop_tmp_*`) → fsync → rename → fsync parent dir. Crash-safe — old file preserved on failure
 - Per-object write locks prevent concurrent writes (30-second timeout)
 - ETag = MD5 hex hash of uploaded content
 
 **List parameters:**
+
 - `list=true` — Required to trigger list mode (otherwise treated as object download)
 - `prefix` — Filter by key prefix (e.g., `folder/`)
 - `delimiter` — Group by delimiter (use `/` for directory-like listing). Objects between prefix and next delimiter become `commonPrefixes`
@@ -191,6 +196,7 @@ const response = await fetch(`${baseUrl}${path}`, {
 ```
 
 Fields:
+
 - `bucket` (required): Target bucket name
 - `key` (required): Target object key
 - `method` (optional, default "GET"): HTTP method allowed
@@ -199,11 +205,11 @@ Fields:
 
 ### API Keys
 
-| Method   | Path                                   | Description                        |
-| -------- | -------------------------------------- | ---------------------------------- |
-| `POST`   | `/api/v1/keys`                         | Create API key (secret shown once) |
-| `GET`    | `/api/v1/keys`                         | List API keys (no secrets)         |
-| `DELETE` | `/api/v1/keys?accessKeyId=BDK_xxxx`    | Delete API key by access key ID    |
+| Method   | Path                                | Description                        |
+| -------- | ----------------------------------- | ---------------------------------- |
+| `POST`   | `/api/v1/keys`                      | Create API key (secret shown once) |
+| `GET`    | `/api/v1/keys`                      | List API keys (no secrets)         |
+| `DELETE` | `/api/v1/keys?accessKeyId=BDK_xxxx` | Delete API key by access key ID    |
 
 **Important:** Delete uses query parameter `?accessKeyId=BDK_xxxx`, NOT a path parameter.
 
@@ -226,7 +232,7 @@ Fields:
 
 ```json
 {
-  "buckets": [{"name": "my-bucket", "createdAt": "2024-01-15T10:30:00Z"}],
+  "buckets": [{ "name": "my-bucket", "createdAt": "2024-01-15T10:30:00Z" }],
   "count": 1
 }
 ```
@@ -281,11 +287,12 @@ Fields:
       "contentType": "text/plain"
     }
   ],
-  "commonPrefixes": [{"prefix": "folder/"}]
+  "commonPrefixes": [{ "prefix": "folder/" }]
 }
 ```
 
 **Download object** — `GET /api/v1/buckets/{bucket}/{key}`: Returns raw file content with headers:
+
 - `Content-Type`: MIME type
 - `Content-Length`: size in bytes
 - `ETag`: quoted MD5 hash (e.g., `"abc123"`)
@@ -347,32 +354,32 @@ All errors return consistent JSON:
 
 **Complete error code reference:**
 
-| HTTP | Code | Category | Retryable | Description | Agent Action |
-|------|------|----------|-----------|-------------|-------------|
-| 400 | INVALID_REQUEST | VALIDATION | No | Malformed request body or params | Fix request format |
-| 400 | INVALID_BUCKET_NAME | VALIDATION | No | Name doesn't match regex | Fix name: 3-63 chars, lowercase, start/end with alnum |
-| 400 | INVALID_OBJECT_KEY | VALIDATION | No | Key empty, has `..`, starts `/`, or >1024 bytes | Fix key path |
-| 400 | INVALID_PATH | VALIDATION | No | Request path invalid | Check URL construction |
-| 400 | MISSING_FIELD | VALIDATION | No | Required field missing | Add missing field to request body |
-| 401 | UNAUTHORIZED | AUTH | No | Missing/invalid Authorization header | Check key ID, signing algorithm, timestamp ±15 min |
-| 401 | INVALID_TOKEN | AUTH | No | Invalid JWT token (web auth) | Re-authenticate |
-| 401 | TOKEN_EXPIRED | AUTH | No | JWT has expired | Re-authenticate |
-| 401 | INVALID_API_KEY | AUTH | No | API key not found or disabled | Verify key exists and is not disabled |
-| 401 | API_KEY_EXPIRED | AUTH | No | API key past expiresAt | Create a new key |
-| 403 | FORBIDDEN | AUTH | No | Valid auth but insufficient permissions | Use key with correct permissions |
-| 403 | PERMISSION_DENIED | AUTH | No | Key lacks required permission | Key needs "read" for GET, "write" for PUT/DELETE |
-| 404 | BUCKET_NOT_FOUND | NOT_FOUND | No | Bucket doesn't exist | Create it first with `?createIfNotExists=true` |
-| 404 | OBJECT_NOT_FOUND | NOT_FOUND | No | Object doesn't exist | Verify bucket and key spelling |
-| 404 | FILE_NOT_FOUND | NOT_FOUND | No | File not found (web UI) | Check path |
-| 404 | LINK_NOT_FOUND | NOT_FOUND | No | Shareable link token invalid | Token may have been revoked |
-| 409 | BUCKET_EXISTS | CONFLICT | No | Bucket already exists | Use `?createIfNotExists=true` |
-| 409 | BUCKET_NOT_EMPTY | CONFLICT | No | Can't delete bucket with objects | Delete all objects first |
-| 409 | OBJECT_EXISTS | CONFLICT | No | Object exists (create-only ops) | Object already uploaded |
-| 413 | FILE_TOO_LARGE | VALIDATION | No | Exceeds 5GB limit | Split or compress the file |
-| 415 | INVALID_MIME_TYPE | VALIDATION | No | Content type not in allowed list | Check allowed MIME types |
-| 423 | OBJECT_LOCKED | STORAGE | **Yes** | Another write in progress | Retry after 1-2 seconds. Lock timeout is 30s |
-| 429 | RATE_LIMIT_EXCEEDED | RATE_LIMIT | **Yes** | Too many requests | Wait `Retry-After` header seconds. Has `X-Retryable: true` |
-| 507 | STORAGE_FULL | STORAGE | No | Server at max-storage limit | Cannot upload — server full |
+| HTTP | Code                | Category   | Retryable | Description                                     | Agent Action                                               |
+| ---- | ------------------- | ---------- | --------- | ----------------------------------------------- | ---------------------------------------------------------- |
+| 400  | INVALID_REQUEST     | VALIDATION | No        | Malformed request body or params                | Fix request format                                         |
+| 400  | INVALID_BUCKET_NAME | VALIDATION | No        | Name doesn't match regex                        | Fix name: 3-63 chars, lowercase, start/end with alnum      |
+| 400  | INVALID_OBJECT_KEY  | VALIDATION | No        | Key empty, has `..`, starts `/`, or >1024 bytes | Fix key path                                               |
+| 400  | INVALID_PATH        | VALIDATION | No        | Request path invalid                            | Check URL construction                                     |
+| 400  | MISSING_FIELD       | VALIDATION | No        | Required field missing                          | Add missing field to request body                          |
+| 401  | UNAUTHORIZED        | AUTH       | No        | Missing/invalid Authorization header            | Check key ID, signing algorithm, timestamp ±15 min         |
+| 401  | INVALID_TOKEN       | AUTH       | No        | Invalid JWT token (web auth)                    | Re-authenticate                                            |
+| 401  | TOKEN_EXPIRED       | AUTH       | No        | JWT has expired                                 | Re-authenticate                                            |
+| 401  | INVALID_API_KEY     | AUTH       | No        | API key not found or disabled                   | Verify key exists and is not disabled                      |
+| 401  | API_KEY_EXPIRED     | AUTH       | No        | API key past expiresAt                          | Create a new key                                           |
+| 403  | FORBIDDEN           | AUTH       | No        | Valid auth but insufficient permissions         | Use key with correct permissions                           |
+| 403  | PERMISSION_DENIED   | AUTH       | No        | Key lacks required permission                   | Key needs "read" for GET, "write" for PUT/DELETE           |
+| 404  | BUCKET_NOT_FOUND    | NOT_FOUND  | No        | Bucket doesn't exist                            | Create it first with `?createIfNotExists=true`             |
+| 404  | OBJECT_NOT_FOUND    | NOT_FOUND  | No        | Object doesn't exist                            | Verify bucket and key spelling                             |
+| 404  | FILE_NOT_FOUND      | NOT_FOUND  | No        | File not found (web UI)                         | Check path                                                 |
+| 404  | LINK_NOT_FOUND      | NOT_FOUND  | No        | Shareable link token invalid                    | Token may have been revoked                                |
+| 409  | BUCKET_EXISTS       | CONFLICT   | No        | Bucket already exists                           | Use `?createIfNotExists=true`                              |
+| 409  | BUCKET_NOT_EMPTY    | CONFLICT   | No        | Can't delete bucket with objects                | Delete all objects first                                   |
+| 409  | OBJECT_EXISTS       | CONFLICT   | No        | Object exists (create-only ops)                 | Object already uploaded                                    |
+| 413  | FILE_TOO_LARGE      | VALIDATION | No        | Exceeds 5GB limit                               | Split or compress the file                                 |
+| 415  | INVALID_MIME_TYPE   | VALIDATION | No        | Content type not in allowed list                | Check allowed MIME types                                   |
+| 423  | OBJECT_LOCKED       | STORAGE    | **Yes**   | Another write in progress                       | Retry after 1-2 seconds. Lock timeout is 30s               |
+| 429  | RATE_LIMIT_EXCEEDED | RATE_LIMIT | **Yes**   | Too many requests                               | Wait `Retry-After` header seconds. Has `X-Retryable: true` |
+| 507  | STORAGE_FULL        | STORAGE    | No        | Server at max-storage limit                     | Cannot upload — server full                                |
 
 ## Presigned URL Types — Decision Guide
 
@@ -403,17 +410,17 @@ URL = https://server/dl/a1b2c3d4e5f67890a1b2c3d4e5f67890
 
 ### When to use which
 
-| Scenario | Client-side | Server-side |
-|----------|:-----------:|:-----------:|
-| Quick temporary link, no tracking | ✅ | |
-| Need to revoke access after sharing | | ✅ |
-| Limit number of downloads | | ✅ |
-| Track download count | | ✅ |
-| Batch-generate many links (zero overhead) | ✅ | |
-| Share in download portal | | ✅ |
-| Must survive API key rotation | | ✅ |
-| Sharing sensitive files with audit trail | | ✅ |
-| Embed in automated emails/notifications | ✅ | |
+| Scenario                                  | Client-side | Server-side |
+| ----------------------------------------- | :---------: | :---------: |
+| Quick temporary link, no tracking         |     ✅      |             |
+| Need to revoke access after sharing       |             |     ✅      |
+| Limit number of downloads                 |             |     ✅      |
+| Track download count                      |             |     ✅      |
+| Batch-generate many links (zero overhead) |     ✅      |             |
+| Share in download portal                  |             |     ✅      |
+| Must survive API key rotation             |             |     ✅      |
+| Sharing sensitive files with audit trail  |             |     ✅      |
+| Embed in automated emails/notifications   |     ✅      |             |
 
 **Default recommendation:** Use server-side URLs unless you have a specific reason for client-side.
 
@@ -421,11 +428,11 @@ URL = https://server/dl/a1b2c3d4e5f67890a1b2c3d4e5f67890
 
 Three independent token-bucket tiers per IP address:
 
-| Tier | Endpoints | Default Rate | Burst |
-|------|-----------|-------------|-------|
-| General | All endpoints | 100 req/min | 100 |
-| Auth | `/auth/login` | 5 req/min | 5 |
-| Upload | PUT objects, `/upload` | 10 req/min | 10 |
+| Tier    | Endpoints              | Default Rate | Burst |
+| ------- | ---------------------- | ------------ | ----- |
+| General | All endpoints          | 100 req/min  | 100   |
+| Auth    | `/auth/login`          | 5 req/min    | 5     |
+| Upload  | PUT objects, `/upload` | 10 req/min   | 10    |
 
 - When rate-limited, response includes `Retry-After: <seconds>` header and `X-Retryable: true`
 - Buckets start full and refill continuously

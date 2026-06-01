@@ -633,12 +633,27 @@ if err != nil {
 
 ## MCP Server
 
-A TypeScript MCP server is available in `mcp/` for AI agent integration via the Model Context Protocol. Connects over stdio transport.
+Beamdrop includes a built-in MCP server at the `/mcp` endpoint, implemented natively in Go. It uses the Streamable HTTP transport with JSON-RPC 2.0. No separate process or TypeScript build needed — it runs as part of the Beamdrop server.
 
-**Configuration (environment variables):**
-- `BEAMDROP_BASE_URL` — Beamdrop server URL (required)
-- `BEAMDROP_ACCESS_KEY_ID` — API access key (required)
-- `BEAMDROP_SECRET_KEY` — API secret key (required)
+- `GET /mcp` — Public discovery endpoint (returns protocol version, transport, available methods)
+- `POST /mcp` — JSON-RPC 2.0 request processing (requires API key auth, same HMAC-SHA256 as S3 API)
+
+**MCP Configuration for AI assistants:**
+
+```json
+// Claude Desktop — claude_desktop_config.json
+{
+  "mcpServers": {
+    "beamdrop": {
+      "url": "https://your-server.com/mcp",
+      "headers": {
+        "Authorization": "Bearer BDK_your_key:signature",
+        "X-Beamdrop-Date": "ISO-8601-timestamp"
+      }
+    }
+  }
+}
+```
 
 **Available tools (16 total):**
 
@@ -650,7 +665,7 @@ A TypeScript MCP server is available in `mcp/` for AI agent integration via the 
 | `bucket_exists` | `name` | Check if a bucket exists |
 | `list_objects` | `bucket`, `prefix?`, `delimiter?`, `maxKeys?` | List objects with S3-style filtering |
 | `put_object` | `bucket`, `key`, `content`, `isBase64?` | Upload text or base64-encoded binary |
-| `get_object` | `bucket`, `key` | Download object (text or base64 for binary) |
+| `get_object` | `bucket`, `key` | Download object (text or base64 for binary, 10MB limit) |
 | `head_object` | `bucket`, `key` | Get object metadata |
 | `delete_object` | `bucket`, `key` | Delete an object |
 | `create_presigned_url` | `bucket`, `key`, `method?`, `expiresIn?`, `maxDownloads?` | Create revocable download link |
@@ -661,4 +676,60 @@ A TypeScript MCP server is available in `mcp/` for AI agent integration via the 
 | `create_api_key` | `name?`, `bucketScope?`, `permissions?` | Create new API key |
 | `delete_api_key` | `id` | Delete an API key |
 
-See `mcp/README.md` for Claude Desktop and VS Code setup instructions.
+## Webhooks
+
+Beamdrop supports real-time event notifications via webhooks. Register HTTP callback URLs and receive signed POST requests when events occur.
+
+**Webhook Management API:**
+- `POST /api/v1/webhooks` — Create webhook (returns signing secret once)
+- `GET /api/v1/webhooks` — List all webhooks
+- `PATCH /api/v1/webhooks/{id}` — Update webhook (name, url, enabled, event_types, bucket_scope, rotate_secret)
+- `DELETE /api/v1/webhooks/{id}` — Delete webhook and all delivery history
+- `POST /api/v1/webhooks/{id}/test` — Send a synthetic test event
+- `GET /api/v1/webhooks/{id}/deliveries` — List recent delivery attempts
+
+**Event Types:**
+| Event | Description |
+|-------|-------------|
+| `beamdrop.object.created` | Object uploaded or created |
+| `beamdrop.object.updated` | Object content updated |
+| `beamdrop.object.deleted` | Object deleted |
+| `beamdrop.bucket.created` | Bucket created |
+| `beamdrop.bucket.deleted` | Bucket deleted |
+| `beamdrop.share.created` | Shareable link created |
+| `beamdrop.share.deleted` | Shareable link deleted |
+| `beamdrop.presign.created` | Presigned URL created |
+| `beamdrop.presign.deleted` | Presigned URL revoked |
+
+Wildcards: `beamdrop.object.*`, `beamdrop.bucket.*`, `beamdrop.share.*`, `beamdrop.presign.*`
+
+**Webhook Signing:**
+Beamdrop signs every webhook delivery with HMAC-SHA256:
+```
+signature_base = timestamp + "\n" + delivery_id + "\n" + request_body
+signature = "v1=" + hex(HMAC-SHA256(signature_base, webhook_secret))
+```
+
+Headers sent with each delivery:
+- `X-Beamdrop-Webhook-Id` — Webhook ID
+- `X-Beamdrop-Event` — Event type (e.g., `beamdrop.object.created`)
+- `X-Beamdrop-Delivery-Id` — Unique delivery UUID
+- `X-Beamdrop-Timestamp` — Unix timestamp
+- `X-Beamdrop-Signature` — `v1=hex_signature`
+
+**Delivery behavior:**
+- Up to 8 retry attempts with exponential backoff (2s base, 15min max)
+- Retryable HTTP status codes: 408, 425, 429, 500, 502, 503, 504
+- 10-second request timeout per delivery attempt
+- Failed deliveries after max attempts are marked as dead_letter
+- Delivery history retained for 7 days
+
+**Create webhook example:**
+```bash
+curl -X POST https://server/api/v1/webhooks \
+  -H "Authorization: Bearer BDK_xxx:signature" \
+  -H "X-Beamdrop-Date: 2024-01-15T10:30:00Z" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"my-hook","url":"https://example.com/webhook","event_types":["beamdrop.object.*"]}'
+# → {"webhook":{...}, "secret":"whsec_...", "warning":"Save the secret now — it will not be shown again."}
+```

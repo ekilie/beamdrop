@@ -5,10 +5,10 @@ import "log/slog"
 func AutoMigrate() {
 	slog.Info("Running database migrations")
 	err := db.AutoMigrate(
-		&ServerStats{}, 
-		&Config{}, 
-		&StarredFile{}, 
-		&APIKey{}, 
+		&ServerStats{},
+		&Config{},
+		&StarredFile{},
+		&APIKey{},
 		&ShareableLink{},
 		&PresignedURL{},
 		&Webhook{},

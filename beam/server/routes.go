@@ -27,13 +27,13 @@ func (s *Server) setupRoutes() {
 	// MCP endpoint (Model Context Protocol) — requires API key auth
 	mcpHandler := handlers.NewMCPHandler(s.sharedDir)
 	apiAuthForMCP := api.NewAPIAuthMiddleware(s.flags.APIAuth)
-	s.mux.HandleFunc("/mcp", func(w http.ResponseWriter, r *http.Request) {
-		// GET /mcp is public (discovery info)
+	s.mux.HandleFunc("/api/mcp", func(w http.ResponseWriter, r *http.Request) {
+		// GET /api/mcp is public (discovery info)
 		if r.Method == http.MethodGet || r.Method == http.MethodOptions {
 			mcpHandler.ServeHTTP(w, r)
 			return
 		}
-		// POST /mcp requires API key authentication
+		// POST /api/mcp requires API key authentication
 		apiAuthForMCP.Middleware(mcpHandler).ServeHTTP(w, r)
 	})
 
@@ -148,6 +148,6 @@ func (s *Server) setupS3APIRoutes() {
 	})
 
 	// Webhook management — session auth (dashboard UI)
-	s.mux.HandleFunc("/webhooks/", webhookHandler.Handle)
-	s.mux.HandleFunc("/webhooks", webhookHandler.Handle)
+	s.mux.HandleFunc("/api/webhooks/", webhookHandler.Handle)
+	s.mux.HandleFunc("/api/webhooks", webhookHandler.Handle)
 }

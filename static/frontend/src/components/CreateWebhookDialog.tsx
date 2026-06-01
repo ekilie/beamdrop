@@ -108,7 +108,7 @@ export function CreateWebhookDialog({
 
     setIsSubmitting(true);
     try {
-      const res = await fetch("/webhooks", {
+      const res = await fetch("/api/webhooks", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

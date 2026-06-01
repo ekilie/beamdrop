@@ -26,10 +26,10 @@ export default function McpPage() {
   const [error, setError] = useState<string | null>(null);
   const [copiedField, setCopiedField] = useState<string | null>(null);
 
-  const mcpUrl = `${window.location.origin}/mcp`;
+  const mcpUrl = `${window.location.origin}/api/mcp`;
 
   useEffect(() => {
-    fetch("/mcp")
+    fetch("/api/mcp")
       .then((res) => {
         if (!res.ok) throw new Error(`Failed: ${res.status}`);
         return res.json();

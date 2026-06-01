@@ -1,0 +1,23 @@
+{
+  "name": "@beamdrop/mcp",
+  "version": "0.1.0",
+  "description": "Model Context Protocol server for Beamdrop file storage",
+  "type": "module",
+  "bin": {
+    "beamdrop-mcp": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "tsc --watch"
+  },
+  "keywords": ["beamdrop", "mcp", "model-context-protocol", "file-storage", "s3"],
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.1"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.3",
+    "@types/node": "^22.15.21"
+  }
+}

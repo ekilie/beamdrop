@@ -1,3 +1,6 @@
 [submodule "beamdrop-skills"]
 	path = beamdrop-skills
 	url = https://github.com/ekilie/beamdrop-skills.git
+[submodule "beamdrop-website"]
+	path = beamdrop-website
+	url = https://github.com/ekilie/beamdrop-website.git

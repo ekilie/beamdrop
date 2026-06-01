@@ -5,12 +5,15 @@ import "log/slog"
 func AutoMigrate() {
 	slog.Info("Running database migrations")
 	err := db.AutoMigrate(
-		&ServerStats{}, 
-		&Config{}, 
-		&StarredFile{}, 
-		&APIKey{}, 
+		&ServerStats{},
+		&Config{},
+		&StarredFile{},
+		&APIKey{},
 		&ShareableLink{},
-		&PresignedURL{})
+		&PresignedURL{},
+		&Webhook{},
+		&WebhookEvent{},
+		&WebhookDelivery{})
 	if err != nil {
 		slog.Error("Failed to migrate database", "error", err)
 	}

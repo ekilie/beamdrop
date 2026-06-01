@@ -13,9 +13,11 @@ import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as SplatRouteImport } from './routes/$'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
 import { Route as ShareTokenRouteImport } from './routes/share/$token'
+import { Route as AuthenticatedWebhooksRouteImport } from './routes/_authenticated/webhooks'
 import { Route as AuthenticatedUsageRouteImport } from './routes/_authenticated/usage'
 import { Route as AuthenticatedSharesRouteImport } from './routes/_authenticated/shares'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
+import { Route as AuthenticatedMcpRouteImport } from './routes/_authenticated/mcp'
 import { Route as AuthenticatedLogsRouteImport } from './routes/_authenticated/logs'
 import { Route as AuthenticatedApiKeysRouteImport } from './routes/_authenticated/api-keys'
 import { Route as AuthenticatedApiDocsRouteImport } from './routes/_authenticated/api-docs'
@@ -39,6 +41,11 @@ const ShareTokenRoute = ShareTokenRouteImport.update({
   path: '/share/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedWebhooksRoute = AuthenticatedWebhooksRouteImport.update({
+  id: '/webhooks',
+  path: '/webhooks',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedUsageRoute = AuthenticatedUsageRouteImport.update({
   id: '/usage',
   path: '/usage',
@@ -52,6 +59,11 @@ const AuthenticatedSharesRoute = AuthenticatedSharesRouteImport.update({
 const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedMcpRoute = AuthenticatedMcpRouteImport.update({
+  id: '/mcp',
+  path: '/mcp',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedLogsRoute = AuthenticatedLogsRouteImport.update({
@@ -76,9 +88,11 @@ export interface FileRoutesByFullPath {
   '/api-docs': typeof AuthenticatedApiDocsRoute
   '/api-keys': typeof AuthenticatedApiKeysRoute
   '/logs': typeof AuthenticatedLogsRoute
+  '/mcp': typeof AuthenticatedMcpRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/shares': typeof AuthenticatedSharesRoute
   '/usage': typeof AuthenticatedUsageRoute
+  '/webhooks': typeof AuthenticatedWebhooksRoute
   '/share/$token': typeof ShareTokenRoute
 }
 export interface FileRoutesByTo {
@@ -86,9 +100,11 @@ export interface FileRoutesByTo {
   '/api-docs': typeof AuthenticatedApiDocsRoute
   '/api-keys': typeof AuthenticatedApiKeysRoute
   '/logs': typeof AuthenticatedLogsRoute
+  '/mcp': typeof AuthenticatedMcpRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/shares': typeof AuthenticatedSharesRoute
   '/usage': typeof AuthenticatedUsageRoute
+  '/webhooks': typeof AuthenticatedWebhooksRoute
   '/share/$token': typeof ShareTokenRoute
   '/': typeof AuthenticatedIndexRoute
 }
@@ -99,9 +115,11 @@ export interface FileRoutesById {
   '/_authenticated/api-docs': typeof AuthenticatedApiDocsRoute
   '/_authenticated/api-keys': typeof AuthenticatedApiKeysRoute
   '/_authenticated/logs': typeof AuthenticatedLogsRoute
+  '/_authenticated/mcp': typeof AuthenticatedMcpRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/shares': typeof AuthenticatedSharesRoute
   '/_authenticated/usage': typeof AuthenticatedUsageRoute
+  '/_authenticated/webhooks': typeof AuthenticatedWebhooksRoute
   '/share/$token': typeof ShareTokenRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
 }
@@ -113,9 +131,11 @@ export interface FileRouteTypes {
     | '/api-docs'
     | '/api-keys'
     | '/logs'
+    | '/mcp'
     | '/settings'
     | '/shares'
     | '/usage'
+    | '/webhooks'
     | '/share/$token'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -123,9 +143,11 @@ export interface FileRouteTypes {
     | '/api-docs'
     | '/api-keys'
     | '/logs'
+    | '/mcp'
     | '/settings'
     | '/shares'
     | '/usage'
+    | '/webhooks'
     | '/share/$token'
     | '/'
   id:
@@ -135,9 +157,11 @@ export interface FileRouteTypes {
     | '/_authenticated/api-docs'
     | '/_authenticated/api-keys'
     | '/_authenticated/logs'
+    | '/_authenticated/mcp'
     | '/_authenticated/settings'
     | '/_authenticated/shares'
     | '/_authenticated/usage'
+    | '/_authenticated/webhooks'
     | '/share/$token'
     | '/_authenticated/'
   fileRoutesById: FileRoutesById
@@ -178,6 +202,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ShareTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/webhooks': {
+      id: '/_authenticated/webhooks'
+      path: '/webhooks'
+      fullPath: '/webhooks'
+      preLoaderRoute: typeof AuthenticatedWebhooksRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/usage': {
       id: '/_authenticated/usage'
       path: '/usage'
@@ -197,6 +228,13 @@ declare module '@tanstack/react-router' {
       path: '/settings'
       fullPath: '/settings'
       preLoaderRoute: typeof AuthenticatedSettingsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/mcp': {
+      id: '/_authenticated/mcp'
+      path: '/mcp'
+      fullPath: '/mcp'
+      preLoaderRoute: typeof AuthenticatedMcpRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/logs': {
@@ -227,9 +265,11 @@ interface AuthenticatedRouteChildren {
   AuthenticatedApiDocsRoute: typeof AuthenticatedApiDocsRoute
   AuthenticatedApiKeysRoute: typeof AuthenticatedApiKeysRoute
   AuthenticatedLogsRoute: typeof AuthenticatedLogsRoute
+  AuthenticatedMcpRoute: typeof AuthenticatedMcpRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedSharesRoute: typeof AuthenticatedSharesRoute
   AuthenticatedUsageRoute: typeof AuthenticatedUsageRoute
+  AuthenticatedWebhooksRoute: typeof AuthenticatedWebhooksRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
 }
 
@@ -237,9 +277,11 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedApiDocsRoute: AuthenticatedApiDocsRoute,
   AuthenticatedApiKeysRoute: AuthenticatedApiKeysRoute,
   AuthenticatedLogsRoute: AuthenticatedLogsRoute,
+  AuthenticatedMcpRoute: AuthenticatedMcpRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedSharesRoute: AuthenticatedSharesRoute,
   AuthenticatedUsageRoute: AuthenticatedUsageRoute,
+  AuthenticatedWebhooksRoute: AuthenticatedWebhooksRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
 }
 

@@ -24,6 +24,19 @@ func (s *Server) setupRoutes() {
 	// LLM discoverability
 	s.mux.HandleFunc("/llms.txt", handlers.LLMsTxtHandler)
 
+	// MCP endpoint (Model Context Protocol) — requires API key auth
+	mcpHandler := handlers.NewMCPHandler(s.sharedDir)
+	apiAuthForMCP := api.NewAPIAuthMiddleware(s.flags.APIAuth)
+	s.mux.HandleFunc("/api/mcp", func(w http.ResponseWriter, r *http.Request) {
+		// GET /api/mcp is public (discovery info)
+		if r.Method == http.MethodGet || r.Method == http.MethodOptions {
+			mcpHandler.ServeHTTP(w, r)
+			return
+		}
+		// POST /api/mcp requires API key authentication
+		apiAuthForMCP.Middleware(mcpHandler).ServeHTTP(w, r)
+	})
+
 	// Static files
 	s.mux.HandleFunc("/", handlers.StaticHandler)
 
@@ -114,6 +127,9 @@ func (s *Server) setupS3APIRoutes() {
 	// Presigned URL management
 	presignHandler := api.NewPresignHandler(s.sharedDir)
 
+	// Webhook management
+	webhookHandler := api.NewWebhookHandler()
+
 	// We support both /api/v1/presign and /api/v1/presign/ for convenience
 	// (some clients may add trailing slash)
 	s.mux.HandleFunc("/api/v1/presign/", func(w http.ResponseWriter, r *http.Request) {
@@ -122,4 +138,16 @@ func (s *Server) setupS3APIRoutes() {
 	s.mux.HandleFunc("/api/v1/presign", func(w http.ResponseWriter, r *http.Request) {
 		apiAuth.Middleware(http.HandlerFunc(presignHandler.Handle)).ServeHTTP(w, r)
 	})
+
+	// Webhook management — S3 API auth (programmatic access)
+	s.mux.HandleFunc("/api/v1/webhooks/", func(w http.ResponseWriter, r *http.Request) {
+		apiAuth.Middleware(http.HandlerFunc(webhookHandler.Handle)).ServeHTTP(w, r)
+	})
+	s.mux.HandleFunc("/api/v1/webhooks", func(w http.ResponseWriter, r *http.Request) {
+		apiAuth.Middleware(http.HandlerFunc(webhookHandler.Handle)).ServeHTTP(w, r)
+	})
+
+	// Webhook management — session auth (dashboard UI)
+	s.mux.HandleFunc("/api/webhooks/", webhookHandler.Handle)
+	s.mux.HandleFunc("/api/webhooks", webhookHandler.Handle)
 }

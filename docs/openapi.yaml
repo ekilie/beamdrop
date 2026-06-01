@@ -276,6 +276,69 @@ components:
           description: Error code
           example: "NOT_FOUND"
 
+    Webhook:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        targetUrl:
+          type: string
+        enabled:
+          type: boolean
+        eventTypes:
+          type: string
+          description: JSON-encoded array of event type strings
+        bucketScope:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        lastDeliveryAt:
+          type: string
+          format: date-time
+          nullable: true
+        lastError:
+          type: string
+          nullable: true
+
+    WebhookDelivery:
+      type: object
+      properties:
+        id:
+          type: integer
+        webhookId:
+          type: integer
+        eventId:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [pending, delivering, delivered, failed, dead_letter]
+        attemptCount:
+          type: integer
+        lastHttpStatus:
+          type: integer
+          nullable: true
+        lastError:
+          type: string
+          nullable: true
+        lastDurationMs:
+          type: integer
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        deliveredAt:
+          type: string
+          format: date-time
+          nullable: true
+
   responses:
     Unauthorized:
       description: Authentication failed
@@ -1105,3 +1168,278 @@ paths:
           description: Token not found
         "410":
           description: Link expired or download limit reached
+
+  /api/v1/webhooks:
+    get:
+      tags:
+        - Webhooks
+      summary: List webhooks
+      description: List all registered webhook endpoints
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: List of webhooks
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  webhooks:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Webhook"
+                  count:
+                    type: integer
+    post:
+      tags:
+        - Webhooks
+      summary: Create webhook
+      description: |
+        Register a new webhook endpoint. The signing secret is returned only once
+        in the response — save it immediately.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - url
+              properties:
+                name:
+                  type: string
+                  default: webhook
+                url:
+                  type: string
+                  description: Target URL (must start with http:// or https://)
+                event_types:
+                  type: array
+                  items:
+                    type: string
+                  description: Event types to subscribe to (supports wildcards like beamdrop.object.*)
+                bucket_scope:
+                  type: string
+                  description: Optional bucket name to scope events to
+      responses:
+        "201":
+          description: Webhook created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  webhook:
+                    $ref: "#/components/schemas/Webhook"
+                  secret:
+                    type: string
+                    description: Signing secret (shown once)
+                  warning:
+                    type: string
+
+  /api/v1/webhooks/{id}:
+    patch:
+      tags:
+        - Webhooks
+      summary: Update webhook
+      description: Update webhook properties. Set rotate_secret to true to generate a new signing secret.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                url:
+                  type: string
+                enabled:
+                  type: boolean
+                event_types:
+                  type: array
+                  items:
+                    type: string
+                bucket_scope:
+                  type: string
+                rotate_secret:
+                  type: boolean
+      responses:
+        "200":
+          description: Webhook updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  updated:
+                    type: boolean
+                  secret:
+                    type: string
+                    description: New secret (only present if rotate_secret was true)
+    delete:
+      tags:
+        - Webhooks
+      summary: Delete webhook
+      description: Delete a webhook and all its delivery history
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Webhook deleted
+
+  /api/v1/webhooks/{id}/test:
+    post:
+      tags:
+        - Webhooks
+      summary: Send test event
+      description: Send a synthetic test event to the webhook endpoint
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Test event queued
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  sent:
+                    type: boolean
+                  message:
+                    type: string
+
+  /api/v1/webhooks/{id}/deliveries:
+    get:
+      tags:
+        - Webhooks
+      summary: List deliveries
+      description: List recent delivery attempts for a webhook
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Delivery list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  deliveries:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/WebhookDelivery"
+                  count:
+                    type: integer
+
+  /mcp:
+    get:
+      tags:
+        - MCP
+      summary: MCP discovery
+      description: Public endpoint returning MCP server info (protocol version, transport, available methods)
+      responses:
+        "200":
+          description: MCP server discovery info
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  protocol:
+                    type: string
+                  transport:
+                    type: string
+                  version:
+                    type: string
+                  name:
+                    type: string
+                  description:
+                    type: string
+                  methods:
+                    type: array
+                    items:
+                      type: string
+    post:
+      tags:
+        - MCP
+      summary: MCP JSON-RPC request
+      description: |
+        Process a JSON-RPC 2.0 request via the Model Context Protocol.
+        Supports methods: initialize, ping, tools/list, tools/call.
+        16 tools available for bucket, object, presigned URL, and API key operations.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - jsonrpc
+                - method
+              properties:
+                jsonrpc:
+                  type: string
+                  enum: ["2.0"]
+                id:
+                  oneOf:
+                    - type: string
+                    - type: integer
+                method:
+                  type: string
+                  enum: [initialize, ping, tools/list, tools/call, notifications/initialized]
+                params:
+                  type: object
+      responses:
+        "200":
+          description: JSON-RPC response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  jsonrpc:
+                    type: string
+                  id:
+                    oneOf:
+                      - type: string
+                      - type: integer
+                  result:
+                    type: object
+                  error:
+                    type: object
+                    properties:
+                      code:
+                        type: integer
+                      message:
+                        type: string

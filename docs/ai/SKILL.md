@@ -376,6 +376,54 @@ curl -X POST http://localhost:7777/api/v1/keys \
   -d '{"name":"readonly-reports","permissions":"read","bucket_scope":"reports"}'
 ```
 
+### Set up webhooks for event notifications
+
+```bash
+# Create a webhook for all object events
+curl -X POST http://localhost:7777/api/v1/webhooks \
+  -H "Authorization: Bearer BDK_xxx:signature" \
+  -H "X-Beamdrop-Date: 2024-01-15T10:30:00Z" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"my-hook","url":"https://example.com/webhook","event_types":["beamdrop.object.*"]}'
+# Save the "secret" from the response — it's shown only once
+```
+
+### Use the built-in MCP server
+
+The MCP server is built into Beamdrop at `/mcp`:
+
+- `GET /mcp` — Public discovery (no auth)
+- `POST /mcp` — JSON-RPC 2.0 requests (requires API key auth)
+
+```json
+// Claude Desktop / VS Code MCP config
+{
+  "mcpServers": {
+    "beamdrop": {
+      "url": "https://your-server.com/mcp",
+      "headers": {
+        "Authorization": "Bearer BDK_your_key:signature",
+        "X-Beamdrop-Date": "ISO-8601-timestamp"
+      }
+    }
+  }
+}
+```
+
+16 tools: list_buckets, create_bucket, delete_bucket, bucket_exists, list_objects, put_object, get_object, head_object, delete_object, create_presigned_url, list_presigned_urls, get_presigned_url, delete_presigned_url, list_api_keys, create_api_key, delete_api_key
+
+## Webhooks Reference
+
+Beamdrop supports real-time event notifications via HMAC-SHA256 signed webhooks.
+
+**API:** `POST /api/v1/webhooks` (create), `GET /api/v1/webhooks` (list), `PATCH /api/v1/webhooks/{id}` (update), `DELETE /api/v1/webhooks/{id}` (delete), `POST /api/v1/webhooks/{id}/test` (test), `GET /api/v1/webhooks/{id}/deliveries` (history)
+
+**Event types:** `beamdrop.object.created`, `.updated`, `.deleted`, `beamdrop.bucket.created`, `.deleted`, `beamdrop.share.created`, `.deleted`, `beamdrop.presign.created`, `.deleted`. Wildcards: `beamdrop.object.*`, `beamdrop.bucket.*`, etc.
+
+**Signing:** `v1=` + hex(HMAC-SHA256(timestamp + "\n" + delivery_id + "\n" + body, secret)). Headers: `X-Beamdrop-Signature`, `X-Beamdrop-Webhook-Id`, `X-Beamdrop-Event`, `X-Beamdrop-Delivery-Id`, `X-Beamdrop-Timestamp`
+
+**Delivery:** Max 8 retries, exponential backoff (2s-15min), 10s timeout, retryable codes: 408/425/429/5xx
+
 ## Validation Rules Summary
 
 | Rule                      | Constraint                               |

@@ -11,7 +11,9 @@ import (
 	"github.com/ekilie/beamdrop/beam"
 	"github.com/ekilie/beamdrop/config"
 	"github.com/ekilie/beamdrop/pkg/errors"
+	"github.com/ekilie/beamdrop/pkg/reqctx"
 	"github.com/ekilie/beamdrop/pkg/storage"
+	"github.com/ekilie/beamdrop/pkg/webhooks"
 )
 
 // ObjectHandler handles object operations
@@ -131,6 +133,9 @@ func (h *ObjectHandler) putObject(w http.ResponseWriter, r *http.Request, bucket
 
 	slog.Info("Object uploaded", "bucket", bucket, "key", key, "bytes", info.Size)
 
+	actor := reqctx.GetAccessKeyID(r.Context())
+	webhooks.EmitObjectCreated(bucket, key, actor, info.Size, info.ETag)
+
 	w.Header().Set("ETag", `"`+info.ETag+`"`)
 	beam.SendJSON(w, map[string]any{
 		"bucket": bucket,
@@ -182,6 +187,9 @@ func (h *ObjectHandler) putObjectMultipart(w http.ResponseWriter, r *http.Reques
 
 	slog.Info("Object uploaded (multipart)", "bucket", bucket, "key", key, "bytes", info.Size)
 
+	actor := reqctx.GetAccessKeyID(r.Context())
+	webhooks.EmitObjectCreated(bucket, key, actor, info.Size, info.ETag)
+
 	w.Header().Set("ETag", `"`+info.ETag+`"`)
 	beam.SendJSON(w, map[string]any{
 		"bucket": bucket,
@@ -212,6 +220,10 @@ func (h *ObjectHandler) deleteObject(w http.ResponseWriter, r *http.Request, buc
 	}
 
 	slog.Info("Object deleted", "bucket", bucket, "key", key)
+
+	actor := reqctx.GetAccessKeyID(r.Context())
+	webhooks.EmitObjectDeleted(bucket, key, actor)
+
 	w.WriteHeader(http.StatusNoContent)
 }
 

@@ -68,14 +68,16 @@ func (oc *OrphanCleaner) RunOnce() {
 	orphanedLinks := oc.cleanupShareableLinks()
 	expiredLinks := oc.cleanupExpiredLinks()
 	expiredPresigned := oc.cleanupExpiredPresignedURLs()
+	oldEvents := CleanupOldWebhookEvents(7 * 24 * time.Hour) // 7 days
 
-	total := orphanedStars + orphanedLinks + expiredLinks + expiredPresigned
+	total := orphanedStars + orphanedLinks + expiredLinks + expiredPresigned + oldEvents
 	if total > 0 {
 		slog.Info("Orphan cleanup completed",
 			"starred_removed", orphanedStars,
 			"links_removed", orphanedLinks,
 			"expired_removed", expiredLinks,
-			"presigned_removed", expiredPresigned)
+			"presigned_removed", expiredPresigned,
+			"webhook_events_removed", oldEvents)
 	}
 }
 

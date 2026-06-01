@@ -8,7 +8,9 @@ import (
 
 	"github.com/ekilie/beamdrop/beam"
 	"github.com/ekilie/beamdrop/pkg/errors"
+	"github.com/ekilie/beamdrop/pkg/reqctx"
 	"github.com/ekilie/beamdrop/pkg/storage"
+	"github.com/ekilie/beamdrop/pkg/webhooks"
 )
 
 // BucketHandler handles bucket operations
@@ -100,6 +102,10 @@ func (h *BucketHandler) createBucket(w http.ResponseWriter, r *http.Request, nam
 	}
 
 	slog.Info("Bucket created", "bucket", name)
+
+	actor := reqctx.GetAccessKeyID(r.Context())
+	webhooks.EmitBucketCreated(name, actor)
+
 	beam.SendJSON(w, map[string]any{
 		"bucket":   name,
 		"created":  time.Now().UTC().Format(time.RFC3339),
@@ -122,6 +128,10 @@ func (h *BucketHandler) createBucketIfNotExists(w http.ResponseWriter, r *http.R
 
 	if created {
 		slog.Info("Bucket created", "bucket", name)
+
+		actor := reqctx.GetAccessKeyID(r.Context())
+		webhooks.EmitBucketCreated(name, actor)
+
 		beam.SendJSON(w, map[string]any{
 			"bucket":   name,
 			"created":  time.Now().UTC().Format(time.RFC3339),
@@ -155,6 +165,10 @@ func (h *BucketHandler) deleteBucket(w http.ResponseWriter, r *http.Request, nam
 	}
 
 	slog.Info("Bucket deleted", "bucket", name)
+
+	actor := reqctx.GetAccessKeyID(r.Context())
+	webhooks.EmitBucketDeleted(name, actor)
+
 	w.WriteHeader(http.StatusNoContent)
 }
 
@@ -177,5 +191,3 @@ func (h *BucketHandler) getBucketInfo(w http.ResponseWriter, r *http.Request, na
 		"exists": true,
 	}, http.StatusOK)
 }
-
-

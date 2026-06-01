@@ -139,11 +139,15 @@ func (s *Server) setupS3APIRoutes() {
 		apiAuth.Middleware(http.HandlerFunc(presignHandler.Handle)).ServeHTTP(w, r)
 	})
 
-	// Webhook management endpoints
+	// Webhook management — S3 API auth (programmatic access)
 	s.mux.HandleFunc("/api/v1/webhooks/", func(w http.ResponseWriter, r *http.Request) {
 		apiAuth.Middleware(http.HandlerFunc(webhookHandler.Handle)).ServeHTTP(w, r)
 	})
 	s.mux.HandleFunc("/api/v1/webhooks", func(w http.ResponseWriter, r *http.Request) {
 		apiAuth.Middleware(http.HandlerFunc(webhookHandler.Handle)).ServeHTTP(w, r)
 	})
+
+	// Webhook management — session auth (dashboard UI)
+	s.mux.HandleFunc("/webhooks/", webhookHandler.Handle)
+	s.mux.HandleFunc("/webhooks", webhookHandler.Handle)
 }

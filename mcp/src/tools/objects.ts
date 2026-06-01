@@ -52,9 +52,9 @@ export function registerObjectTools(server: McpServer, client: BeamdropClient) {
     },
     async ({ bucket, key, content, isBase64 }) => {
       try {
-        const body = isBase64 ? Buffer.from(content, "base64") : content;
+        const body = isBase64 ? new Uint8Array(Buffer.from(content, "base64")) : content;
         const path = `/api/v1/buckets/${encodeURIComponent(bucket)}/${key}`;
-        const response = await client.request("PUT", path, typeof body === "string" ? body : body);
+        const response = await client.request("PUT", path, body);
         const result = await response.json();
         return { content: [{ type: "text" as const, text: JSON.stringify(result, null, 2) }] };
       } catch (e) {

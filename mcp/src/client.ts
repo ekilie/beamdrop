@@ -51,7 +51,7 @@ export class BeamdropClient {
     };
   }
 
-  async request(method: string, path: string, body?: string | Buffer): Promise<Response> {
+  async request(method: string, path: string, body?: string | Uint8Array): Promise<Response> {
     const { authorization, timestamp } = this.sign(method, path);
     const url = `${this.baseURL}${path}`;
 
@@ -67,7 +67,7 @@ export class BeamdropClient {
     const response = await fetch(url, {
       method,
       headers,
-      body: body ?? undefined,
+      body: (body ?? undefined) as BodyInit | undefined,
     });
 
     if (!response.ok) {

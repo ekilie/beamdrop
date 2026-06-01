@@ -414,6 +414,23 @@ curl "http://localhost:8080/api/v1/buckets/my-bucket?list&prefix=path/" \
 - Postman Environment: [docs/beamdrop-api.postman_environment.json](docs/beamdrop-api.postman_environment.json)
 - Postman Guide: [docs/POSTMAN-GUIDE.md](docs/POSTMAN-GUIDE.md)
 
+## AI & Agentic Development
+
+Beamdrop is designed to be easily used by AI agents and LLM-powered tools.
+
+### LLM Discoverability
+
+Beamdrop serves an [`/llms.txt`](docs/llms.txt) endpoint following the [llmstxt.org](https://llmstxt.org/) specification, providing LLMs with a concise overview of the API. Append `?full=true` for the expanded version with complete API reference.
+
+### MCP Server
+
+A TypeScript [Model Context Protocol](https://modelcontextprotocol.io/) server is included in [`mcp/`](mcp/), exposing 16 tools for bucket, object, presigned URL, and API key management. See [mcp/README.md](mcp/README.md) for setup with Claude Desktop, VS Code, and other MCP-compatible clients.
+
+### Agent Instructions
+
+- **[Agent Instructions](docs/ai/agent-instructions.md)** — Language-agnostic HTTP API guide with signing examples in curl, Python, and JavaScript
+- **[VS Code Copilot Skill](docs/ai/SKILL.md)** — AI skill definition for GitHub Copilot integration with Go client code templates
+
 ## Storage Structure
 
 ```

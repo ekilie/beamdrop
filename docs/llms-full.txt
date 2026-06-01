@@ -1,86 +1,101 @@
 # Beamdrop
 
-> Beamdrop is a self-hosted, single-binary file storage server with an S3-compatible API built in Go. It replaces cloud storage services with a lightweight, secure solution you run on your own infrastructure.
+> Beamdrop is a self-hosted, single-binary file storage server with an S3-compatible REST API built in Go. It replaces cloud storage with a lightweight, zero-dependency solution — web file manager, programmable storage API, presigned URLs, shareable links, real-time stats, and Prometheus metrics in one ~39MB binary.
 
 ## Overview
 
-Beamdrop runs as a single binary (~39MB Docker image) with zero external dependencies on Linux, macOS, and Windows (Intel + ARM). It provides:
+Beamdrop runs as a single binary with zero external dependencies on Linux, macOS, and Windows (Intel + ARM). SQLite database for metadata, filesystem for object storage. Docker image is ~39MB.
 
-- **Web UI**: React-based file manager with drag-and-drop, search, move, copy, rename
-- **S3-Compatible API**: Full REST API for buckets and objects at `/api/v1/`
-- **Shareable Links**: Unique URLs with optional password protection and expiry
-- **Real-time Dashboard**: WebSocket-powered storage stats and bandwidth metrics
-- **Security**: HMAC-SHA256 API auth, JWT web auth, rate limiting, CSRF protection, TLS
-- **Observability**: Structured JSON logging, Prometheus metrics, Grafana dashboard
+Core capabilities:
+- **Web UI**: React-based file manager with drag-and-drop upload, search, move, copy, rename, mkdir, trash
+- **S3-Compatible API**: Full REST API at `/api/v1/` for buckets, objects, presigned URLs, and API key management
+- **Shareable Links**: Token-based URLs with optional bcrypt-hashed password protection, configurable expiry, and access counting
+- **Real-time Dashboard**: WebSocket-powered (`/ws/stats`) storage stats, bandwidth metrics, request counters
+- **Security**: HMAC-SHA256 API auth, JWT web auth with token revocation, per-IP rate limiting (3 tiers), CSRF protection, CSP headers, TLS support
+- **Observability**: Structured JSON logging (slog), Prometheus metrics at `/metrics`, Kubernetes health probes, Grafana dashboard template
 
 ## Quick Start
 
 ```bash
-# Share current directory
+# Share current directory on auto-detected port (prefers 7777)
 beamdrop
 
-# With password and API auth
+# With password protection and S3 API auth
 beamdrop -dir /path/to/share -p mysecretpassword -api-auth
 
-# Create an API key
+# Create an API key (secret shown only once)
 curl -X POST http://localhost:7777/api/v1/keys
+# Response: {"accessKeyId": "BDK_...", "secretKey": "sk_...", ...}
 
-# Use the returned access_key_id and secret_key for API calls
+# Production behind Cloudflare with TLS
+beamdrop -dir /data -p secret -api-auth -disable-csp -disable-csrf -tls-cert cert.pem -tls-key key.pem
 ```
 
 ## CLI Flags
 
 | Flag | Default | Description |
 |------|---------|-------------|
-| `-dir` | `.` | Directory to share |
-| `-port` | auto (prefers 7777) | Server port |
-| `-p` | none | Password for web authentication |
-| `-api-auth` | false | Enable HMAC API key authentication |
-| `-qr` | false | Generate QR code for mobile access |
-| `-tls-cert` | none | TLS certificate path |
-| `-tls-key` | none | TLS private key path |
-| `-rate-limit` | 100 | Requests/min per IP (0 = disabled) |
-| `-max-storage` | unlimited | Max storage (e.g. "10GB") |
-| `-db-path` | `~/.beamdrop/beamdrop.db` | SQLite database path |
-| `-log-level` | info | Log level: debug, info, warn, error |
-| `-allowed-origins` | none | CORS origins (comma-separated) |
-| `-shutdown-timeout` | 30s | Graceful shutdown timeout |
-| `-jwt-secret` | auto-generated | JWT signing secret (min 32 bytes) |
-| `-trusted-proxies` | none | CIDR ranges for reverse proxy |
-| `-disable-csp` | false | Disable Content-Security-Policy |
-| `-disable-csrf` | false | Disable CSRF validation |
-| `-disable-system-stats` | false | Hide system metrics from dashboard |
+| `-dir` | `.` | Directory to share (becomes root for web UI and bucket storage) |
+| `-port` | auto (prefers 7777) | Server port. Auto-detection tries 7777 first, then finds available |
+| `-p` | none | Password for web UI authentication. Enables JWT-based auth with HttpOnly cookies |
+| `-api-auth` | false | Enable HMAC-SHA256 API key authentication for S3 API endpoints |
+| `-qr` | false | Generate and display QR code for mobile access on startup |
+| `-tls-cert` | none | TLS certificate file path. Enables HTTPS and adds HSTS header |
+| `-tls-key` | none | TLS private key file path. Required with `-tls-cert` |
+| `-rate-limit` | 100 | General rate limit in requests/min per IP. Auth tier = 5% (5/min). Upload tier = 10% (10/min). Set 0 to disable |
+| `-max-storage` | unlimited | Maximum total storage. Accepts human-readable sizes: "500MB", "10GB", "1TB" |
+| `-db-path` | `<dir>/.beamdrop/beamdrop.db` | SQLite database path for metadata, API keys, presigned URLs, shareable links |
+| `-log-level` | info | Structured log level: debug, info, warn, error |
+| `-allowed-origins` | none (CORS disabled) | Comma-separated CORS origins. Empty = CORS disabled (most secure) |
+| `-shutdown-timeout` | 30s | Graceful shutdown timeout for in-flight requests |
+| `-jwt-secret` | auto-generated | JWT signing secret. Min 32 bytes. Auto-generated and persisted in DB if omitted |
+| `-trusted-proxies` | none | Comma-separated CIDR ranges for reverse proxy IP detection (X-Forwarded-For, X-Real-IP) |
+| `-disable-csp` | false | Skip Content-Security-Policy header. Needed for some CDN/proxy setups (e.g., Cloudflare) |
+| `-disable-csrf` | false | Skip CSRF token validation. Needed when API clients can't manage CSRF tokens |
+| `-disable-system-stats` | false | Hide server disk/memory/CPU stats from the web dashboard |
 
-All flags can be set via `BEAMDROP_*` environment variables (e.g. `BEAMDROP_DIR`, `BEAMDROP_PASSWORD`).
+All flags can be set via `BEAMDROP_*` environment variables (CLI flags take precedence):
+`BEAMDROP_DIR`, `BEAMDROP_PASSWORD`, `BEAMDROP_PORT`, `BEAMDROP_DB_PATH`, `BEAMDROP_TLS_CERT`, `BEAMDROP_TLS_KEY`, `BEAMDROP_ALLOWED_ORIGINS`, `BEAMDROP_API_AUTH`, `BEAMDROP_QR`, `BEAMDROP_LOG_LEVEL`, `BEAMDROP_RATE_LIMIT`, `BEAMDROP_MAX_STORAGE`, `BEAMDROP_SHUTDOWN_TIMEOUT`, `BEAMDROP_JWT_SECRET`, `BEAMDROP_TRUSTED_PROXIES`, `BEAMDROP_DISABLE_CSP`, `BEAMDROP_DISABLE_CSRF`, `BEAMDROP_DISABLE_SYSTEM_STATS`
 
 ## Authentication
 
-### HMAC-SHA256 API Authentication
+### HMAC-SHA256 API Authentication (S3 API)
 
-All S3 API requests require HMAC-SHA256 signing when `-api-auth` is enabled:
+Enabled with `-api-auth` flag. All `/api/v1/` requests must be signed.
 
-```
-StringToSign = METHOD + "\n" + PATH + "\n" + TIMESTAMP
-Signature = Base64(HMAC-SHA256(StringToSign, SecretKey))
-```
+**Key format:**
+- AccessKeyID: `BDK_` + 16 hex chars (8 random bytes). Example: `BDK_a1b2c3d4e5f67890`
+- SecretKey: `sk_` + 40 hex chars (20 random bytes). Example: `sk_0123456789abcdef...`
+- Secret is encrypted at rest with AES-256-GCM using a server-derived 32-byte key
+- Secret is shown only once at creation — it cannot be retrieved later
 
-Headers:
-```
-Authorization: Bearer ACCESS_KEY_ID:SIGNATURE
-X-Beamdrop-Date: 2024-01-15T10:30:00Z  (ISO 8601 UTC)
-```
+**Signing algorithm:**
+1. Get current UTC time as RFC3339: `2024-01-15T10:30:00Z`
+2. Build string to sign: `METHOD + "\n" + PATH + "\n" + TIMESTAMP`
+   - PATH is the URL path only, no query string. Example: `/api/v1/buckets/my-bucket`
+3. Compute: `Signature = Base64(HMAC-SHA256(StringToSign, SecretKey))` (standard Base64, not URL-safe)
+4. Set headers:
+   - `Authorization: Bearer BDK_xxxx:SIGNATURE`
+   - `X-Beamdrop-Date: 2024-01-15T10:30:00Z`
 
-- AccessKeyID format: `BDK_*`
-- SecretKey format: `sk_*` (shown once at creation, encrypted at rest with AES-256-GCM)
-- Timestamps must be within 15 minutes of server time
-- API keys can be scoped to specific buckets and actions
+**Clock skew tolerance:** ±15 minutes. Requests outside this window are rejected with 401.
 
-### Web Authentication
+**API key properties:**
+- `permissions`: JSON string — `"read"`, `"write"`, or `"read,write"`
+- `bucketScope`: Optional. Restricts key to operations on a single bucket
+- `expiresAt`: Optional. Key automatically stops working after this time
+- `disabled`: Boolean. Can be set to temporarily disable a key
+- `lastUsedAt`: Tracked automatically on each authenticated request
 
-When `-p <password>` is set:
-- `POST /auth/login` with `{"password": "..."}` returns JWT in HttpOnly cookie
-- JWT stored in `beamdrop_token` cookie (SameSite=Strict)
-- `POST /auth/logout` revokes token immediately
+### Web Authentication (Password-Based)
+
+Enabled when `-p <password>` flag is set. Independent from API auth.
+
+- `POST /auth/login` with `{"password": "..."}` → JWT in `beamdrop_token` HttpOnly cookie (SameSite=Strict)
+- `POST /auth/logout` → revokes token immediately (stored in revocation table, checked on each request)
+- `GET /auth/status` → check if current session is authenticated
+- Password is hashed with bcrypt at cost=10
+- Background job cleans up expired revoked tokens
 
 ## S3-Compatible API Reference
 
@@ -93,19 +108,27 @@ Base path: `/api/v1/`
 POST /api/v1/keys
 Content-Type: application/json
 
-{"name": "my-key", "bucketScope": "optional-bucket", "permissions": ["GetObject", "PutObject"]}
+{
+  "name": "my-key",
+  "permissions": "read,write",
+  "bucket_scope": "optional-bucket",
+  "expires_in": "720h"
+}
 
 Response 201:
 {
   "id": 1,
   "name": "my-key",
-  "access_key_id": "BDK_abc123",
-  "secret_key": "sk_secret456",  // shown ONCE
-  "bucket_scope": "optional-bucket",
-  "permissions": ["GetObject", "PutObject"],
-  "created_at": "2024-01-15T10:30:00Z"
+  "accessKeyId": "BDK_a1b2c3d4e5f67890",
+  "secretKey": "sk_0123456789abcdef0123456789abcdef01234567",
+  "permissions": "read,write",
+  "bucketScope": "optional-bucket",
+  "expiresAt": "2024-02-15T10:30:00Z",
+  "createdAt": "2024-01-15T10:30:00Z",
+  "warning": "Save the secret key now — it cannot be retrieved later"
 }
 ```
+⚠️ The `secretKey` field is shown ONLY in the creation response. Store it immediately.
 
 **List API Keys**
 ```
@@ -113,19 +136,42 @@ GET /api/v1/keys
 
 Response 200:
 {
-  "keys": [{"id": 1, "name": "my-key", "access_key_id": "BDK_abc123", ...}],
+  "keys": [
+    {
+      "id": 1,
+      "name": "my-key",
+      "accessKeyId": "BDK_a1b2c3d4e5f67890",
+      "permissions": "read,write",
+      "bucketScope": "optional-bucket",
+      "expiresAt": "2024-02-15T10:30:00Z",
+      "lastUsedAt": "2024-01-20T08:00:00Z",
+      "createdAt": "2024-01-15T10:30:00Z",
+      "disabled": false
+    }
+  ],
   "count": 1
 }
 ```
+Note: `secretKey` is never returned in list responses.
 
 **Delete API Key**
 ```
-DELETE /api/v1/keys/{id}
+DELETE /api/v1/keys?accessKeyId=BDK_a1b2c3d4e5f67890
 
 Response 204 (no content)
 ```
+Deletion is immediate — any in-flight or future requests using this key will fail with 401.
 
 ### Buckets
+
+**Bucket name validation:**
+- Regex: `^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$`
+- Length: 3-63 characters exactly
+- Allowed characters: lowercase a-z, digits 0-9, hyphens `-`, dots `.`
+- Must start and end with a letter or digit
+- IP-like names rejected (e.g., `192.168.1.1` → INVALID_BUCKET_NAME)
+- Valid examples: `my-bucket`, `data.2024`, `ai-artifacts`
+- Invalid examples: `-bucket`, `MY-BUCKET`, `ab`, `a-bucket-name-that-is-way-too-long-and-exceeds-the-sixty-three-character-limit`
 
 **List Buckets**
 ```
@@ -133,7 +179,9 @@ GET /api/v1/buckets
 
 Response 200:
 {
-  "buckets": [{"name": "my-bucket", "created_at": "2024-01-15T10:30:00Z"}],
+  "buckets": [
+    {"name": "my-bucket", "createdAt": "2024-01-15T10:30:00Z"}
+  ],
   "count": 1
 }
 ```
@@ -143,33 +191,51 @@ Response 200:
 PUT /api/v1/buckets/{bucket}
 
 Response 201:
-{"bucket": "my-bucket", "created": true, "location": "/api/v1/buckets/my-bucket"}
+{"bucket": "my-bucket", "created": "2024-01-15T10:30:00Z", "location": "/api/v1/buckets/my-bucket"}
 
-# Idempotent variant:
-PUT /api/v1/buckets/{bucket}?createIfNotExists=true
-
-Response 200 (if exists):
-{"bucket": "my-bucket", "created": false, "exists": true, "location": "/api/v1/buckets/my-bucket"}
+Error 409 if bucket already exists:
+{"error": {"code": "BUCKET_EXISTS", "category": "CONFLICT", "message": "Bucket already exists"}}
 ```
 
-Bucket name rules: 3-63 chars, lowercase alphanumeric + hyphens/dots, must start/end with letter/number, no IP-like names.
+**Create Bucket (Idempotent) — RECOMMENDED**
+```
+PUT /api/v1/buckets/{bucket}?createIfNotExists=true
+
+Response 201 (newly created):
+{"bucket": "my-bucket", "created": "2024-01-15T10:30:00Z", "location": "/api/v1/buckets/my-bucket"}
+
+Response 200 (already existed):
+{"bucket": "my-bucket", "exists": true, "location": "/api/v1/buckets/my-bucket"}
+```
+Always prefer `?createIfNotExists=true` to avoid 409 errors in automated workflows.
 
 **Check Bucket Existence**
 ```
 HEAD /api/v1/buckets/{bucket}
 
-Response 200 (exists) or 404 (not found)
+Response 200 (exists) — no body
+Response 404 (not found) — no body
 ```
 
 **Delete Bucket**
 ```
 DELETE /api/v1/buckets/{bucket}
 
-Response 204 (no content) — bucket must be empty
-Response 409 if bucket contains objects
+Response 204 (no content) — bucket successfully deleted
+Response 404 — bucket not found
+Response 409 — bucket not empty (delete all objects first)
 ```
 
 ### Objects
+
+**Object key validation:**
+- Cannot be empty
+- Cannot contain `..` (path traversal prevention)
+- Cannot start with `/`
+- Maximum 1024 bytes (S3 compatible)
+- Forward slashes `/` in keys create virtual directory hierarchies
+- Valid examples: `file.txt`, `folder/sub/file.pdf`, `2024/01/report.csv`
+- Invalid examples: `../etc/passwd`, `/absolute/path`, empty string
 
 **List Objects**
 ```
@@ -180,43 +246,77 @@ Response 200:
   "bucket": "my-bucket",
   "prefix": "folder/",
   "delimiter": "/",
-  "max_keys": 100,
-  "is_truncated": false,
+  "maxKeys": 100,
+  "isTruncated": false,
   "contents": [
-    {"key": "folder/file.txt", "size": 1234, "last_modified": "2024-01-15T10:30:00Z", "etag": "d41d8cd98f00b204e9800998ecf8427e", "content_type": "text/plain"}
+    {
+      "key": "folder/file.txt",
+      "size": 1234,
+      "lastModified": "2024-01-15T10:30:00Z",
+      "etag": "d41d8cd98f00b204e9800998ecf8427e",
+      "contentType": "text/plain"
+    }
   ],
-  "common_prefixes": ["folder/subfolder/"]
+  "commonPrefixes": [{"prefix": "folder/subfolder/"}]
 }
 ```
+
+**Query parameters:**
+- `list=true` — Required to trigger list mode (otherwise treated as object download)
+- `prefix` — Filter to objects whose keys start with this string
+- `delimiter` — Group objects by this separator. Use `/` for directory-like listing. Objects between prefix and next delimiter occurrence become `commonPrefixes`
+- `max-keys` — Maximum number of objects to return (default 1000)
 
 **Upload Object**
 ```
 PUT /api/v1/buckets/{bucket}/{key}
 Content-Type: application/octet-stream
-Body: <file content>
+Body: <raw file bytes>
 
-Response 201:
-{"bucket": "my-bucket", "key": "path/to/file.txt", "etag": "d41d8cd98f00b204e9800998ecf8427e", "size": 1234, "url": "/api/v1/buckets/my-bucket/path/to/file.txt"}
+Response 200:
+{
+  "bucket": "my-bucket",
+  "key": "path/to/file.txt",
+  "etag": "d41d8cd98f00b204e9800998ecf8427e",
+  "size": 1234,
+  "url": "/api/v1/buckets/my-bucket/path/to/file.txt"
+}
 ```
+
+**Upload details:**
+- Maximum file size: 5GB (5,242,880,000 bytes)
+- Writes are atomic: temp file → fsync → rename → fsync parent dir. If the server crashes mid-write, the old file is preserved
+- ETag is the MD5 hex hash of the uploaded content, computed during write
+- Parent directories in the key path are created automatically
+- Per-object write locks prevent concurrent writes to the same key (30-second lock timeout)
+- Multipart form upload also supported via `POST` with `multipart/form-data`
+- Allowed MIME types: images (jpeg, png, gif, webp, svg+xml, bmp), documents (pdf, docx, xlsx, pptx, txt, csv, html, css, js), archives (zip, rar, 7z, tar, gzip), audio (mpeg, wav, ogg, mp4, webm, flac), video (mp4, mpeg, webm, ogg, avi, quicktime), code (json, xml, javascript), application/octet-stream
 
 **Download Object**
 ```
 GET /api/v1/buckets/{bucket}/{key}
 
 Response 200:
-Headers: Content-Type, Content-Length, ETag, Last-Modified
-Body: <file content>
-
-Supports Range header for partial downloads.
+Headers:
+  Content-Type: text/plain
+  Content-Length: 1234
+  ETag: "d41d8cd98f00b204e9800998ecf8427e"
+  Last-Modified: Mon, 15 Jan 2024 10:30:00 GMT
+Body: <raw file bytes>
 ```
 
-**Get Object Metadata**
+- Supports HTTP `Range` header for partial downloads (e.g., `Range: bytes=0-999`)
+- ETag in response headers is quoted (e.g., `"abc123"`); the Go client trims quotes automatically
+
+**Get Object Metadata (HEAD)**
 ```
 HEAD /api/v1/buckets/{bucket}/{key}
 
 Response 200:
 Headers: Content-Type, Content-Length, ETag, Last-Modified
 (no body)
+
+Response 404 if object not found
 ```
 
 **Delete Object**
@@ -224,23 +324,37 @@ Headers: Content-Type, Content-Length, ETag, Last-Modified
 DELETE /api/v1/buckets/{bucket}/{key}
 
 Response 204 (no content)
+Response 404 if object not found
 ```
 
 ### Presigned URLs
 
-Two types of presigned URLs:
+Beamdrop supports two types of presigned URLs. Choose based on your requirements:
 
-**1. Client-side (HMAC)**
-Generated locally using your secret key. Self-contained, no server call needed.
+**Type 1: Client-side HMAC presigned URLs**
+- Generated locally using your secret key — no API call to the server
+- Self-contained: all auth info is in the URL query parameters
+- Cannot be revoked (valid until expiry or key rotation)
+- No download tracking or limits
+- Best for: ephemeral links, embedding in emails, cases where you don't need control after generation
+
 ```
 Token = Base64URL(HMAC-SHA256("METHOD\nBUCKET\nKEY\nUNIX_TIMESTAMP", SecretKey))
 URL = https://server/api/v1/buckets/{bucket}/{key}?access_key=BDK_xxx&expires=2024-01-16T10:30:00Z&token=TOKEN
 ```
 
-**2. Server-side (Pretty URLs)**
-Stored in database, revocable, with download tracking.
+Note: Key rotation invalidates ALL client-side presigned URLs generated with the old key.
 
-**Create Presigned URL**
+**Type 2: Server-side pretty presigned URLs (RECOMMENDED for most use cases)**
+- Created via API call, stored in database with 32-char hex token
+- Short, clean URLs: `/dl/{token}`
+- Revocable at any time — revoked URLs return 404 immediately
+- Download counting: `downloadCount` tracks usage
+- Download limits: `maxDownloads` restricts total uses
+- Expiry: `expiresAt` for time-based expiration
+- Best for: shareable links, download portals, temporary access, anything requiring control or auditing
+
+**Create Server-Side Presigned URL**
 ```
 POST /api/v1/presign
 Content-Type: application/json
@@ -249,24 +363,32 @@ Content-Type: application/json
   "bucket": "my-bucket",
   "key": "path/to/file.txt",
   "method": "GET",
-  "expires_in": 3600,       // seconds (optional)
-  "max_downloads": 10       // optional
+  "expires_in": 3600,
+  "max_downloads": 10
 }
 
 Response 201:
 {
   "id": 1,
-  "token": "abc123",
-  "url": "https://server/dl/abc123",
+  "token": "a1b2c3d4e5f67890a1b2c3d4e5f67890",
+  "url": "https://server/dl/a1b2c3d4e5f67890a1b2c3d4e5f67890",
   "bucket": "my-bucket",
   "key": "path/to/file.txt",
   "method": "GET",
-  "expires_at": "2024-01-15T11:30:00Z",
-  "max_downloads": 10,
-  "download_count": 0,
-  "created_at": "2024-01-15T10:30:00Z"
+  "expiresAt": "2024-01-15T11:30:00Z",
+  "maxDownloads": 10,
+  "downloadCount": 0,
+  "createdBy": "BDK_a1b2c3d4e5f67890",
+  "createdAt": "2024-01-15T10:30:00Z"
 }
 ```
+
+**Request fields:**
+- `bucket` (required): Target bucket name
+- `key` (required): Target object key
+- `method` (optional, default "GET"): HTTP method allowed
+- `expires_in` (optional): Seconds until expiry. Omit for no expiry
+- `max_downloads` (optional): Maximum download count. Omit for unlimited
 
 **List Presigned URLs**
 ```
@@ -280,117 +402,263 @@ Response 200:
 ```
 GET /api/v1/presign/{token}
 
-Response 200: (same structure as create response)
+Response 200: (same structure as create response, with updated downloadCount)
 ```
 
 **Revoke Presigned URL**
 ```
 DELETE /api/v1/presign/{token}
 
-Response 204 (no content) — URL returns 404 immediately after revocation
+Response 200: {"message": "Presigned URL revoked"}
 ```
+After revocation, `GET /dl/{token}` returns 404 immediately.
 
-**Download via Presigned URL**
+**Download via Presigned URL (Public)**
 ```
 GET /dl/{token}
 
-Response 200: file download (public, no auth required)
+Response 200: file download with Content-Disposition header
 Response 404: expired, revoked, or max downloads reached
 ```
+No authentication required — this is the public download endpoint. Supports Range header.
+
+**When to use which presigned URL type:**
+
+| Scenario | Use Client-side | Use Server-side |
+|----------|----------------|-----------------|
+| Quick temporary link, no tracking needed | ✅ | |
+| Need to revoke access after sharing | | ✅ |
+| Want to limit number of downloads | | ✅ |
+| Need to track how many times a file was downloaded | | ✅ |
+| Embedding download links in automated emails | ✅ | |
+| Creating a download portal for users | | ✅ |
+| Link must survive API key rotation | | ✅ |
+| Generating many links with zero server overhead | ✅ | |
+| Sharing sensitive files with audit trail | | ✅ |
 
 ## Error Responses
 
 All errors follow a consistent JSON structure:
 ```json
 {
-  "error": "BUCKET_NOT_FOUND",
-  "category": "NOT_FOUND",
-  "message": "The specified bucket does not exist",
-  "details": {},
-  "retryable": false,
-  "retry_after": 0
+  "error": {
+    "code": "BUCKET_NOT_FOUND",
+    "category": "NOT_FOUND",
+    "message": "The specified bucket does not exist",
+    "details": {}
+  }
 }
 ```
 
-Common error codes:
-| HTTP Status | Error Code | Category | Retryable |
-|-------------|-----------|----------|-----------|
-| 400 | INVALID_BUCKET_NAME | VALIDATION | No |
-| 400 | INVALID_OBJECT_KEY | VALIDATION | No |
-| 401 | UNAUTHORIZED | AUTH | No |
-| 403 | FORBIDDEN | AUTH | No |
-| 404 | BUCKET_NOT_FOUND | NOT_FOUND | No |
-| 404 | OBJECT_NOT_FOUND | NOT_FOUND | No |
-| 409 | BUCKET_ALREADY_EXISTS | CONFLICT | No |
-| 409 | BUCKET_NOT_EMPTY | CONFLICT | No |
-| 423 | OBJECT_LOCKED | LOCKED | Yes |
-| 429 | RATE_LIMIT_EXCEEDED | RATE_LIMIT | Yes |
+**Complete error code reference:**
 
-Rate limit responses include `Retry-After` header (seconds) and `X-Retryable: true`.
+| HTTP | Code | Category | Retryable | Description |
+|------|------|----------|-----------|-------------|
+| 400 | INVALID_REQUEST | VALIDATION | No | Malformed request body or parameters |
+| 400 | INVALID_BUCKET_NAME | VALIDATION | No | Bucket name doesn't match `^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$` |
+| 400 | INVALID_OBJECT_KEY | VALIDATION | No | Key empty, contains `..`, starts with `/`, or >1024 bytes |
+| 400 | INVALID_PATH | VALIDATION | No | Request path is invalid |
+| 400 | MISSING_FIELD | VALIDATION | No | Required field missing from request |
+| 401 | UNAUTHORIZED | AUTH | No | Missing or invalid Authorization header |
+| 401 | INVALID_TOKEN | AUTH | No | JWT token is invalid |
+| 401 | TOKEN_EXPIRED | AUTH | No | JWT token has expired |
+| 401 | INVALID_API_KEY | AUTH | No | API key not found or disabled |
+| 401 | API_KEY_EXPIRED | AUTH | No | API key has passed its expiresAt time |
+| 403 | FORBIDDEN | AUTH | No | Valid auth but insufficient permissions |
+| 403 | PERMISSION_DENIED | AUTH | No | API key lacks required permission for this operation |
+| 404 | BUCKET_NOT_FOUND | NOT_FOUND | No | Bucket does not exist |
+| 404 | OBJECT_NOT_FOUND | NOT_FOUND | No | Object does not exist in bucket |
+| 404 | FILE_NOT_FOUND | NOT_FOUND | No | File not found (web UI operations) |
+| 404 | LINK_NOT_FOUND | NOT_FOUND | No | Shareable link token not found |
+| 409 | BUCKET_EXISTS | CONFLICT | No | Bucket already exists (use `?createIfNotExists=true`) |
+| 409 | BUCKET_NOT_EMPTY | CONFLICT | No | Cannot delete bucket with objects in it |
+| 409 | OBJECT_EXISTS | CONFLICT | No | Object already exists (for create-only operations) |
+| 413 | FILE_TOO_LARGE | VALIDATION | No | Upload exceeds 5GB limit |
+| 415 | INVALID_MIME_TYPE | VALIDATION | No | Content type not in allowed MIME types list |
+| 423 | OBJECT_LOCKED | STORAGE | Yes | Object is currently locked by another operation. Retry after brief delay |
+| 429 | RATE_LIMIT_EXCEEDED | RATE_LIMIT | Yes | Per-IP rate limit exceeded. Check `Retry-After` header |
+| 507 | STORAGE_FULL | STORAGE | No | Server storage capacity reached (`-max-storage` limit) |
+
+**Retry headers** (present when retryable=true):
+- `Retry-After: <seconds>` — number of seconds to wait before retrying
+- `X-Retryable: true` — signals that the request can be retried
 
 ## Rate Limiting
 
-Three independent tiers per IP:
+Token bucket algorithm with three independent tiers per IP address:
 
-| Tier | Endpoints | Default |
-|------|-----------|---------|
-| General | All endpoints | 100 req/min |
-| Auth | `/auth/login` | 5 req/min |
-| Upload | PUT objects, `/upload` | 10 req/min |
+| Tier | Endpoints | Default Rate | Burst Capacity |
+|------|-----------|-------------|----------------|
+| General | All endpoints | 100 req/min | 100 requests |
+| Auth | `/auth/login` | 5 req/min | 5 requests |
+| Upload | PUT objects, `/upload` | 10 req/min | 10 requests |
 
-Configure with `-rate-limit N` (sets general tier; auth = 5%, upload = 10%).
-Disable with `-rate-limit 0`.
+- Configure with `-rate-limit N` flag (sets general tier; auth tier = 5% of N, upload tier = 10% of N)
+- Disable entirely with `-rate-limit 0`
+- Buckets start full and refill continuously
+- Stale IP entries cleaned up every 5 minutes (removes IPs unseen for >10 minutes)
+- IP extraction: Uses RemoteAddr by default. Only trusts X-Forwarded-For/X-Real-IP from `-trusted-proxies` list. For X-Forwarded-For, uses the first (leftmost) IP
+
+## Security Headers
+
+Applied to all responses:
+```
+X-Frame-Options: DENY
+X-Content-Type-Options: nosniff
+Referrer-Policy: strict-origin-when-cross-origin
+Permissions-Policy: geolocation=(), microphone=(), camera=()
+Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' ws: wss:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
+Strict-Transport-Security: max-age=31536000; includeSubDomains  (HTTPS only)
+```
+
+CSP can be disabled with `-disable-csp` flag (needed for some CDN proxies like Cloudflare).
+
+## CORS
+
+Disabled by default (most secure). When enabled via `-allowed-origins`:
+```
+Access-Control-Allow-Origin: <requested origin if in allowed list>
+Access-Control-Allow-Credentials: true
+Access-Control-Allow-Methods: GET, POST, OPTIONS
+Access-Control-Allow-Headers: Content-Type, Authorization, X-Request-ID
+Access-Control-Expose-Headers: X-Request-ID
+Access-Control-Max-Age: 86400
+```
+Preflight OPTIONS requests return 403 if origin is not in the allowed list.
 
 ## Health Endpoints
 
-- `GET /health` — Health index with component status (JSON)
-- `GET /health/live` — Kubernetes liveness probe
-- `GET /health/ready` — Kubernetes readiness probe
-- `GET /health/startup` — Kubernetes startup probe
-- `GET /metrics` — Prometheus metrics
+- `GET /health` — Component status (JSON: disk, database, storage)
+- `GET /health/live` — Kubernetes liveness probe (always 200 if process is running)
+- `GET /health/ready` — Kubernetes readiness probe (checks disk access)
+- `GET /health/startup` — Kubernetes startup probe (for slow boot scenarios)
+- `GET /ready` — Legacy readiness alias
+- `GET /metrics` — Prometheus metrics (request counters, latency histograms, storage gauges)
+- `GET /stats` — Real-time storage stats (JSON)
+- `GET /ws/stats` — WebSocket for real-time stats streaming
+
+## Storage Internals
+
+**Filesystem layout:**
+```
+<shared-dir>/
+├── buckets/
+│   ├── my-bucket/
+│   │   ├── file.txt
+│   │   └── folder/
+│   │       └── nested-file.pdf
+│   └── another-bucket/
+├── .beamdrop/
+│   └── beamdrop.db          (SQLite: API keys, presigned URLs, shareable links, revoked tokens)
+└── .trash/                   (soft-deleted files from web UI)
+```
+
+**Atomic writes:** Every object write goes through: create temp file (`.beamdrop_tmp_*` prefix) → write content + compute MD5 → fsync file → atomic rename to target → fsync parent directory → return ETag. On failure, temp file is cleaned up and the original object is preserved.
+
+**Object locking:** Per-object read/write locks via `LockManager`. Lock key = `{bucket}/{key}`. Default timeout = 30 seconds. Deadlock detection runs every 10 seconds. Stale lock warnings at 5 minutes. Lock is acquired before write, released after atomic rename completes.
 
 ## Go Client SDK
 
 ```go
 import "github.com/ekilie/beamdrop/pkg/client"
 
+// Initialize — validates BaseURL, creates HTTP client with 2-minute timeout
 c, err := client.New(client.Config{
-    BaseURL:     "http://localhost:7777",
-    AccessKeyID: "BDK_abc123",
-    SecretKey:   "sk_secret",
+    BaseURL:     "http://localhost:7777",   // Required. Must have scheme and host
+    AccessKeyID: "BDK_abc123",             // Optional for anonymous access
+    SecretKey:   "sk_secret",              // Required if AccessKeyID is set
+    // HTTPClient: custom *http.Client     // Optional, defaults to 2-min timeout
+    // UserAgent: "my-app/1.0"             // Optional, defaults to "beamdrop-go-client/0.1"
 })
 
 // Buckets
-buckets, _ := c.ListBuckets(ctx)
-created, _ := c.CreateBucketIfNotExists(ctx, "my-bucket")
-exists, _ := c.BucketExists(ctx, "my-bucket")
-_ = c.DeleteBucket(ctx, "my-bucket")
+buckets, _ := c.ListBuckets(ctx)                           // → *BucketList{Buckets, Count}
+created, _ := c.CreateBucket(ctx, "my-bucket")             // → *BucketCreated — errors on 409 if exists
+created, _ = c.CreateBucketIfNotExists(ctx, "my-bucket")   // → *BucketCreated — 201 or 200 with Exists=true
+exists, _ := c.BucketExists(ctx, "my-bucket")              // → bool (HEAD request, 404 → false)
+_ = c.DeleteBucket(ctx, "my-bucket")                       // → error (409 if not empty)
 
 // Objects
-uploaded, _ := c.PutObject(ctx, "my-bucket", "file.txt", []byte("hello"))
-uploaded, _ = c.PutObjectReader(ctx, "my-bucket", "file.txt", reader)
-obj, _ := c.GetObject(ctx, "my-bucket", "file.txt")      // obj.Body is []byte
-meta, _ := c.HeadObject(ctx, "my-bucket", "file.txt")     // metadata only
-_ = c.DeleteObject(ctx, "my-bucket", "file.txt")
-list, _ := c.ListObjects(ctx, "my-bucket", client.ListObjectsOptions{Prefix: "folder/"})
-
-// Presigned URLs (client-side)
-url, _ := c.PresignObjectURL("GET", "my-bucket", "file.txt", time.Now().Add(24*time.Hour))
-
-// Presigned URLs (server-side)
-presigned, _ := c.CreatePresignedURL(ctx, client.CreatePresignedURLRequest{
-    Bucket:       "my-bucket",
-    Key:          "file.txt",
-    Method:       "GET",
-    ExpiresIn:    intPtr(3600),
-    MaxDownloads: intPtr(10),
+uploaded, _ := c.PutObject(ctx, "bucket", "key", []byte("content"))   // → *ObjectCreated{Bucket,Key,ETag,Size,URL}
+uploaded, _ = c.PutObjectReader(ctx, "bucket", "key", ioReader)       // Streaming upload from io.Reader
+obj, _ := c.GetObject(ctx, "bucket", "key")                           // → *ObjectBody{ObjectMetadata, Body []byte}
+meta, _ := c.HeadObject(ctx, "bucket", "key")                         // → *ObjectMetadata{ContentType,ContentLength,ETag,LastModified}
+_ = c.DeleteObject(ctx, "bucket", "key")                              // → error
+exists, _ = c.ObjectExists(ctx, "bucket", "key")                      // → bool (HEAD, 404 → false)
+list, _ := c.ListObjects(ctx, "bucket", client.ListObjectsOptions{    // → *ObjectList
+    Prefix:    "folder/",                                              //   Contents []ObjectInfo + CommonPrefixes
+    Delimiter: "/",
+    MaxKeys:   100,
 })
-urls, _ := c.ListPresignedURLs(ctx)
-_ = c.DeletePresignedURL(ctx, "token123")
+
+// Presigned URLs — client-side (HMAC, no server call)
+url, _ := c.PresignObjectURL("GET", "bucket", "key", time.Now().Add(24*time.Hour))
+// Returns: "http://server/api/v1/buckets/bucket/key?access_key=BDK_xxx&expires=...&token=..."
+
+// Presigned URLs — server-side (database-tracked, revocable)
+presigned, _ := c.CreatePresignedURL(ctx, client.CreatePresignedURLRequest{
+    Bucket:       "bucket",
+    Key:          "key",
+    Method:       "GET",
+    ExpiresIn:    int64Ptr(3600),    // 1 hour in seconds
+    MaxDownloads: intPtr(10),        // limit to 10 downloads
+})
+// presigned.URL = "https://server/dl/a1b2c3..."
+// presigned.Token = "a1b2c3..."
+
+urls, _ := c.ListPresignedURLs(ctx)              // → *PresignedURLList{URLs, Count}
+details, _ := c.GetPresignedURL(ctx, "token")    // → *PresignedURL (with current downloadCount)
+_ = c.DeletePresignedURL(ctx, "token")           // Revoke — /dl/token immediately returns 404
 ```
+
+**Error handling in Go client:**
+```go
+result, err := c.GetObject(ctx, "bucket", "missing-key")
+if err != nil {
+    var apiErr *client.APIError
+    if errors.As(err, &apiErr) {
+        fmt.Println(apiErr.StatusCode)  // 404
+        fmt.Println(apiErr.Code)        // "OBJECT_NOT_FOUND"
+        fmt.Println(apiErr.Category)    // "NOT_FOUND"
+        fmt.Println(apiErr.Retryable)   // false
+        if apiErr.Retryable {
+            time.Sleep(time.Duration(apiErr.RetryAfter) * time.Second)
+            // retry...
+        }
+    }
+}
+```
+
+**Sentinel errors:** `client.ErrInvalidBaseURL`, `client.ErrMissingCredentials`, `client.ErrInvalidPath`
 
 ## MCP Server
 
-A TypeScript MCP server is available in the `mcp/` directory for AI agent integration. See `mcp/README.md` for setup instructions.
+A TypeScript MCP server is available in `mcp/` for AI agent integration via the Model Context Protocol. Connects over stdio transport.
 
-Available tools: `list_buckets`, `create_bucket`, `delete_bucket`, `bucket_exists`, `list_objects`, `put_object`, `get_object`, `head_object`, `delete_object`, `create_presigned_url`, `list_presigned_urls`, `get_presigned_url`, `delete_presigned_url`, `list_api_keys`, `create_api_key`, `delete_api_key`.
+**Configuration (environment variables):**
+- `BEAMDROP_BASE_URL` — Beamdrop server URL (required)
+- `BEAMDROP_ACCESS_KEY_ID` — API access key (required)
+- `BEAMDROP_SECRET_KEY` — API secret key (required)
+
+**Available tools (16 total):**
+
+| Tool | Parameters | Description |
+|------|-----------|-------------|
+| `list_buckets` | none | List all storage buckets |
+| `create_bucket` | `name`, `idempotent?` | Create a bucket (idempotent by default) |
+| `delete_bucket` | `name` | Delete an empty bucket |
+| `bucket_exists` | `name` | Check if a bucket exists |
+| `list_objects` | `bucket`, `prefix?`, `delimiter?`, `maxKeys?` | List objects with S3-style filtering |
+| `put_object` | `bucket`, `key`, `content`, `isBase64?` | Upload text or base64-encoded binary |
+| `get_object` | `bucket`, `key` | Download object (text or base64 for binary) |
+| `head_object` | `bucket`, `key` | Get object metadata |
+| `delete_object` | `bucket`, `key` | Delete an object |
+| `create_presigned_url` | `bucket`, `key`, `method?`, `expiresIn?`, `maxDownloads?` | Create revocable download link |
+| `list_presigned_urls` | none | List all presigned URLs |
+| `get_presigned_url` | `token` | Get presigned URL details |
+| `delete_presigned_url` | `token` | Revoke a presigned URL |
+| `list_api_keys` | none | List API keys (no secrets) |
+| `create_api_key` | `name?`, `bucketScope?`, `permissions?` | Create new API key |
+| `delete_api_key` | `id` | Delete an API key |
+
+See `mcp/README.md` for Claude Desktop and VS Code setup instructions.

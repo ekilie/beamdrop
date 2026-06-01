@@ -1,165 +1,395 @@
 ---
 name: beamdrop
-description: Interact with a Beamdrop file storage server — upload, download, and manage files via the S3-compatible API. Use when the user wants to store files, create buckets, generate presigned URLs, or manage API keys on a Beamdrop instance.
+description: Interact with a Beamdrop file storage server — upload, download, and manage files via the S3-compatible API. Use when the user wants to store files, create buckets, generate presigned/shareable URLs, manage API keys, or integrate Beamdrop into their project. Covers Go SDK, HTTP API, presigned URL strategies, and error handling.
 ---
 
 # Beamdrop File Storage Skill
 
+## When to Use This Skill
+
 Use this skill when the user asks to:
 
-- Upload or download files to/from a Beamdrop server
+- Upload, download, or manage files on a Beamdrop server
 - Create, list, or delete storage buckets
-- Generate presigned/shareable download URLs
-- Manage Beamdrop API keys
-- Store AI-generated artifacts (code, images, documents) on Beamdrop
-- Set up Beamdrop integration in their project
+- Generate presigned or shareable download URLs
+- Manage Beamdrop API keys (create, list, delete, scope permissions)
+- Store AI-generated artifacts (code, images, documents, build outputs) on Beamdrop
+- Set up Beamdrop integration in their Go, Python, JavaScript, PHP, or any project
+- Compare presigned URL types or decide on a file-sharing strategy
+- Debug Beamdrop API errors (401, 404, 409, 429)
+- Configure Beamdrop for production deployment
 
 ## Prerequisites
 
-The user needs a running Beamdrop instance with API authentication enabled (`-api-auth` flag). They need these environment variables or config values:
+The user needs a running Beamdrop instance with API authentication enabled:
+
+```bash
+beamdrop -dir /path/to/share -api-auth
+```
+
+They need these environment variables or config values:
 
 - `BEAMDROP_BASE_URL` — The server URL (e.g., `http://localhost:7777`)
-- `BEAMDROP_ACCESS_KEY_ID` — API access key (format: `BDK_*`)
-- `BEAMDROP_SECRET_KEY` — API secret key (format: `sk_*`)
+- `BEAMDROP_ACCESS_KEY_ID` — API access key (format: `BDK_` + 16 hex chars)
+- `BEAMDROP_SECRET_KEY` — API secret key (format: `sk_` + 40 hex chars)
 
 If the user doesn't have API keys yet, they can create them:
 
 ```bash
 curl -X POST http://localhost:7777/api/v1/keys
+# Response includes accessKeyId and secretKey (secret shown ONCE — save immediately)
 ```
 
-## Authentication
+## Authentication Details
 
-All S3 API requests use HMAC-SHA256 signing:
+All S3 API requests at `/api/v1/` use HMAC-SHA256 signing:
 
 ```
-StringToSign = METHOD + "\n" + PATH + "\n" + TIMESTAMP
+StringToSign = METHOD + "\n" + PATH + "\n" + RFC3339_TIMESTAMP
 Signature = Base64(HMAC-SHA256(StringToSign, SecretKey))
 ```
 
-Headers required:
+- PATH is the URL path only — no query string. Example: `/api/v1/buckets/my-bucket`
+- TIMESTAMP is RFC3339 UTC (e.g., `2024-01-15T10:30:00Z`). Must be within ±15 minutes of server time.
+- Base64 is standard encoding (not URL-safe)
+
+Headers required on every request:
 
 ```
-Authorization: Bearer ACCESS_KEY_ID:SIGNATURE
+Authorization: Bearer BDK_xxxx:SIGNATURE
 X-Beamdrop-Date: 2024-01-15T10:30:00Z
 ```
 
-## Go Client Usage
+API key properties:
 
-When generating Go code, use the official client SDK:
+- `permissions`: `"read"`, `"write"`, or `"read,write"`
+- `bucketScope`: Optional — restricts key to a single bucket
+- `expiresAt`: Optional — key auto-expires after this time
+- `disabled`: Can be set to temporarily disable without deleting
+
+## Go Client SDK
+
+When generating Go code, always use the official client SDK at `github.com/ekilie/beamdrop/pkg/client`:
 
 ```go
 import "github.com/ekilie/beamdrop/pkg/client"
 
-// Initialize client
+// Initialize client (validates BaseURL, creates HTTP client with 2-min timeout)
 c, err := client.New(client.Config{
-    BaseURL:     os.Getenv("BEAMDROP_BASE_URL"),
+    BaseURL:     os.Getenv("BEAMDROP_BASE_URL"),   // Required, must have scheme+host
     AccessKeyID: os.Getenv("BEAMDROP_ACCESS_KEY_ID"),
     SecretKey:   os.Getenv("BEAMDROP_SECRET_KEY"),
+    // HTTPClient: &http.Client{Timeout: 5*time.Minute},  // Optional custom client
+    // UserAgent:  "my-app/1.0",                           // Optional, default "beamdrop-go-client/0.1"
 })
 if err != nil {
-    log.Fatal(err)
+    log.Fatal(err)  // ErrInvalidBaseURL or ErrMissingCredentials
 }
+```
 
-// Create bucket (idempotent)
-_, err = c.CreateBucketIfNotExists(ctx, "my-bucket")
+### Bucket Operations
 
-// Upload file
-uploaded, err := c.PutObject(ctx, "my-bucket", "path/to/file.txt", []byte("content"))
+```go
+// List all buckets → *BucketList{Buckets []BucketInfo, Count int}
+buckets, err := c.ListBuckets(ctx)
 
-// Upload from reader (streaming, for large files)
-uploaded, err = c.PutObjectReader(ctx, "my-bucket", "large-file.bin", file)
+// Create bucket — errors with 409 BUCKET_EXISTS if already exists
+created, err := c.CreateBucket(ctx, "my-bucket")   // → *BucketCreated{Bucket, Created, Location}
 
-// Download file
-obj, err := c.GetObject(ctx, "my-bucket", "path/to/file.txt")
-fmt.Println(string(obj.Body))
+// Create bucket (IDEMPOTENT — preferred for automation)
+// Returns 201 if new, 200 with Exists=true if already existed
+created, err := c.CreateBucketIfNotExists(ctx, "my-bucket")
 
-// List objects with prefix
-list, err := c.ListObjects(ctx, "my-bucket", client.ListObjectsOptions{
-    Prefix:    "folder/",
-    Delimiter: "/",
+// Check existence via HEAD (returns false on 404, not an error)
+exists, err := c.BucketExists(ctx, "my-bucket")   // → bool
+
+// Delete (must be empty — 409 BUCKET_NOT_EMPTY if objects remain)
+err = c.DeleteBucket(ctx, "my-bucket")
+```
+
+Bucket name rules: 3-63 chars, regex `^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$`, no IP-like names.
+
+### Object Operations
+
+```go
+// Upload from bytes → *ObjectCreated{Bucket, Key, ETag, Size, URL}
+uploaded, err := c.PutObject(ctx, "bucket", "path/to/file.txt", []byte("content"))
+
+// Upload from io.Reader (streaming — use for large files, avoids loading into memory)
+f, _ := os.Open("large-file.bin")
+defer f.Close()
+uploaded, err = c.PutObjectReader(ctx, "bucket", "large-file.bin", f)
+
+// Download → *ObjectBody{ObjectMetadata, Body []byte}
+obj, err := c.GetObject(ctx, "bucket", "path/to/file.txt")
+fmt.Println(string(obj.Body))                    // file content
+fmt.Println(obj.ContentType)                     // "text/plain"
+fmt.Println(obj.ETag)                            // MD5 hex hash (quotes trimmed)
+
+// Metadata only (no body download) → *ObjectMetadata
+meta, err := c.HeadObject(ctx, "bucket", "path/to/file.txt")
+fmt.Printf("Size: %d, Type: %s\n", meta.ContentLength, meta.ContentType)
+
+// Check existence (false on 404, not an error)
+exists, err := c.ObjectExists(ctx, "bucket", "key")
+
+// Delete
+err = c.DeleteObject(ctx, "bucket", "path/to/file.txt")
+
+// List objects with S3-style prefix/delimiter → *ObjectList
+list, err := c.ListObjects(ctx, "bucket", client.ListObjectsOptions{
+    Prefix:    "folder/",    // only keys starting with "folder/"
+    Delimiter: "/",          // group into "directories" at "/"
+    MaxKeys:   100,          // default 1000
 })
+// list.Contents → []ObjectInfo{Key, Size, LastModified, ETag, ContentType}
+// list.CommonPrefixes → []CommonPrefix{Prefix} (virtual subdirectories)
+// list.IsTruncated → bool (more results available)
+```
 
-// Generate presigned URL (client-side, self-contained)
-url, err := c.PresignObjectURL("GET", "my-bucket", "file.txt", time.Now().Add(24*time.Hour))
+Object key rules: max 1024 bytes, no `..`, no leading `/`. Forward slashes create virtual directory hierarchies.
+Max upload size: 5GB. Writes are atomic (crash-safe). ETag = MD5 hex hash of content.
 
-// Generate presigned URL (server-side, revocable, with download tracking)
+### Presigned URLs — Choosing the Right Type
+
+Beamdrop has two presigned URL mechanisms. **Always choose deliberately** — they have different trade-offs:
+
+#### Client-side HMAC presigned URLs
+
+Generated locally using your secret key. No server API call needed. Self-contained URL.
+
+```go
+url, err := c.PresignObjectURL("GET", "bucket", "file.txt", time.Now().Add(24*time.Hour))
+// Returns: "http://server/api/v1/buckets/bucket/file.txt?access_key=BDK_xxx&expires=...&token=..."
+```
+
+**Use when:**
+
+- You need zero server overhead (URL computed locally)
+- Generating many links in a batch
+- Embedding in automated emails or notifications
+- Temporary access with no tracking needed
+
+**Limitations:**
+
+- Cannot be revoked (valid until expiry)
+- No download counting or limits
+- Key rotation invalidates ALL outstanding client-side URLs
+- URL is long (contains bucket/key path + query params)
+
+#### Server-side presigned URLs (RECOMMENDED for most use cases)
+
+Created via API call, stored in database with a short 32-char hex token. Clean `/dl/{token}` URLs.
+
+```go
 presigned, err := c.CreatePresignedURL(ctx, client.CreatePresignedURLRequest{
-    Bucket:       "my-bucket",
+    Bucket:       "bucket",
     Key:          "file.txt",
     Method:       "GET",
-    ExpiresIn:    intPtr(3600),    // 1 hour
-    MaxDownloads: intPtr(10),       // limit to 10 downloads
+    ExpiresIn:    int64Ptr(3600),    // 1 hour (seconds). Omit for no expiry.
+    MaxDownloads: intPtr(10),         // Max 10 downloads. Omit for unlimited.
 })
-// presigned.URL is something like "https://server/dl/abc123"
+// presigned.URL = "https://server/dl/a1b2c3d4..."  (short, clean)
+// presigned.Token = "a1b2c3d4..."
+// presigned.DownloadCount = 0
+
+// List all presigned URLs
+urls, err := c.ListPresignedURLs(ctx)   // → *PresignedURLList{URLs, Count}
+
+// Check download stats
+details, err := c.GetPresignedURL(ctx, "token")
+fmt.Printf("Downloaded %d/%d times\n", details.DownloadCount, *details.MaxDownloads)
+
+// Revoke — /dl/token immediately returns 404
+err = c.DeletePresignedURL(ctx, "token")
 ```
+
+**Use when:**
+
+- You need to revoke access after sharing
+- You want download counting or limits
+- You need an audit trail (createdBy, createdAt tracked)
+- Link must survive API key rotation
+- You want short, clean URLs for users
+- Sharing sensitive files
+
+**Decision matrix:**
+
+| Scenario                          | Client-side | Server-side |
+| --------------------------------- | :---------: | :---------: |
+| Quick temporary link, no tracking |     ✅      |             |
+| Need to revoke after sharing      |             |     ✅      |
+| Limit number of downloads         |             |     ✅      |
+| Track download count              |             |     ✅      |
+| Batch-generate 1000 links         |     ✅      |             |
+| Share in download portal          |             |     ✅      |
+| Must survive key rotation         |             |     ✅      |
+| Sensitive files with audit trail  |             |     ✅      |
+| Embed in automated emails         |     ✅      |             |
 
 ## HTTP API Quick Reference
 
-When generating code in other languages, use the HTTP API directly:
+When generating code in other languages, use the HTTP API directly with HMAC signing:
 
 ### Buckets
 
-- `GET /api/v1/buckets` — List buckets
-- `PUT /api/v1/buckets/{name}` — Create bucket
-- `PUT /api/v1/buckets/{name}?createIfNotExists=true` — Create or reuse bucket
-- `HEAD /api/v1/buckets/{name}` — Check existence
-- `DELETE /api/v1/buckets/{name}` — Delete (must be empty)
+- `GET /api/v1/buckets` → `{"buckets":[{name, createdAt}], "count":N}`
+- `PUT /api/v1/buckets/{name}` → 201 `{bucket, created, location}` | 409 BUCKET_EXISTS
+- `PUT /api/v1/buckets/{name}?createIfNotExists=true` → 201 (new) or 200 `{exists:true}` (existed)
+- `HEAD /api/v1/buckets/{name}` → 200 or 404
+- `DELETE /api/v1/buckets/{name}` → 204 | 409 BUCKET_NOT_EMPTY
 
 ### Objects
 
-- `PUT /api/v1/buckets/{bucket}/{key}` — Upload (body = file content)
-- `GET /api/v1/buckets/{bucket}/{key}` — Download
-- `HEAD /api/v1/buckets/{bucket}/{key}` — Metadata only
-- `DELETE /api/v1/buckets/{bucket}/{key}` — Delete
-- `GET /api/v1/buckets/{bucket}?list=true&prefix=...&delimiter=...` — List
+- `PUT /api/v1/buckets/{bucket}/{key}` (body = raw bytes) → 200 `{bucket, key, etag, size, url}`
+- `GET /api/v1/buckets/{bucket}/{key}` → raw file (headers: Content-Type, Content-Length, ETag, Last-Modified). Supports Range header
+- `HEAD /api/v1/buckets/{bucket}/{key}` → headers only, no body
+- `DELETE /api/v1/buckets/{bucket}/{key}` → 204
+- `GET /api/v1/buckets/{bucket}?list=true&prefix=X&delimiter=/&max-keys=N` → `{contents, commonPrefixes, isTruncated}`
 
 ### Presigned URLs
 
-- `POST /api/v1/presign` — Create (JSON: bucket, key, method, expires_in, max_downloads)
-- `GET /api/v1/presign` — List all
-- `DELETE /api/v1/presign/{token}` — Revoke
+- `POST /api/v1/presign` (JSON: `{bucket, key, method, expires_in, max_downloads}`) → 201 `{token, url, ...}`
+- `GET /api/v1/presign` → `{urls, count}`
+- `GET /api/v1/presign/{token}` → presigned URL details with current downloadCount
+- `DELETE /api/v1/presign/{token}` → 200 (immediate revocation)
+- `GET /dl/{token}` → public download (no auth needed). 404 if expired/revoked/max-reached
+
+### API Keys
+
+- `POST /api/v1/keys` (JSON: `{name, permissions, bucket_scope}`) → 201 `{accessKeyId, secretKey, ...}` — secret shown ONCE
+- `GET /api/v1/keys` → `{keys, count}` — no secrets
+- `DELETE /api/v1/keys?accessKeyId=BDK_xxxx` → 204
 
 ## Error Handling
 
-Handle these common errors:
+All errors return consistent JSON: `{"error":{"code":"CODE","category":"CATEGORY","message":"...","details":{}}}`
 
-- **429 Rate Limited**: Retry after `Retry-After` header seconds. Response includes `"retryable": true`.
-- **404 Not Found**: Bucket or object doesn't exist. Check the name/key.
-- **409 Conflict**: Bucket already exists (use `?createIfNotExists=true`) or bucket not empty (delete objects first).
-- **401 Unauthorized**: Invalid or expired credentials. Check API key and timestamp (must be within 15 min of server time).
+Handle these errors in generated code:
+
+| HTTP | Code                | What to Do                                                                                                       |
+| ---- | ------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| 400  | INVALID_BUCKET_NAME | Fix bucket name: 3-63 chars, lowercase a-z0-9 + hyphens/dots, start/end with letter/digit                        |
+| 400  | INVALID_OBJECT_KEY  | Fix key: no `..`, no leading `/`, max 1024 bytes                                                                 |
+| 401  | UNAUTHORIZED        | Check: (1) API key exists and not disabled, (2) timestamp within ±15 min, (3) signing path matches request path  |
+| 403  | PERMISSION_DENIED   | API key lacks required permission or bucket scope doesn't match                                                  |
+| 404  | BUCKET_NOT_FOUND    | Create bucket first with `CreateBucketIfNotExists`                                                               |
+| 404  | OBJECT_NOT_FOUND    | Object doesn't exist — check key spelling, verify bucket                                                         |
+| 409  | BUCKET_EXISTS       | Use `?createIfNotExists=true` to avoid this                                                                      |
+| 409  | BUCKET_NOT_EMPTY    | Delete all objects before deleting bucket                                                                        |
+| 413  | FILE_TOO_LARGE      | File exceeds 5GB limit — split or compress                                                                       |
+| 423  | OBJECT_LOCKED       | Another operation holds the lock — **retry after brief delay** (lock timeout is 30s)                             |
+| 429  | RATE_LIMIT_EXCEEDED | **Retry after `Retry-After` header seconds**. Response has `X-Retryable: true`. General: 100/min, upload: 10/min |
+| 507  | STORAGE_FULL        | Server reached `-max-storage` limit — cannot upload                                                              |
+
+Go client error handling pattern:
+
+```go
+result, err := c.GetObject(ctx, "bucket", "key")
+if err != nil {
+    var apiErr *client.APIError
+    if errors.As(err, &apiErr) {
+        switch apiErr.Code {
+        case "OBJECT_NOT_FOUND":
+            // handle missing object
+        case "RATE_LIMIT_EXCEEDED":
+            time.Sleep(time.Duration(apiErr.RetryAfter) * time.Second)
+            // retry
+        }
+    }
+}
+```
 
 ## Common Workflows
 
 ### Store AI-generated artifacts
 
 ```go
-// Create a dedicated bucket for AI outputs
 c.CreateBucketIfNotExists(ctx, "ai-artifacts")
 
-// Store with structured key paths
-c.PutObject(ctx, "ai-artifacts", fmt.Sprintf("session-%s/output.txt", sessionID), result)
+// Use structured key paths: {purpose}/{session}/{filename}
+key := fmt.Sprintf("generations/%s/%s", sessionID, "output.json")
+c.PutObject(ctx, "ai-artifacts", key, resultBytes)
 
-// Generate a shareable link
-url, _ := c.CreatePresignedURL(ctx, client.CreatePresignedURLRequest{
+// Generate a shareable link (server-side, revocable, 24h expiry)
+presigned, _ := c.CreatePresignedURL(ctx, client.CreatePresignedURLRequest{
     Bucket:    "ai-artifacts",
-    Key:       fmt.Sprintf("session-%s/output.txt", sessionID),
+    Key:       key,
     Method:    "GET",
-    ExpiresIn: intPtr(86400), // 24 hours
+    ExpiresIn: int64Ptr(86400),
 })
+fmt.Println("Download:", presigned.URL)
 ```
 
-### Upload and share a file
+### Upload and share with download limits
 
 ```go
 c.CreateBucketIfNotExists(ctx, "shared")
 c.PutObject(ctx, "shared", "report.pdf", pdfBytes)
-url, _ := c.PresignObjectURL("GET", "shared", "report.pdf", time.Now().Add(7*24*time.Hour))
-// Share url with recipient
+
+// Server-side URL — max 5 downloads, expires in 7 days
+presigned, _ := c.CreatePresignedURL(ctx, client.CreatePresignedURLRequest{
+    Bucket:       "shared",
+    Key:          "report.pdf",
+    Method:       "GET",
+    ExpiresIn:    int64Ptr(7 * 24 * 3600),
+    MaxDownloads: intPtr(5),
+})
 ```
 
-## Validation Rules
+### List and organize files
 
-- **Bucket names**: 3-63 chars, lowercase alphanumeric + hyphens/dots, start/end with letter/number
-- **Object keys**: Max 1024 bytes, no `..` or leading `/`, no path traversal
-- **Max upload size**: 5GB per file
+```go
+// List top-level "directories" in a bucket
+list, _ := c.ListObjects(ctx, "bucket", client.ListObjectsOptions{
+    Delimiter: "/",
+})
+// list.CommonPrefixes → ["folder1/", "folder2/"]
+
+// List files within a "directory"
+list, _ = c.ListObjects(ctx, "bucket", client.ListObjectsOptions{
+    Prefix:    "folder1/",
+    Delimiter: "/",
+})
+// list.Contents → [{Key:"folder1/file.txt", ...}]
+// list.CommonPrefixes → ["folder1/sub/"]
+```
+
+### Deduplicate with ETags
+
+```go
+// ETags are MD5 hashes — use for deduplication
+meta, _ := c.HeadObject(ctx, "bucket", "file.txt")
+if meta.ETag == computeMD5Hex(newContent) {
+    fmt.Println("Content unchanged, skipping upload")
+} else {
+    c.PutObject(ctx, "bucket", "file.txt", newContent)
+}
+```
+
+### Scoped API keys for limited access
+
+```bash
+# Create a read-only key scoped to one bucket
+curl -X POST http://localhost:7777/api/v1/keys \
+  -H "Content-Type: application/json" \
+  -d '{"name":"readonly-reports","permissions":"read","bucket_scope":"reports"}'
+```
+
+## Validation Rules Summary
+
+| Rule                      | Constraint                               |
+| ------------------------- | ---------------------------------------- |
+| Bucket name length        | 3-63 characters                          |
+| Bucket name regex         | `^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$`     |
+| Bucket name chars         | Lowercase a-z, digits 0-9, hyphens, dots |
+| Bucket name start/end     | Must be letter or digit                  |
+| IP-like bucket names      | Rejected (e.g., `192.168.1.1`)           |
+| Object key max length     | 1024 bytes                               |
+| Object key no-go patterns | Empty, contains `..`, starts with `/`    |
+| Max upload size           | 5GB (5,242,880,000 bytes)                |
+| HMAC clock skew tolerance | ±15 minutes                              |
+| Object lock timeout       | 30 seconds                               |
+| Rate limit — general      | 100 req/min per IP                       |
+| Rate limit — upload       | 10 req/min per IP                        |
+| Rate limit — auth         | 5 req/min per IP                         |

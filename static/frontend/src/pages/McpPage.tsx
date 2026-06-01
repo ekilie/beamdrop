@@ -2,7 +2,15 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Copy, Check, ExternalLink, Cpu, Wrench, Shield, Zap } from "lucide-react";
+import {
+  Copy,
+  Check,
+  ExternalLink,
+  Cpu,
+  Wrench,
+  Shield,
+  Zap,
+} from "lucide-react";
 
 interface MCPInfo {
   protocol: string;
@@ -64,7 +72,7 @@ export default function McpPage() {
       },
     },
     null,
-    2
+    2,
   );
 
   const tools = [
@@ -114,11 +122,7 @@ export default function McpPage() {
                 ACTIVE
               </Badge>
             )}
-            {error && (
-              <Badge variant="destructive">
-                ERROR
-              </Badge>
-            )}
+            {error && <Badge variant="destructive">ERROR</Badge>}
           </div>
         </CardHeader>
         <CardContent className="space-y-3">
@@ -138,22 +142,16 @@ export default function McpPage() {
                 <p className="text-xs text-muted-foreground font-mono">
                   PROTOCOL
                 </p>
-                <p className="text-sm font-mono mt-0.5">
-                  MCP {info.version}
-                </p>
+                <p className="text-sm font-mono mt-0.5">MCP {info.version}</p>
               </div>
               <div className="p-3 rounded-lg bg-muted/50">
                 <p className="text-xs text-muted-foreground font-mono">
                   TRANSPORT
                 </p>
-                <p className="text-sm font-mono mt-0.5">
-                  {info.transport}
-                </p>
+                <p className="text-sm font-mono mt-0.5">{info.transport}</p>
               </div>
               <div className="p-3 rounded-lg bg-muted/50">
-                <p className="text-xs text-muted-foreground font-mono">
-                  TOOLS
-                </p>
+                <p className="text-xs text-muted-foreground font-mono">TOOLS</p>
                 <p className="text-sm font-mono mt-0.5">
                   {tools.length} available
                 </p>
@@ -178,8 +176,10 @@ export default function McpPage() {
         <CardContent>
           <div className="space-y-2 text-sm">
             <p className="text-muted-foreground">
-              POST requests require <strong>HMAC-SHA256 API key authentication</strong> — the same auth used by the S3 API.
-              GET requests are public (returns server info only).
+              POST requests require{" "}
+              <strong>HMAC-SHA256 API key authentication</strong> — the same
+              auth used by the S3 API. GET requests are public (returns server
+              info only).
             </p>
             <div className="flex items-center gap-2 mt-3">
               <Badge variant="outline" className="font-mono text-xs">
@@ -209,8 +209,10 @@ export default function McpPage() {
             {claudeConfig}
           </pre>
           <p className="text-xs text-muted-foreground mt-3">
-            Add this to your <code className="text-foreground">claude_desktop_config.json</code> or MCP client settings.
-            Replace the Authorization header with your actual API key and HMAC signature.
+            Add this to your{" "}
+            <code className="text-foreground">claude_desktop_config.json</code>{" "}
+            or MCP client settings. Replace the Authorization header with your
+            actual API key and HMAC signature.
           </p>
         </CardContent>
       </Card>

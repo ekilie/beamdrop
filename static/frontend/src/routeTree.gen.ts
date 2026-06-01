@@ -16,6 +16,7 @@ import { Route as ShareTokenRouteImport } from './routes/share/$token'
 import { Route as AuthenticatedUsageRouteImport } from './routes/_authenticated/usage'
 import { Route as AuthenticatedSharesRouteImport } from './routes/_authenticated/shares'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
+import { Route as AuthenticatedMcpRouteImport } from './routes/_authenticated/mcp'
 import { Route as AuthenticatedLogsRouteImport } from './routes/_authenticated/logs'
 import { Route as AuthenticatedApiKeysRouteImport } from './routes/_authenticated/api-keys'
 import { Route as AuthenticatedApiDocsRouteImport } from './routes/_authenticated/api-docs'
@@ -54,6 +55,11 @@ const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedMcpRoute = AuthenticatedMcpRouteImport.update({
+  id: '/mcp',
+  path: '/mcp',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedLogsRoute = AuthenticatedLogsRouteImport.update({
   id: '/logs',
   path: '/logs',
@@ -76,6 +82,7 @@ export interface FileRoutesByFullPath {
   '/api-docs': typeof AuthenticatedApiDocsRoute
   '/api-keys': typeof AuthenticatedApiKeysRoute
   '/logs': typeof AuthenticatedLogsRoute
+  '/mcp': typeof AuthenticatedMcpRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/shares': typeof AuthenticatedSharesRoute
   '/usage': typeof AuthenticatedUsageRoute
@@ -86,6 +93,7 @@ export interface FileRoutesByTo {
   '/api-docs': typeof AuthenticatedApiDocsRoute
   '/api-keys': typeof AuthenticatedApiKeysRoute
   '/logs': typeof AuthenticatedLogsRoute
+  '/mcp': typeof AuthenticatedMcpRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/shares': typeof AuthenticatedSharesRoute
   '/usage': typeof AuthenticatedUsageRoute
@@ -99,6 +107,7 @@ export interface FileRoutesById {
   '/_authenticated/api-docs': typeof AuthenticatedApiDocsRoute
   '/_authenticated/api-keys': typeof AuthenticatedApiKeysRoute
   '/_authenticated/logs': typeof AuthenticatedLogsRoute
+  '/_authenticated/mcp': typeof AuthenticatedMcpRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/shares': typeof AuthenticatedSharesRoute
   '/_authenticated/usage': typeof AuthenticatedUsageRoute
@@ -113,6 +122,7 @@ export interface FileRouteTypes {
     | '/api-docs'
     | '/api-keys'
     | '/logs'
+    | '/mcp'
     | '/settings'
     | '/shares'
     | '/usage'
@@ -123,6 +133,7 @@ export interface FileRouteTypes {
     | '/api-docs'
     | '/api-keys'
     | '/logs'
+    | '/mcp'
     | '/settings'
     | '/shares'
     | '/usage'
@@ -135,6 +146,7 @@ export interface FileRouteTypes {
     | '/_authenticated/api-docs'
     | '/_authenticated/api-keys'
     | '/_authenticated/logs'
+    | '/_authenticated/mcp'
     | '/_authenticated/settings'
     | '/_authenticated/shares'
     | '/_authenticated/usage'
@@ -199,6 +211,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSettingsRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/mcp': {
+      id: '/_authenticated/mcp'
+      path: '/mcp'
+      fullPath: '/mcp'
+      preLoaderRoute: typeof AuthenticatedMcpRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/logs': {
       id: '/_authenticated/logs'
       path: '/logs'
@@ -227,6 +246,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedApiDocsRoute: typeof AuthenticatedApiDocsRoute
   AuthenticatedApiKeysRoute: typeof AuthenticatedApiKeysRoute
   AuthenticatedLogsRoute: typeof AuthenticatedLogsRoute
+  AuthenticatedMcpRoute: typeof AuthenticatedMcpRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedSharesRoute: typeof AuthenticatedSharesRoute
   AuthenticatedUsageRoute: typeof AuthenticatedUsageRoute
@@ -237,6 +257,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedApiDocsRoute: AuthenticatedApiDocsRoute,
   AuthenticatedApiKeysRoute: AuthenticatedApiKeysRoute,
   AuthenticatedLogsRoute: AuthenticatedLogsRoute,
+  AuthenticatedMcpRoute: AuthenticatedMcpRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedSharesRoute: AuthenticatedSharesRoute,
   AuthenticatedUsageRoute: AuthenticatedUsageRoute,

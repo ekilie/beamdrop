@@ -155,6 +155,13 @@ func (rl *RateLimiter) Middleware(next http.Handler) http.Handler {
 	}
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Skip rate limiting for static assets — a single page load can
+		// trigger dozens of JS/CSS chunk requests simultaneously.
+		if isStaticAsset(r.URL.Path) {
+			next.ServeHTTP(w, r)
+			return
+		}
+
 		ip := extractIP(r, rl.config.TrustedProxies)
 		tier := classifyRequest(r)
 
@@ -313,6 +320,14 @@ func isTrustedProxy(ipStr string, trustedProxies []*net.IPNet) bool {
 		}
 	}
 	return false
+}
+
+// isStaticAsset returns true for paths that serve embedded frontend assets
+// and should not count against API rate limits.
+func isStaticAsset(path string) bool {
+	return strings.HasPrefix(path, "/assets/") ||
+		path == "/favicon.ico" ||
+		path == "/index.html"
 }
 
 // cleanup periodically removes stale client entries (unseen for >10 min).

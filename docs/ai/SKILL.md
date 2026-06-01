@@ -391,6 +391,7 @@ curl -X POST http://localhost:7777/api/v1/webhooks \
 ### Use the built-in MCP server
 
 The MCP server is built into Beamdrop at `/mcp`:
+
 - `GET /mcp` — Public discovery (no auth)
 - `POST /mcp` — JSON-RPC 2.0 requests (requires API key auth)
 

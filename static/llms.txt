@@ -18,7 +18,9 @@ Important facts for working with Beamdrop:
 - Object locking: per-object read/write locks with 30-second timeout. Deadlock detection runs every 10 seconds. Stale lock warning at 5 minutes. Lock key format: `{bucket}/{key}`.
 - Health endpoints: `/health` (component status JSON), `/health/live` (K8s liveness), `/health/ready` (K8s readiness), `/health/startup` (K8s startup). Prometheus metrics at `/metrics`.
 - Allowed MIME types for upload: images (jpeg, png, gif, webp, svg+xml, bmp), documents (pdf, docx, xlsx, pptx, txt, csv, html, css, js), archives (zip, rar, 7z, tar, gzip), audio (mpeg, wav, ogg, mp4, webm, flac), video (mp4, mpeg, webm, ogg, avi, quicktime), code (json, xml, javascript), and application/octet-stream.
-- Official Go client SDK in `pkg/client/`, Laravel integration in `docs/laravel/`, TypeScript MCP server in `mcp/`.
+- Official Go client SDK in `pkg/client/`, Laravel integration in `docs/laravel/`.
+- Built-in MCP server at `/mcp` endpoint (Streamable HTTP transport, JSON-RPC 2.0). POST requires API key auth, GET is public discovery.
+- Webhooks system for real-time event notifications — HMAC-SHA256 signed HTTP callbacks with exponential backoff retry (up to 8 attempts).
 
 ## Docs
 
@@ -36,7 +38,7 @@ Important facts for working with Beamdrop:
 
 ## AI & Agents
 
-- [MCP server](https://github.com/ekilie/beamdrop/tree/main/mcp): TypeScript Model Context Protocol server exposing 16 tools (bucket CRUD, object CRUD, presigned URL management, API key management). Connects via stdio. Config via `BEAMDROP_BASE_URL`, `BEAMDROP_ACCESS_KEY_ID`, `BEAMDROP_SECRET_KEY` env vars
+- [Built-in MCP server](https://github.com/ekilie/beamdrop/tree/main/pkg/mcp): Native Go MCP server at `/mcp` endpoint with Streamable HTTP transport. 16 tools: bucket CRUD, object CRUD, presigned URL management, API key management. POST requires API key auth (same HMAC-SHA256 as S3 API), GET returns public discovery info. No separate process — runs as part of the Beamdrop server.
 - [Agent instructions](https://github.com/ekilie/beamdrop/blob/main/docs/ai/agent-instructions.md): Complete HTTP API guide for AI agents with HMAC signing examples in curl, Python, and JavaScript, all endpoints, response schemas, error codes, and step-by-step workflows
 - [VS Code Copilot skill](https://github.com/ekilie/beamdrop/blob/main/docs/ai/SKILL.md): AI skill for GitHub Copilot with Go client code templates, presigned URL decision guide, error handling patterns, and common agentic workflows
 
@@ -71,6 +73,21 @@ API Keys:
 - `POST /api/v1/keys` (JSON: `{name, permissions, bucket_scope, expires_in}`) → 201 `{id, accessKeyId, secretKey, ...}` — secretKey shown ONCE
 - `GET /api/v1/keys` → `{"keys":[...], "count":N}` — no secrets in response
 - `DELETE /api/v1/keys?accessKeyId=BDK_xxxx` → 204
+
+Webhooks:
+- `POST /api/v1/webhooks` (JSON: `{name, url, event_types, bucket_scope?}`) → 201 `{webhook, secret, warning}` — secret shown ONCE
+- `GET /api/v1/webhooks` → `{"webhooks":[...], "count":N}`
+- `PATCH /api/v1/webhooks/{id}` (JSON: `{name?, url?, enabled?, event_types?, bucket_scope?, rotate_secret?}`) → 200
+- `DELETE /api/v1/webhooks/{id}` → 204
+- `POST /api/v1/webhooks/{id}/test` → 200 (sends synthetic test event)
+- `GET /api/v1/webhooks/{id}/deliveries` → `{"deliveries":[...], "count":N}`
+- Event types: `beamdrop.object.created`, `beamdrop.object.updated`, `beamdrop.object.deleted`, `beamdrop.bucket.created`, `beamdrop.bucket.deleted`, `beamdrop.share.created`, `beamdrop.share.deleted`, `beamdrop.presign.created`, `beamdrop.presign.deleted`. Wildcards: `beamdrop.object.*`, `beamdrop.bucket.*`, `beamdrop.share.*`, `beamdrop.presign.*`
+- Webhook signing: `signature_base = timestamp + "\n" + delivery_id + "\n" + body`. Signature = `v1=` + Hex(HMAC-SHA256(signature_base, secret)). Sent in `X-Beamdrop-Signature` header. Also: `X-Beamdrop-Webhook-Id`, `X-Beamdrop-Event`, `X-Beamdrop-Delivery-Id`, `X-Beamdrop-Timestamp`
+
+MCP Endpoint:
+- `GET /mcp` → public discovery info (protocol, transport, version, tools)
+- `POST /mcp` → JSON-RPC 2.0 requests (requires API key auth). Methods: `initialize`, `ping`, `tools/list`, `tools/call`
+- 16 tools available: list_buckets, create_bucket, delete_bucket, bucket_exists, list_objects, put_object, get_object, head_object, delete_object, create_presigned_url, list_presigned_urls, get_presigned_url, delete_presigned_url, list_api_keys, create_api_key, delete_api_key
 
 Error response format: `{"error":{"code":"BUCKET_NOT_FOUND","category":"NOT_FOUND","message":"...","details":{}}}`
 Key error codes: INVALID_BUCKET_NAME, INVALID_OBJECT_KEY, UNAUTHORIZED, BUCKET_NOT_FOUND, OBJECT_NOT_FOUND, BUCKET_EXISTS, BUCKET_NOT_EMPTY, OBJECT_LOCKED (423, retryable), RATE_LIMIT_EXCEEDED (429, retryable), FILE_TOO_LARGE (413), STORAGE_FULL (507)

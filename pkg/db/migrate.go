@@ -10,7 +10,10 @@ func AutoMigrate() {
 		&StarredFile{}, 
 		&APIKey{}, 
 		&ShareableLink{},
-		&PresignedURL{})
+		&PresignedURL{},
+		&Webhook{},
+		&WebhookEvent{},
+		&WebhookDelivery{})
 	if err != nil {
 		slog.Error("Failed to migrate database", "error", err)
 	}

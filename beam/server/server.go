@@ -21,6 +21,7 @@ import (
 	"github.com/ekilie/beamdrop/pkg/reqctx"
 	"github.com/ekilie/beamdrop/pkg/storage"
 	"github.com/ekilie/beamdrop/pkg/styles"
+	"github.com/ekilie/beamdrop/pkg/webhooks"
 )
 
 type Server struct {
@@ -33,6 +34,7 @@ type Server struct {
 	httpServer            *http.Server
 	orphanCleaner         *db.OrphanCleaner
 	metricsCollector      *metrics.Collector
+	webhookWorker         *webhooks.Worker
 	stopRevocationCleanup func()
 }
 
@@ -132,6 +134,10 @@ func (s *Server) Start() error {
 	// Start token revocation cleanup
 	s.stopRevocationCleanup = auth.StartRevocationCleanup()
 
+	// Start webhook delivery worker
+	s.webhookWorker = webhooks.NewWorker()
+	s.webhookWorker.Start()
+
 	port := s.getPort()
 	ip := GetLocalIP()
 
@@ -222,6 +228,11 @@ func (s *Server) Shutdown(ctx context.Context) error {
 	if s.stopRevocationCleanup != nil {
 		s.stopRevocationCleanup()
 		slog.Info("Token revocation cleanup stopped")
+	}
+
+	// 5b. Stop webhook worker
+	if s.webhookWorker != nil {
+		s.webhookWorker.Stop()
 	}
 
 	// 6. Close database connection

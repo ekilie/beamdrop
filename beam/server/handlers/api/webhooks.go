@@ -126,12 +126,12 @@ func (h *WebhookHandler) create(w http.ResponseWriter, r *http.Request) {
 
 	// Validate event types
 	validEvents := map[string]bool{
-		"beamdrop.object.created":  true, "beamdrop.object.updated": true,
-		"beamdrop.object.deleted":  true, "beamdrop.bucket.created": true,
-		"beamdrop.bucket.deleted":  true, "beamdrop.share.created": true,
-		"beamdrop.share.deleted":   true, "beamdrop.presign.created": true,
+		"beamdrop.object.created": true, "beamdrop.object.updated": true,
+		"beamdrop.object.deleted": true, "beamdrop.bucket.created": true,
+		"beamdrop.bucket.deleted": true, "beamdrop.share.created": true,
+		"beamdrop.share.deleted": true, "beamdrop.presign.created": true,
 		"beamdrop.presign.deleted": true,
-		"beamdrop.object.*": true, "beamdrop.bucket.*": true,
+		"beamdrop.object.*":        true, "beamdrop.bucket.*": true,
 		"beamdrop.share.*": true, "beamdrop.presign.*": true,
 	}
 	for _, et := range req.EventTypes {
@@ -160,12 +160,12 @@ func (h *WebhookHandler) create(w http.ResponseWriter, r *http.Request) {
 }
 
 type updateWebhookRequest struct {
-	Name        *string  `json:"name,omitempty"`
-	URL         *string  `json:"url,omitempty"`
-	Enabled     *bool    `json:"enabled,omitempty"`
-	EventTypes  []string `json:"event_types,omitempty"`
-	BucketScope *string  `json:"bucket_scope,omitempty"`
-	RotateSecret bool    `json:"rotate_secret,omitempty"`
+	Name         *string  `json:"name,omitempty"`
+	URL          *string  `json:"url,omitempty"`
+	Enabled      *bool    `json:"enabled,omitempty"`
+	EventTypes   []string `json:"event_types,omitempty"`
+	BucketScope  *string  `json:"bucket_scope,omitempty"`
+	RotateSecret bool     `json:"rotate_secret,omitempty"`
 }
 
 func (h *WebhookHandler) update(w http.ResponseWriter, r *http.Request, id uint) {

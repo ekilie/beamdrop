@@ -4,3 +4,4 @@
 [submodule "beamdrop-website"]
 	path = beamdrop-website
 	url = https://github.com/ekilie/beamdrop-website.git
+	branch = main

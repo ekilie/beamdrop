@@ -77,10 +77,10 @@ try {
   // 5. list objects with prefix
   logStep("listing objects with prefix");
   const objects = await client.listObjects(config.bucket, "demo/", "/", 100);
-  for (const obj of objects.contents) {
+  for (const obj of objects.contents ?? []) {
     console.log(`object: ${obj.key} size=${obj.size} etag=${obj.etag}`);
   }
-  if (objects.commonPrefixes.length > 0) {
+  if ((objects.commonPrefixes ?? []).length > 0) {
     console.log(`common prefixes: ${objects.commonPrefixes.join(", ")}`);
   }
 

@@ -1,8 +1,12 @@
 {
-  "name": "bunjs",
+  "name": "beamdrop-bunjs-example",
   "module": "index.ts",
   "type": "module",
   "private": true,
+  "scripts": {
+    "start": "bun run index.ts",
+    "typecheck": "bun x tsc --noEmit"
+  },
   "devDependencies": {
     "@types/bun": "latest"
   },

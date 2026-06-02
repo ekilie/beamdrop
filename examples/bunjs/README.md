@@ -39,13 +39,13 @@ bun run start
 
 ## Configuration
 
-| Variable | Required | Default | Description |
-|---|---|---|---|
-| `BEAMDROP_BASE_URL` | Yes | — | Server URL (e.g. `http://localhost:7777`) |
-| `BEAMDROP_ACCESS_KEY_ID` | Yes | — | API access key (starts with `BDK_`) |
-| `BEAMDROP_SECRET_KEY` | Yes | — | API secret key (starts with `sk_`) |
-| `BEAMDROP_BUCKET` | No | `beamdrop-bun-example` | Bucket name to use |
-| `BEAMDROP_CLEANUP` | No | `false` | Set to `true` to delete demo objects on exit |
+| Variable                 | Required | Default                | Description                                  |
+| ------------------------ | -------- | ---------------------- | -------------------------------------------- |
+| `BEAMDROP_BASE_URL`      | Yes      | —                      | Server URL (e.g. `http://localhost:7777`)    |
+| `BEAMDROP_ACCESS_KEY_ID` | Yes      | —                      | API access key (starts with `BDK_`)          |
+| `BEAMDROP_SECRET_KEY`    | Yes      | —                      | API secret key (starts with `sk_`)           |
+| `BEAMDROP_BUCKET`        | No       | `beamdrop-bun-example` | Bucket name to use                           |
+| `BEAMDROP_CLEANUP`       | No       | `false`                | Set to `true` to delete demo objects on exit |
 
 ## What It Does
 

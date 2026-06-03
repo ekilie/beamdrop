@@ -14,5 +14,12 @@ var LLMsTxt string
 var LLMsFullTxt string
 
 func init() {
-	//TODO: im gonna do something here later not sure what yet
+	// Verify the frontend build was embedded. Without this, forgetting to
+	// build the frontend before building the Go binary only surfaces as a
+	// runtime 404.
+	_, err := FrontendFiles.Open("frontend/dist/index.html")
+	if err != nil {
+		panic("static: frontend build not embedded. Run `cd static/frontend && pnpm run build` before building the Go binary.")
+	}
 }
+

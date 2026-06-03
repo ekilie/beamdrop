@@ -1,0 +1,173 @@
+package beam
+
+import (
+	"encoding/json"
+	"fmt"
+	"log/slog"
+	"net"
+	"net/http"
+	"os"
+	"path/filepath"
+	"strings"
+	"time"
+)
+
+func GetLocalIP() string {
+	slog.Debug("Detecting local IP address")
+	addrs, err := net.InterfaceAddrs()
+	if err != nil {
+		slog.Warn("Failed to get network interfaces", "error", err)
+		return "localhost"
+	}
+
+	for _, addr := range addrs {
+		if ipnet, ok := addr.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
+			if ipnet.IP.To4() != nil {
+				slog.Debug("Found local IP", "ip", ipnet.IP.String())
+				return ipnet.IP.String()
+			}
+		}
+	}
+
+	slog.Warn("No local IP found, using localhost")
+	slog.Info("This might be due to no active network connection")
+	return "localhost"
+}
+
+func FormatFileSize(size int64) string {
+	const (
+		KB = 1024
+		MB = KB * 1024
+		GB = MB * 1024
+		TB = GB * 1024
+		PB = TB * 1024
+	)
+
+	switch {
+	case size < KB:
+		return fmt.Sprintf("%d B", size)
+	case size < MB:
+		val := float64(size) / KB
+		if val == float64(int64(val)) {
+			return fmt.Sprintf("%.0f KB", val)
+		}
+		return fmt.Sprintf("%.2f KB", val)
+	case size < GB:
+		val := float64(size) / MB
+		if val == float64(int64(val)) {
+			return fmt.Sprintf("%.0f MB", val)
+		}
+		return fmt.Sprintf("%.2f MB", val)
+	case size < TB:
+		val := float64(size) / GB
+		if val == float64(int64(val)) {
+			return fmt.Sprintf("%.0f GB", val)
+		}
+		return fmt.Sprintf("%.2f GB", val)
+	case size < PB:
+		val := float64(size) / TB
+		if val == float64(int64(val)) {
+			return fmt.Sprintf("%.0f TB", val)
+		}
+		return fmt.Sprintf("%.2f TB", val)
+	default:
+		val := float64(size) / PB
+		if val == float64(int64(val)) {
+			return fmt.Sprintf("%.0f PB", val)
+		}
+		return fmt.Sprintf("%.2f PB", val)
+	}
+}
+
+func FormatModTime(modTime string) string {
+	t, err := time.Parse(time.RFC3339, modTime)
+	if err != nil {
+		return modTime
+	}
+	return t.Format("2006-01-02 15:04:05")
+}
+
+// ResolvePath returns the absolute safe path inside sharedDir
+func ResolvePath(sharedDir, raw string) (string, error) {
+	clean := filepath.Clean(raw)
+	target := filepath.Join(sharedDir, clean)
+
+	absShared, err := filepath.Abs(sharedDir)
+	if err != nil {
+		return "", err
+	}
+	absTarget, err := filepath.Abs(target)
+	if err != nil {
+		return "", err
+	}
+	if !strings.HasPrefix(absTarget, absShared) {
+		return "", fmt.Errorf("invalid path")
+	}
+	return absTarget, nil
+}
+
+func IsDir(path string) bool {
+	info, err := os.Stat(path)
+	if err != nil {
+		return false
+	}
+	return info.IsDir()
+}
+
+func IsFile(path string) bool {
+	info, err := os.Stat(path)
+	if err != nil {
+		return false
+	}
+	return !info.IsDir()
+}
+
+// searchFiles recursively searches for files matching the query in the given directory
+func searchFiles(rootPath, query, relativePath string, results *[]File) error {
+	return filepath.Walk(rootPath, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			slog.Warn("Error accessing path", "path", path, "error", err)
+			return nil // Continue searching other files
+		}
+		
+		// Get relative path from the search root
+		relPath, err := filepath.Rel(rootPath, path)
+		if err != nil {
+			return nil
+		}
+
+		// Construct the path relative to the shared directory
+		var fullRelPath string
+		if relativePath == "" {
+			fullRelPath = relPath
+		} else {
+			fullRelPath = filepath.Join(relativePath, relPath)
+		}
+
+		// Skip the root directory itself
+		if relPath == "." {
+			return nil
+		}
+
+		// Check if filename contains the search query (case-insensitive)
+		if strings.Contains(strings.ToLower(info.Name()), strings.ToLower(query)) {
+			file := File{
+				Name:    info.Name(),
+				IsDir:   info.IsDir(),
+				Size:    FormatFileSize(info.Size()),
+				ModTime: FormatModTime(info.ModTime().Format(time.RFC3339)),
+				Path:    strings.ReplaceAll(fullRelPath, "\\", "/"), // Normalize path separators
+			}
+			*results = append(*results, file)
+		}
+
+		return nil
+	})
+}
+
+// SendJSON is a helper function to send JSON responses
+func SendJSON(w http.ResponseWriter, data any, status int) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	json.NewEncoder(w).Encode(data)
+}

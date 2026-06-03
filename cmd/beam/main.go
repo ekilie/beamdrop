@@ -13,7 +13,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/ekilie/beamdrop/beam/server"
+	"github.com/ekilie/beamdrop/internal/server"
 	"github.com/ekilie/beamdrop/config"
 	"github.com/ekilie/beamdrop/pkg/auth"
 	"github.com/ekilie/beamdrop/pkg/db"

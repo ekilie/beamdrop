@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/ekilie/beamdrop/beam"
+	"github.com/ekilie/beamdrop/internal"
 	"github.com/ekilie/beamdrop/config"
 	"github.com/ekilie/beamdrop/pkg/errors"
 	"github.com/ekilie/beamdrop/pkg/reqctx"

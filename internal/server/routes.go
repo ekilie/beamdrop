@@ -4,8 +4,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/ekilie/beamdrop/beam/server/handlers"
-	"github.com/ekilie/beamdrop/beam/server/handlers/api"
+	"github.com/ekilie/beamdrop/internal/server/handlers"
+	"github.com/ekilie/beamdrop/internal/server/handlers/api"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 

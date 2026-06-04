@@ -20,24 +20,56 @@ const (
 	EventPresignDeleted = "beamdrop.presign.deleted"
 )
 
-// Emit records an event and fans out deliveries to matching webhooks.
-// It runs asynchronously to avoid blocking the request handler.
-func Emit(eventType, resourceType, resourcePath, actor string, data any) {
-	go func() {
-		payloadJSON := ""
-		if data != nil {
-			if b, err := json.Marshal(data); err == nil {
-				payloadJSON = string(b)
-			}
-		}
+// Max queued events before we start dropping. This bounds memory
+// under high load instead of letting goroutines grow unbounded.
+const emitQueueSize = 1000
 
-		if err := db.CreateWebhookEvent(eventType, resourceType, resourcePath, actor, payloadJSON); err != nil {
+// emitCh is a buffered channel that limits concurrent event emission.
+// The delivery worker goroutine processes events from this channel.
+var emitCh = make(chan emitJob, emitQueueSize)
+
+func init() {
+	go emitLoop()
+}
+
+type emitJob struct {
+	eventType    string
+	resourceType string
+	resourcePath string
+	actor        string
+	payloadJSON  string
+}
+
+func emitLoop() {
+	for job := range emitCh {
+		if err := db.CreateWebhookEvent(job.eventType, job.resourceType, job.resourcePath, job.actor, job.payloadJSON); err != nil {
 			slog.Error("Failed to emit webhook event",
-				"event_type", eventType,
-				"resource", resourcePath,
+				"event_type", job.eventType,
+				"resource", job.resourcePath,
 				"error", err)
 		}
-	}()
+	}
+}
+
+// Emit records an event and fans out deliveries to matching webhooks.
+// It runs asynchronously via a bounded channel to avoid blocking the
+// request handler while also preventing unbounded goroutine growth.
+func Emit(eventType, resourceType, resourcePath, actor string, data any) {
+	payloadJSON := ""
+	if data != nil {
+		if b, err := json.Marshal(data); err == nil {
+			payloadJSON = string(b)
+		}
+	}
+
+	select {
+	case emitCh <- emitJob{eventType, resourceType, resourcePath, actor, payloadJSON}:
+	default:
+		// Channel full -- drop the event to back-pressure the caller.
+		slog.Warn("Webhook event dropped, emit queue full",
+			"event_type", eventType,
+			"resource", resourcePath)
+	}
 }
 
 // EmitObjectCreated emits an object.created event.

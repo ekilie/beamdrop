@@ -16,6 +16,22 @@ import (
 	"github.com/ekilie/beamdrop/pkg/reqctx"
 )
 
+// lastUsedCh is a bounded channel for async last-used updates to avoid
+// an unbounded goroutine per authenticated request.
+var lastUsedCh = make(chan string, 1000)
+
+func init() {
+	go lastUsedLoop()
+}
+
+func lastUsedLoop() {
+	for id := range lastUsedCh {
+		if err := db.UpdateLastUsed(id); err != nil {
+			slog.Error("Failed to update last used", "error", err)
+		}
+	}
+}
+
 // APIAuthMiddleware handles API key authentication
 type APIAuthMiddleware struct {
 	enabled bool
@@ -128,11 +144,11 @@ func (m *APIAuthMiddleware) Middleware(next http.Handler) http.Handler {
 		}
 
 		// Update last used timestamp (async to not slow down request)
-		go func() {
-			if err := db.UpdateLastUsed(accessKeyID); err != nil {
-				slog.Error("Failed to update last used", "error", err)
-			}
-		}()
+		select {
+		case lastUsedCh <- accessKeyID:
+		default:
+			slog.Warn("Last-used update dropped, queue full")
+		}
 
 		// Store the authenticated access key ID in request context
 		ctx := context.WithValue(r.Context(), reqctx.AccessKeyIDKey, accessKeyID)

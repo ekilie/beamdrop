@@ -23,7 +23,7 @@ type DirUsage struct {
 var (
 	usageCache     DirUsage
 	usageCacheLock sync.RWMutex
-	usageCacheTTL  = 5 * time.Second
+	usageCacheTTL  = 15 * time.Second
 )
 
 // GetDirStorageUsage returns cached or freshly computed usage for dir.

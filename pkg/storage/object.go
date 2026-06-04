@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -261,7 +262,7 @@ func (om *ObjectManager) ListObjects(bucket, prefix, delimiter string, maxKeys i
 	// Track common prefixes for delimiter handling
 	seenPrefixes := make(map[string]bool)
 
-	err := filepath.Walk(bucketPath, func(path string, info os.FileInfo, err error) error {
+	err := filepath.WalkDir(bucketPath, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return nil // Skip errors
 		}
@@ -275,9 +276,11 @@ func (om *ObjectManager) ListObjects(bucket, prefix, delimiter string, maxKeys i
 		relPath, _ := filepath.Rel(bucketPath, path)
 		key := filepath.ToSlash(relPath)
 
+		isDir := d.IsDir()
+
 		// Apply prefix filter
 		if prefix != "" && !strings.HasPrefix(key, prefix) {
-			if info.IsDir() && !strings.HasPrefix(prefix, key+"/") {
+			if isDir && !strings.HasPrefix(prefix, key+"/") {
 				return filepath.SkipDir
 			}
 			return nil
@@ -296,7 +299,7 @@ func (om *ObjectManager) ListObjects(bucket, prefix, delimiter string, maxKeys i
 					seenPrefixes[commonPrefix] = true
 					result.CommonPrefixes = append(result.CommonPrefixes, commonPrefix)
 				}
-				if info.IsDir() {
+				if isDir {
 					return filepath.SkipDir
 				}
 				return nil
@@ -304,7 +307,14 @@ func (om *ObjectManager) ListObjects(bucket, prefix, delimiter string, maxKeys i
 		}
 
 		// Skip directories in the contents list
-		if info.IsDir() {
+		if isDir {
+			return nil
+		}
+
+		// Get file info only for files (lazy — WalkDir's DirEntry avoids
+		// calling os.Lstat on every entry, but we need Info for size/modTime)
+		info, err := d.Info()
+		if err != nil {
 			return nil
 		}
 
@@ -329,5 +339,3 @@ func (om *ObjectManager) ListObjects(bucket, prefix, delimiter string, maxKeys i
 
 	return result, nil
 }
-
-

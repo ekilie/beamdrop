@@ -99,14 +99,17 @@ func (lm *LockManager) RLock(bucket, key string) (unlock func(), err error) {
 	k := objectKey(bucket, key)
 	entry := lm.getOrCreateEntry(k)
 
-	done := make(chan struct{})
+	locked := make(chan struct{}, 1)
 	go func() {
 		entry.mu.RLock()
-		close(done)
+		locked <- struct{}{}
 	}()
 
+	timer := time.NewTimer(lm.timeout)
+	defer timer.Stop()
+
 	select {
-	case <-done:
+	case <-locked:
 		lm.mu.Lock()
 		entry.readers++
 		lm.mu.Unlock()
@@ -119,11 +122,13 @@ func (lm *LockManager) RLock(bucket, key string) (unlock func(), err error) {
 			lm.releaseEntry(k)
 		}, nil
 
-	case <-time.After(lm.timeout):
-		// We couldn't get the lock in time. We still need to clean up the
-		// goroutine, but we can't cancel RLock. Decrement refCount.
+	case <-timer.C:
+		// Timeout — the locking goroutine is still blocked waiting for
+		// the RWMutex. We must let it complete so it doesn't leak.
+		// But we can avoid spawning a SECOND goroutine by doing the
+		// cleanup inline after the lock is released.
 		go func() {
-			<-done // wait for the goroutine to finish
+			<-locked
 			entry.mu.RUnlock()
 			lm.releaseEntry(k)
 		}()
@@ -137,14 +142,17 @@ func (lm *LockManager) Lock(bucket, key string) (unlock func(), err error) {
 	k := objectKey(bucket, key)
 	entry := lm.getOrCreateEntry(k)
 
-	done := make(chan struct{})
+	locked := make(chan struct{}, 1)
 	go func() {
 		entry.mu.Lock()
-		close(done)
+		locked <- struct{}{}
 	}()
 
+	timer := time.NewTimer(lm.timeout)
+	defer timer.Stop()
+
 	select {
-	case <-done:
+	case <-locked:
 		lm.mu.Lock()
 		entry.writeLock = true
 		entry.lockedAt = time.Now()
@@ -159,9 +167,9 @@ func (lm *LockManager) Lock(bucket, key string) (unlock func(), err error) {
 			lm.releaseEntry(k)
 		}, nil
 
-	case <-time.After(lm.timeout):
+	case <-timer.C:
 		go func() {
-			<-done
+			<-locked
 			entry.mu.Unlock()
 			lm.releaseEntry(k)
 		}()

@@ -218,30 +218,40 @@ func CreateWebhookEvent(eventType, resourceType, resourcePath, actor, payloadJSO
 			return err
 		}
 
-		// Find matching webhooks
-		var hooks []Webhook
-		query := tx.Where("enabled = ?", true)
-		if err := query.Find(&hooks).Error; err != nil {
-			return err
-		}
-
+		// Find matching webhooks (batch-process to avoid loading all into memory)
 		now := time.Now()
-		for _, wh := range hooks {
-			if !webhookMatchesEvent(wh, eventType, resourcePath) {
-				continue
+		batchSize := 50
+		var cursor uint
+
+		for {
+			var batch []Webhook
+			if err := tx.Where("enabled = ? AND id > ?", true, cursor).
+				Order("id ASC").Limit(batchSize).Find(&batch).Error; err != nil {
+				return err
 			}
-			delivery := &WebhookDelivery{
-				WebhookID:     wh.ID,
-				EventID:       eventID,
-				Status:        DeliveryPending,
-				AttemptCount:  0,
-				NextAttemptAt: &now,
-				CreatedAt:     now,
-				UpdatedAt:     now,
+			if len(batch) == 0 {
+				break
 			}
-			if err := tx.Create(delivery).Error; err != nil {
-				slog.Error("Failed to create webhook delivery", "webhook_id", wh.ID, "event_id", eventID, "error", err)
+
+			for _, wh := range batch {
+				if !webhookMatchesEvent(wh, eventType, resourcePath) {
+					continue
+				}
+				delivery := &WebhookDelivery{
+					WebhookID:     wh.ID,
+					EventID:       eventID,
+					Status:        DeliveryPending,
+					AttemptCount:  0,
+					NextAttemptAt: &now,
+					CreatedAt:     now,
+					UpdatedAt:     now,
+				}
+				if err := tx.Create(delivery).Error; err != nil {
+					slog.Error("Failed to create webhook delivery", "webhook_id", wh.ID, "event_id", eventID, "error", err)
+				}
 			}
+
+			cursor = batch[len(batch)-1].ID
 		}
 
 		return nil

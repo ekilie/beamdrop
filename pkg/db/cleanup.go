@@ -82,50 +82,72 @@ func (oc *OrphanCleaner) RunOnce() {
 }
 
 // cleanupStarredFiles removes starred records whose file no longer exists.
+// Processes records in batches to avoid loading all into memory at once.
 func (oc *OrphanCleaner) cleanupStarredFiles() int {
 	db := GetDB()
-	var starredFiles []StarredFile
-	if err := db.Find(&starredFiles).Error; err != nil {
-		slog.Error("Orphan cleanup: failed to list starred files", "error", err)
-		return 0
-	}
-
 	removed := 0
-	for _, sf := range starredFiles {
-		fullPath := filepath.Join(oc.sharedDir, sf.FilePath)
-		if _, err := os.Stat(fullPath); os.IsNotExist(err) {
-			if err := db.Delete(&sf).Error; err != nil {
-				slog.Error("Orphan cleanup: failed to delete orphaned starred file", "path", sf.FilePath, "error", err)
-			} else {
-				slog.Debug("Orphan cleanup: removed starred file record", "path", sf.FilePath)
-				removed++
+	batchSize := 100
+	offset := 0
+
+	for {
+		var batch []StarredFile
+		if err := db.Select("id, file_path").Limit(batchSize).Offset(offset).Find(&batch).Error; err != nil {
+			slog.Error("Orphan cleanup: failed to list starred files", "error", err)
+			return removed
+		}
+		if len(batch) == 0 {
+			break
+		}
+
+		for _, sf := range batch {
+			fullPath := filepath.Join(oc.sharedDir, sf.FilePath)
+			if _, err := os.Stat(fullPath); os.IsNotExist(err) {
+				if err := db.Delete(&sf).Error; err != nil {
+					slog.Error("Orphan cleanup: failed to delete orphaned starred file", "path", sf.FilePath, "error", err)
+				} else {
+					slog.Debug("Orphan cleanup: removed starred file record", "path", sf.FilePath)
+					removed++
+				}
 			}
 		}
+
+		offset += len(batch)
 	}
 	return removed
 }
 
 // cleanupShareableLinks removes links whose target path no longer exists.
+// Processes records in batches to avoid loading all into memory at once.
 func (oc *OrphanCleaner) cleanupShareableLinks() int {
 	db := GetDB()
-	var links []ShareableLink
-	if err := db.Find(&links).Error; err != nil {
-		slog.Error("Orphan cleanup: failed to list shareable links", "error", err)
-		return 0
-	}
-
 	removed := 0
-	for _, link := range links {
-		fullPath := filepath.Join(oc.sharedDir, link.Path)
-		if _, err := os.Stat(fullPath); os.IsNotExist(err) {
-			if err := db.Delete(&link).Error; err != nil {
-				slog.Error("Orphan cleanup: failed to delete orphaned shareable link",
-					"token", link.Token, "path", link.Path, "error", err)
-			} else {
-				slog.Debug("Orphan cleanup: removed shareable link", "token", link.Token, "path", link.Path)
-				removed++
+	batchSize := 100
+	offset := 0
+
+	for {
+		var batch []ShareableLink
+		if err := db.Select("id, path, token").Limit(batchSize).Offset(offset).Find(&batch).Error; err != nil {
+			slog.Error("Orphan cleanup: failed to list shareable links", "error", err)
+			return removed
+		}
+		if len(batch) == 0 {
+			break
+		}
+
+		for _, link := range batch {
+			fullPath := filepath.Join(oc.sharedDir, link.Path)
+			if _, err := os.Stat(fullPath); os.IsNotExist(err) {
+				if err := db.Delete(&link).Error; err != nil {
+					slog.Error("Orphan cleanup: failed to delete orphaned shareable link",
+						"token", link.Token, "path", link.Path, "error", err)
+				} else {
+					slog.Debug("Orphan cleanup: removed shareable link", "token", link.Token, "path", link.Path)
+					removed++
+				}
 			}
 		}
+
+		offset += len(batch)
 	}
 	return removed
 }

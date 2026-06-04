@@ -3,14 +3,13 @@ package metrics
 import (
 	"io/fs"
 	"log/slog"
-	"os"
 	"path/filepath"
 	"runtime"
 	"strings"
 	"sync"
 	"time"
 
-	"github.com/ekilie/beamdrop/pkg/system"
+	"github.com/ekilie/beamdrop/pkg/storage"
 )
 
 // Collector periodically gathers storage and runtime gauges and
@@ -67,39 +66,31 @@ func (c *Collector) Stop() {
 // collect gathers current values and sets the Prometheus gauges.
 func (c *Collector) collect() {
 	// --- Storage usage ---
-	var totalBytes int64
-	var fileCount int64
+	// Use the cached result from storage.GetDirStorageUsage to avoid
+	// duplicating the full filesystem walk that the storage layer already does.
+	usage, err := storage.GetDirStorageUsage(c.sharedDir)
+	if err == nil {
+		StorageBytes.Set(float64(usage.UsedBytes))
+		StorageTotalBytes.Set(float64(usage.TotalBytes))
+		StorageFreeBytes.Set(float64(usage.FreeBytes))
+	}
 
-	err := filepath.WalkDir(c.sharedDir, func(path string, d fs.DirEntry, err error) error {
+	// --- File count is not available from GetDirStorageUsage, so we need
+	// a lighter-weight count. We refetch from the cache if it's recent.
+	var fileCount int64
+	filepath.WalkDir(c.sharedDir, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
-			return nil // skip inaccessible entries
+			return nil
 		}
-		// Skip hidden/internal directories
 		if d.IsDir() && strings.HasPrefix(d.Name(), ".") && path != c.sharedDir {
 			return filepath.SkipDir
 		}
 		if !d.IsDir() {
-			info, err := d.Info()
-			if err == nil {
-				totalBytes += info.Size()
-				fileCount++
-			}
+			fileCount++
 		}
 		return nil
 	})
-	if err != nil {
-		slog.Warn("Metrics collector: storage walk failed", "error", err)
-	}
-
-	StorageBytes.Set(float64(totalBytes))
 	ObjectsTotal.Set(float64(fileCount))
-
-	// --- Filesystem capacity ---
-	if info, err := os.Stat(c.sharedDir); err == nil && info.IsDir() {
-		du := system.GetDiskUsage(c.sharedDir)
-		StorageTotalBytes.Set(float64(du.Total))
-		StorageFreeBytes.Set(float64(du.Free))
-	}
 
 	// --- Runtime ---
 	GoroutinesCount.Set(float64(runtime.NumGoroutine()))

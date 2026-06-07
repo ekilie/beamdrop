@@ -64,7 +64,7 @@ func (h *FileHandler) ListFiles(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			continue
 		}
-		if f.Name() == "beamdrop.db" {
+		if IsSensitiveName(f.Name()) {
 			continue
 		}
 		filePath := path.Join(reqPath, info.Name())
@@ -88,9 +88,19 @@ func (h *FileHandler) Download(w http.ResponseWriter, r *http.Request) {
 	}
 
 	filename := r.URL.Query().Get("file")
+	if IsSensitiveRequestPath(filename) {
+		slog.Warn("Refusing download of sensitive system path", "file", filename)
+		http.Error(w, "Forbidden", http.StatusForbidden)
+		return
+	}
 	filePath, err := ResolvePath(h.sharedDir, filename)
 	if err != nil {
 		slog.Error("Invalid download path", "file", filename, "error", err)
+		http.Error(w, "Forbidden", http.StatusForbidden)
+		return
+	}
+	if IsSensitivePath(h.sharedDir, filePath) {
+		slog.Warn("Refusing download of sensitive system path", "file", filename)
 		http.Error(w, "Forbidden", http.StatusForbidden)
 		return
 	}
@@ -154,9 +164,19 @@ func (h *FileHandler) Upload(w http.ResponseWriter, r *http.Request) {
 	if uploadPath == "." {
 		uploadPath = ""
 	}
+	if IsSensitiveRequestPath(uploadPath) {
+		slog.Warn("Refusing upload to sensitive system path", "path", uploadPath)
+		errors.Forbidden("Operation on system files is not allowed").WriteHTTPResponse(w)
+		return
+	}
 	uploadDir, err := ResolvePath(h.sharedDir, uploadPath)
 	if err != nil {
 		errors.InvalidPath("Invalid upload path").WriteHTTPResponse(w)
+		return
+	}
+	if IsSensitivePath(h.sharedDir, uploadDir) {
+		slog.Warn("Refusing upload to sensitive system path", "path", uploadPath)
+		errors.Forbidden("Operation on system files is not allowed").WriteHTTPResponse(w)
 		return
 	}
 	if err := os.MkdirAll(uploadDir, 0755); err != nil {

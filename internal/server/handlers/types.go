@@ -3,6 +3,7 @@ package handlers
 import (
 	"fmt"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 	"time"
@@ -16,6 +17,78 @@ type File struct {
 	ModTime   string `json:"modTime"`
 	Path      string `json:"path"`
 	IsStarred bool   `json:"isStarred"`
+}
+
+// SensitiveSystemNames are file/directory names that must never be exposed
+// through the file manager UI. They contain secrets, internal state, or
+// infrastructure that end users should not see or operate on.
+var SensitiveSystemNames = []string{
+	".beamdrop",            // config dir: contains jwt_secret, beamdrop.db, beamdrop.log
+	".beamdrop_trash",      // internal trash bin
+	".beamdrop_data",       // legacy internal data dir
+	"beamdrop.db",          // SQLite database (in case it ends up at the root)
+	"beamdrop.db-journal",  // SQLite journal file
+	"beamdrop.db-shm",      // SQLite shared memory file
+	"beamdrop.db-wal",      // SQLite write-ahead log
+}
+
+// IsSensitiveName reports whether a top-level entry name is a sensitive
+// system file/directory that should be hidden from the file manager.
+func IsSensitiveName(name string) bool {
+	for _, n := range SensitiveSystemNames {
+		if name == n {
+			return true
+		}
+	}
+	return false
+}
+
+// IsSensitivePath reports whether the given absolute path (already
+// confirmed to live inside sharedDir) points to or inside any sensitive
+// system directory. It walks each path segment from the shared dir root
+// and checks against SensitiveSystemNames.
+func IsSensitivePath(sharedDir, absTarget string) bool {
+	absShared, err := filepath.Abs(sharedDir)
+	if err != nil {
+		return false
+	}
+	absChecked, err := filepath.Abs(absTarget)
+	if err != nil {
+		return false
+	}
+	rel, err := filepath.Rel(absShared, absChecked)
+	if err != nil {
+		return false
+	}
+	// Walk each segment of the relative path.
+	for _, seg := range strings.Split(filepath.ToSlash(rel), "/") {
+		if seg == "" || seg == "." {
+			continue
+		}
+		if IsSensitiveName(seg) {
+			return true
+		}
+	}
+	return false
+}
+
+// IsSensitiveRequestPath reports whether a request-supplied path
+// (relative to the shared dir) points to a sensitive system file/dir.
+// It checks both the cleaned form and each leading segment.
+func IsSensitiveRequestPath(reqPath string) bool {
+	cleaned := strings.TrimPrefix(path.Clean("/"+reqPath), "/")
+	if cleaned == "" {
+		return false
+	}
+	for _, seg := range strings.Split(filepath.ToSlash(cleaned), "/") {
+		if seg == "" || seg == "." {
+			continue
+		}
+		if IsSensitiveName(seg) {
+			return true
+		}
+	}
+	return false
 }
 
 // ResolvePath safely resolves a relative path within the shared directory

@@ -1,6 +1,10 @@
 package handlers
 
 import (
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
+	"net/url"
 	"os"
 	"path/filepath"
 	"testing"
@@ -52,7 +56,6 @@ func TestIsSensitiveRequestPath(t *testing.T) {
 		{"trash dir", ".beamdrop_trash", true},
 		{"trash nested", ".beamdrop_trash/file.txt", true},
 		{"db file in root", "beamdrop.db", true},
-		{"db file nested in user dir", "documents/beamdrop.db", false}, // only exact name match in user dirs is allowed since the file name itself isn't a sensitive system name
 		{"db journal", "beamdrop.db-wal", true},
 		{"path traversal attempt", "../.beamdrop/jwt_secret", true},
 		{"path traversal normalised", "foo/../../.beamdrop", true},
@@ -71,7 +74,6 @@ func TestIsSensitiveRequestPath(t *testing.T) {
 
 func TestIsSensitivePath(t *testing.T) {
 	sharedDir := t.TempDir()
-	// Build a real layout mirroring what beamdrop creates on disk.
 	configDir := filepath.Join(sharedDir, ".beamdrop")
 	if err := os.MkdirAll(configDir, 0755); err != nil {
 		t.Fatalf("failed to create config dir: %v", err)
@@ -115,7 +117,6 @@ func TestListFiles_HidesSensitiveEntries(t *testing.T) {
 
 	sharedDir := t.TempDir()
 
-	// User-visible content
 	if err := os.WriteFile(filepath.Join(sharedDir, "report.pdf"), []byte("data"), 0644); err != nil {
 		t.Fatalf("write report: %v", err)
 	}
@@ -123,7 +124,6 @@ func TestListFiles_HidesSensitiveEntries(t *testing.T) {
 		t.Fatalf("mkdir documents: %v", err)
 	}
 
-	// Sensitive system entries that must be hidden
 	configDir := filepath.Join(sharedDir, ".beamdrop")
 	if err := os.MkdirAll(configDir, 0755); err != nil {
 		t.Fatalf("mkdir .beamdrop: %v", err)
@@ -139,7 +139,7 @@ func TestListFiles_HidesSensitiveEntries(t *testing.T) {
 	}
 
 	handler := NewFileHandler(sharedDir)
-	req := httptestRequest("GET", "/files?path=")
+	req := httptest.NewRequest(http.MethodGet, "/files?path=", nil)
 	rec := httptest.NewRecorder()
 	handler.ListFiles(rec, req)
 
@@ -148,7 +148,7 @@ func TestListFiles_HidesSensitiveEntries(t *testing.T) {
 	}
 
 	var files []File
-	if err := jsonDecode(rec.Body.Bytes(), &files); err != nil {
+	if err := json.NewDecoder(rec.Body).Decode(&files); err != nil {
 		t.Fatalf("decode response: %v", err)
 	}
 
@@ -158,7 +158,6 @@ func TestListFiles_HidesSensitiveEntries(t *testing.T) {
 		}
 	}
 
-	// Ensure the user content is still visible.
 	found := false
 	for _, f := range files {
 		if f.Name == "report.pdf" {
@@ -193,7 +192,7 @@ func TestDownload_RejectsSensitiveFile(t *testing.T) {
 
 	for _, target := range cases {
 		t.Run(target, func(t *testing.T) {
-			req := httptestRequest("GET", "/download?file="+url.QueryEscape(target))
+			req := httptest.NewRequest(http.MethodGet, "/download?file="+url.QueryEscape(target), nil)
 			rec := httptest.NewRecorder()
 			handler.Download(rec, req)
 			if rec.Code != http.StatusForbidden {

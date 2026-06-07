@@ -40,9 +40,21 @@ func (h *FileOperationsHandler) Move(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if IsSensitiveRequestPath(req.SourcePath) || IsSensitiveRequestPath(req.TargetPath) {
+		slog.Warn("Refusing move involving sensitive system path", "source", req.SourcePath, "target", req.TargetPath)
+		errors.Forbidden("Operation on system files is not allowed").WriteHTTPResponse(w)
+		return
+	}
+
 	sourcePath, err := ResolvePath(h.sharedDir, req.SourcePath)
 	if err != nil {
 		errors.InvalidPath("Invalid source path").WriteHTTPResponse(w)
+		return
+	}
+
+	if IsSensitivePath(h.sharedDir, sourcePath) {
+		slog.Warn("Refusing move of sensitive system path", "source", req.SourcePath)
+		errors.Forbidden("Operation on system files is not allowed").WriteHTTPResponse(w)
 		return
 	}
 
@@ -54,6 +66,12 @@ func (h *FileOperationsHandler) Move(w http.ResponseWriter, r *http.Request) {
 	targetPath, err := resolveTargetPath(h.sharedDir, sourcePath, req.TargetPath)
 	if err != nil {
 		errors.InvalidPath("Invalid target path").WriteHTTPResponse(w)
+		return
+	}
+
+	if IsSensitivePath(h.sharedDir, targetPath) {
+		slog.Warn("Refusing move into sensitive system path", "target", req.TargetPath)
+		errors.Forbidden("Operation on system files is not allowed").WriteHTTPResponse(w)
 		return
 	}
 
@@ -88,9 +106,21 @@ func (h *FileOperationsHandler) Trash(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if IsSensitiveRequestPath(req.SourcePath) {
+		slog.Warn("Refusing trash of sensitive system path", "source", req.SourcePath)
+		errors.Forbidden("Operation on system files is not allowed").WriteHTTPResponse(w)
+		return
+	}
+
 	sourcePath, err := ResolvePath(h.sharedDir, req.SourcePath)
 	if err != nil {
 		errors.InvalidPath("Invalid source path").WriteHTTPResponse(w)
+		return
+	}
+
+	if IsSensitivePath(h.sharedDir, sourcePath) {
+		slog.Warn("Refusing trash of sensitive system path", "source", req.SourcePath)
+		errors.Forbidden("Operation on system files is not allowed").WriteHTTPResponse(w)
 		return
 	}
 
@@ -148,9 +178,21 @@ func (h *FileOperationsHandler) Copy(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if IsSensitiveRequestPath(req.SourcePath) || IsSensitiveRequestPath(req.TargetPath) {
+		slog.Warn("Refusing copy involving sensitive system path", "source", req.SourcePath, "target", req.TargetPath)
+		errors.Forbidden("Operation on system files is not allowed").WriteHTTPResponse(w)
+		return
+	}
+
 	sourcePath, err := ResolvePath(h.sharedDir, req.SourcePath)
 	if err != nil {
 		errors.InvalidPath("Invalid source path").WriteHTTPResponse(w)
+		return
+	}
+
+	if IsSensitivePath(h.sharedDir, sourcePath) {
+		slog.Warn("Refusing copy of sensitive system path", "source", req.SourcePath)
+		errors.Forbidden("Operation on system files is not allowed").WriteHTTPResponse(w)
 		return
 	}
 
@@ -165,6 +207,12 @@ func (h *FileOperationsHandler) Copy(w http.ResponseWriter, r *http.Request) {
 	targetPath, err := resolveTargetPath(h.sharedDir, sourcePath, req.TargetPath)
 	if err != nil {
 		errors.InvalidPath("Invalid target path").WriteHTTPResponse(w)
+		return
+	}
+
+	if IsSensitivePath(h.sharedDir, targetPath) {
+		slog.Warn("Refusing copy into sensitive system path", "target", req.TargetPath)
+		errors.Forbidden("Operation on system files is not allowed").WriteHTTPResponse(w)
 		return
 	}
 
@@ -206,9 +254,21 @@ func (h *FileOperationsHandler) Mkdir(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if IsSensitiveRequestPath(req.DirPath) {
+		slog.Warn("Refusing mkdir at sensitive system path", "path", req.DirPath)
+		errors.Forbidden("Operation on system files is not allowed").WriteHTTPResponse(w)
+		return
+	}
+
 	targetPath, err := ResolvePath(h.sharedDir, req.DirPath)
 	if err != nil {
 		errors.InvalidPath("Invalid directory path").WriteHTTPResponse(w)
+		return
+	}
+
+	if IsSensitivePath(h.sharedDir, targetPath) {
+		slog.Warn("Refusing mkdir at sensitive system path", "path", req.DirPath)
+		errors.Forbidden("Operation on system files is not allowed").WriteHTTPResponse(w)
 		return
 	}
 
@@ -247,9 +307,21 @@ func (h *FileOperationsHandler) Rename(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if IsSensitiveName(req.NewName) || IsSensitiveRequestPath(req.OldPath) {
+		slog.Warn("Refusing rename involving sensitive system path", "old", req.OldPath, "new", req.NewName)
+		errors.Forbidden("Operation on system files is not allowed").WriteHTTPResponse(w)
+		return
+	}
+
 	oldPath, err := ResolvePath(h.sharedDir, req.OldPath)
 	if err != nil {
 		errors.InvalidPath("Invalid old path").WriteHTTPResponse(w)
+		return
+	}
+
+	if IsSensitivePath(h.sharedDir, oldPath) {
+		slog.Warn("Refusing rename of sensitive system path", "old", req.OldPath)
+		errors.Forbidden("Operation on system files is not allowed").WriteHTTPResponse(w)
 		return
 	}
 
@@ -270,6 +342,12 @@ func (h *FileOperationsHandler) Rename(w http.ResponseWriter, r *http.Request) {
 	newFullPath, err := ResolvePath(h.sharedDir, newPath)
 	if err != nil {
 		errors.InvalidPath("Invalid new name").WriteHTTPResponse(w)
+		return
+	}
+
+	if IsSensitivePath(h.sharedDir, newFullPath) {
+		slog.Warn("Refusing rename to sensitive system path", "new", req.NewName)
+		errors.Forbidden("Operation on system files is not allowed").WriteHTTPResponse(w)
 		return
 	}
 
@@ -314,9 +392,21 @@ func (h *FileOperationsHandler) Write(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if IsSensitiveRequestPath(req.FilePath) {
+		slog.Warn("Refusing write to sensitive system path", "path", req.FilePath)
+		errors.Forbidden("Operation on system files is not allowed").WriteHTTPResponse(w)
+		return
+	}
+
 	targetPath, err := ResolvePath(h.sharedDir, req.FilePath)
 	if err != nil {
 		errors.InvalidPath("Invalid file path").WriteHTTPResponse(w)
+		return
+	}
+
+	if IsSensitivePath(h.sharedDir, targetPath) {
+		slog.Warn("Refusing write to sensitive system path", "path", req.FilePath)
+		errors.Forbidden("Operation on system files is not allowed").WriteHTTPResponse(w)
 		return
 	}
 
@@ -359,9 +449,21 @@ func (h *FileOperationsHandler) Search(w http.ResponseWriter, r *http.Request) {
 		searchPath = ""
 	}
 
+	if IsSensitiveRequestPath(searchPath) {
+		slog.Warn("Refusing search of sensitive system path", "path", searchPath)
+		errors.Forbidden("Operation on system files is not allowed").WriteHTTPResponse(w)
+		return
+	}
+
 	targetPath, err := ResolvePath(h.sharedDir, searchPath)
 	if err != nil {
 		errors.InvalidPath("Invalid search path").WriteHTTPResponse(w)
+		return
+	}
+
+	if IsSensitivePath(h.sharedDir, targetPath) {
+		slog.Warn("Refusing search of sensitive system path", "path", searchPath)
+		errors.Forbidden("Operation on system files is not allowed").WriteHTTPResponse(w)
 		return
 	}
 
@@ -399,9 +501,21 @@ func (h *FileOperationsHandler) Star(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if IsSensitiveRequestPath(req.FilePath) {
+		slog.Warn("Refusing star of sensitive system path", "path", req.FilePath)
+		errors.Forbidden("Operation on system files is not allowed").WriteHTTPResponse(w)
+		return
+	}
+
 	target, err := ResolvePath(h.sharedDir, req.FilePath)
 	if err != nil {
 		errors.InvalidPath("Invalid file path").WriteHTTPResponse(w)
+		return
+	}
+
+	if IsSensitivePath(h.sharedDir, target) {
+		slog.Warn("Refusing star of sensitive system path", "path", req.FilePath)
+		errors.Forbidden("Operation on system files is not allowed").WriteHTTPResponse(w)
 		return
 	}
 
@@ -444,13 +558,16 @@ func (h *FileOperationsHandler) Starred(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	// Convert to a more frontend-friendly format
-	result := make([]map[string]string, len(starredFiles))
-	for i, sf := range starredFiles {
-		result[i] = map[string]string{
+	// Convert to a more frontend-friendly format, hiding sensitive system paths
+	result := make([]map[string]string, 0, len(starredFiles))
+	for _, sf := range starredFiles {
+		if IsSensitiveRequestPath(sf.FilePath) {
+			continue
+		}
+		result = append(result, map[string]string{
 			"filePath":  sf.FilePath,
 			"createdAt": sf.CreatedAt.Format(time.RFC3339),
-		}
+		})
 	}
 
 	slog.Debug("Retrieved starred files", "count", len(starredFiles))
@@ -491,6 +608,14 @@ func searchFiles(rootPath, query, relativePath string, results *[]File) error {
 
 		// Skip the root directory itself
 		if relPath == "." {
+			return nil
+		}
+
+		// Skip sensitive system entries at any depth
+		if IsSensitiveName(info.Name()) {
+			if info.IsDir() {
+				return filepath.SkipDir
+			}
 			return nil
 		}
 

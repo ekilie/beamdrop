@@ -47,8 +47,8 @@ func (s *Server) setupRoutes() {
 	s.mux.HandleFunc("/auth/status", authHandler.Status)
 
 	// Stats
-	s.mux.HandleFunc("/stats", handlers.StatsHandler)
-	s.mux.HandleFunc("/ws/stats", StatsSocketHandler(s.sharedDir, s.getAllowedOrigins(), s.flags.DisableSystemStats)) //TODO: will come up with  better structure for the websockts
+	s.mux.HandleFunc("/stats", handlers.StatsHandlerWithStorage(s.sharedDir, s.flags.DisableSystemStats, s.flags.MaxStorage))
+	s.mux.HandleFunc("/ws/stats", StatsSocketHandler(s.sharedDir, s.getAllowedOrigins(), s.flags.DisableSystemStats, s.flags.MaxStorage))
 
 	// Logs
 	s.mux.HandleFunc("/api/logs", handlers.LogsHandler())

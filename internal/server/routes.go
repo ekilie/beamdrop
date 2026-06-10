@@ -47,7 +47,7 @@ func (s *Server) setupRoutes() {
 	s.mux.HandleFunc("/auth/status", authHandler.Status)
 
 	// Stats
-	s.mux.HandleFunc("/stats", StatsHandlerWithStorage(s.sharedDir, s.flags.DisableSystemStats, s.flags.MaxStorage))
+	s.mux.HandleFunc("/stats", handlers.StatsHandlerWithStorage(s.sharedDir, s.flags.DisableSystemStats, s.flags.MaxStorage))
 	s.mux.HandleFunc("/ws/stats", StatsSocketHandler(s.sharedDir, s.getAllowedOrigins(), s.flags.DisableSystemStats, s.flags.MaxStorage))
 
 	// Logs

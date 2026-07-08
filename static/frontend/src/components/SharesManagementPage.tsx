@@ -11,6 +11,7 @@ import {
   FileIcon,
   FolderIcon,
   Clock,
+  Download,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -63,6 +64,7 @@ export function SharesManagementPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [linkToDelete, setLinkToDelete] = useState<ShareableLink | null>(null);
   const [copiedToken, setCopiedToken] = useState<string | null>(null);
+  const [copiedDownloadToken, setCopiedDownloadToken] = useState<string | null>(null);
 
   const fetchLinks = useCallback(async () => {
     try {
@@ -95,6 +97,25 @@ export function SharesManagementPage() {
       toast({
         title: "Copied",
         description: "Shareable link copied to clipboard",
+      });
+    } catch {
+      toast({
+        title: "Error",
+        description: "Failed to copy to clipboard",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleCopyDownloadLink = async (token: string) => {
+    try {
+      const url = `${window.location.origin}/api/shares/download/${token}`;
+      await navigator.clipboard.writeText(url);
+      setCopiedDownloadToken(token);
+      setTimeout(() => setCopiedDownloadToken(null), 2000);
+      toast({
+        title: "Copied",
+        description: "Download link copied to clipboard",
       });
     } catch {
       toast({
@@ -313,12 +334,24 @@ export function SharesManagementPage() {
                             variant="ghost"
                             size="icon"
                             onClick={() => handleCopyLink(link.token)}
-                            title="Copy link"
+                            title="Copy share link"
                           >
                             {copiedToken === link.token ? (
                               <Check className="w-4 h-4 text-green-500" />
                             ) : (
                               <Copy className="w-4 h-4" />
+                            )}
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleCopyDownloadLink(link.token)}
+                            title="Copy download link"
+                          >
+                            {copiedDownloadToken === link.token ? (
+                              <Check className="w-4 h-4 text-green-500" />
+                            ) : (
+                              <Download className="w-4 h-4" />
                             )}
                           </Button>
                           <Button

@@ -52,3 +52,5 @@ cmd/*/*
 .beamdrop/*
 
 beamdrop.db
+docs/.DS_Store
+.DS_Store

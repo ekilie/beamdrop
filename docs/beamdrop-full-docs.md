@@ -1043,6 +1043,7 @@ Content-Type: application/json
 {
   "token": "abc123def456",
   "url": "http://localhost:7777/share/abc123def456",
+  "downloadUrl": "http://localhost:7777/api/shares/download/abc123def456",
   "path": "documents/report.pdf",
   "expiresAt": "2025-01-16T10:30:00Z",
   "createdAt": "2025-01-15T10:30:00Z"
@@ -1155,6 +1156,24 @@ GET /api/shares/access/{token}?mode=download
 ```
 GET /api/shares/access/{token}?mode=inline
 ```
+
+### Download Raw
+
+Returns the raw file bytes directly as a download — no JSON metadata, no preview page. Password-protected links accept the password via the `X-Share-Password` header or `?pwd=` query parameter.
+
+```
+GET /api/shares/download/{token}
+```
+
+**With password:**
+
+```
+GET /api/shares/download/{token}?pwd=my-password
+```
+
+> Directories cannot be downloaded via this endpoint.
+
+**Web UI:** When creating a share link, the dialog shows both a **Preview Link** and a **Download Link**. The Shares Management page (`/shares`) also offers copy buttons for both link types for every active share.
 
 ---
 
@@ -2469,6 +2488,7 @@ When rate limiting is enabled (`-rate-limit N`):
 | `GET`      | `/api/shares/list`                              | Yes     | List shareable links       |
 | `DELETE`   | `/api/shares/delete`                            | Yes     | Delete shareable link      |
 | `GET/POST` | `/api/shares/access/{token}`                    | No      | Access shared content      |
+| `GET`      | `/api/shares/download/{token}`                  | No      | Download raw file bytes    |
 | `GET`      | `/api/v1/keys`                                  | Session | List API keys              |
 | `POST`     | `/api/v1/keys`                                  | Session | Create API key             |
 | `DELETE`   | `/api/v1/keys`                                  | Session | Delete API key             |

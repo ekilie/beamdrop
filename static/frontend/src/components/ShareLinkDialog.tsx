@@ -20,6 +20,7 @@ import {
   Loader2,
   FolderIcon,
   FileIcon,
+  Download,
 } from "lucide-react";
 import {
   Select,
@@ -54,12 +55,14 @@ export function ShareLinkDialog({
   isDir = false,
 }: ShareLinkDialogProps) {
   const [shareLink, setShareLink] = useState<string>("");
+  const [downloadLink, setDownloadLink] = useState<string>("");
   const [expiresAt, setExpiresAt] = useState<string | null>(null);
   const [password, setPassword] = useState<string>("");
   const [expiresIn, setExpiresIn] = useState<string>(""); // in hours
   const [expiryPreset, setExpiryPreset] = useState<string>("none");
   const [isGenerating, setIsGenerating] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [copiedDownload, setCopiedDownload] = useState(false);
 
   const getExpiryHours = (): number => {
     if (expiryPreset === "custom") return parseFloat(expiresIn);
@@ -105,6 +108,7 @@ export function ShareLinkDialog({
 
       const data = await response.json();
       setShareLink(data.url);
+      setDownloadLink(data.downloadUrl);
       setExpiresAt(data.expiresAt || null);
 
       toast({
@@ -140,17 +144,37 @@ export function ShareLinkDialog({
     }
   };
 
+  const copyDownloadLink = async () => {
+    try {
+      await navigator.clipboard.writeText(downloadLink);
+      setCopiedDownload(true);
+      setTimeout(() => setCopiedDownload(false), 2000);
+      toast({
+        title: "Copied",
+        description: "Download link copied to clipboard",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to copy download link",
+        variant: "destructive",
+      });
+    }
+  };
+
   const openInNewTab = () => {
     window.open(shareLink, "_blank");
   };
 
   const handleClose = () => {
     setShareLink("");
+    setDownloadLink("");
     setPassword("");
     setExpiresIn("");
     setExpiryPreset("none");
     setExpiresAt(null);
     setCopied(false);
+    setCopiedDownload(false);
     onOpenChange(false);
   };
 
@@ -246,7 +270,10 @@ export function ShareLinkDialog({
         ) : (
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="shareLink">Shareable Link</Label>
+              <Label htmlFor="shareLink" className="flex items-center gap-2">
+                <Link2 className="w-4 h-4" />
+                Preview Link
+              </Label>
               <div className="flex gap-2">
                 <Input
                   id="shareLink"
@@ -277,11 +304,38 @@ export function ShareLinkDialog({
               </div>
             </div>
 
+            <div className="space-y-2">
+              <Label htmlFor="downloadLink" className="flex items-center gap-2">
+                <Download className="w-4 h-4" />
+                Download Link
+              </Label>
+              <div className="flex gap-2">
+                <Input
+                  id="downloadLink"
+                  value={downloadLink}
+                  readOnly
+                  className="font-mono text-sm"
+                />
+                <Button
+                  size="icon"
+                  variant="outline"
+                  onClick={copyDownloadLink}
+                  className="flex-shrink-0"
+                >
+                  {copiedDownload ? (
+                    <Check className="w-4 h-4 text-green-500" />
+                  ) : (
+                    <Copy className="w-4 h-4" />
+                  )}
+                </Button>
+              </div>
+            </div>
+
             {password && (
               <div className="p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-md">
                 <p className="text-sm text-yellow-700 dark:text-yellow-400 flex items-center gap-2">
                   <Lock className="w-4 h-4" />
-                  This link is password protected
+                  This link is password protected. Append <code className="text-xs bg-yellow-500/20 px-1 rounded">?pwd=PASSWORD</code> to the download link for direct access.
                 </p>
               </div>
             )}

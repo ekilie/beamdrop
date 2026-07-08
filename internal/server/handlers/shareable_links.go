@@ -30,11 +30,12 @@ type CreateShareableLinkRequest struct {
 
 // CreateShareableLinkResponse represents the response after creating a shareable link
 type CreateShareableLinkResponse struct {
-	Token     string     `json:"token"`
-	URL       string     `json:"url"`
-	Path      string     `json:"path"`
-	ExpiresAt *time.Time `json:"expiresAt,omitempty"`
-	CreatedAt time.Time  `json:"createdAt"`
+	Token       string     `json:"token"`
+	URL         string     `json:"url"`
+	DownloadURL string     `json:"downloadUrl"`
+	Path        string     `json:"path"`
+	ExpiresAt   *time.Time `json:"expiresAt,omitempty"`
+	CreatedAt   time.Time  `json:"createdAt"`
 }
 
 // ShareableLinkInfo represents link information without sensitive data
@@ -92,19 +93,21 @@ func (h *ShareableLinkHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Construct the shareable URL
+	// Construct the shareable URL and download URL
 	scheme := "http"
 	if r.TLS != nil {
 		scheme = "https"
 	}
 	shareURL := fmt.Sprintf("%s://%s/share/%s", scheme, r.Host, link.Token)
+	downloadURL := fmt.Sprintf("%s://%s/api/shares/download/%s", scheme, r.Host, link.Token)
 
 	response := CreateShareableLinkResponse{
-		Token:     link.Token,
-		URL:       shareURL,
-		Path:      link.Path,
-		ExpiresAt: link.ExpiresAt,
-		CreatedAt: link.CreatedAt,
+		Token:       link.Token,
+		URL:         shareURL,
+		DownloadURL: downloadURL,
+		Path:        link.Path,
+		ExpiresAt:   link.ExpiresAt,
+		CreatedAt:   link.CreatedAt,
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -300,6 +303,74 @@ func (h *ShareableLinkHandler) Access(w http.ResponseWriter, r *http.Request) {
 	}
 
 	slog.Info("Shareable link accessed", "token", token, "path", link.Path)
+}
+
+// DownloadRaw serves the raw file data as a download for a shareable link token
+func (h *ShareableLinkHandler) DownloadRaw(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		sendJSONError(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Extract token from URL path: /api/shares/download/<token>
+	token := strings.TrimPrefix(r.URL.Path, "/api/shares/download/")
+	if token == "" {
+		sendJSONError(w, "Missing token", http.StatusBadRequest)
+		return
+	}
+
+	// Get the shareable link
+	link, err := db.GetShareableLinkByToken(token)
+	if err != nil {
+		slog.Error("Error accessing shareable link", "error", err)
+		sendJSONError(w, "Invalid or expired link", http.StatusNotFound)
+		return
+	}
+	if link == nil {
+		sendJSONError(w, "Link not found", http.StatusNotFound)
+		return
+	}
+
+	// Handle password-protected links
+	if link.PasswordHash != "" {
+		password := r.Header.Get("X-Share-Password")
+		if password == "" {
+			password = r.URL.Query().Get("pwd")
+		}
+		if password == "" {
+			sendJSONError(w, "Password required", http.StatusUnauthorized)
+			return
+		}
+		if !db.ValidateLinkPassword(link, password) {
+			sendJSONError(w, "Invalid password", http.StatusUnauthorized)
+			return
+		}
+	}
+
+	// Resolve the full path
+	fullPath := filepath.Join(h.sharedDir, link.Path)
+
+	fileInfo, err := os.Stat(fullPath)
+	if err != nil {
+		slog.Error("Failed to stat path", "error", err)
+		sendJSONError(w, "File not found", http.StatusNotFound)
+		return
+	}
+	if fileInfo.IsDir() {
+		sendJSONError(w, "Cannot download a directory", http.StatusBadRequest)
+		return
+	}
+
+	// Increment access count
+	if err := db.IncrementAccessCount(token); err != nil {
+		slog.Error("Failed to increment access count", "error", err)
+	}
+
+	// Serve the file as a download
+	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"", filepath.Base(link.Path)))
+	http.ServeFile(w, r, fullPath)
+
+	slog.Info("Shareable link downloaded", "token", token, "path", link.Path)
 }
 
 // detectContentType determines the MIME type of a file based on extension

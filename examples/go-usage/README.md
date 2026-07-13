@@ -1,15 +1,6 @@
-# Beamdrop Go Client Example
+# Beamdrop Go Client Examples
 
-This example project shows how to use the in-repo Beamdrop Go client for the main storage flows:
-
-- create or reuse a bucket
-- upload objects with both `PutObject` and `PutObjectReader`
-- list buckets and objects
-- read metadata with `HeadObject`
-- download objects with `GetObject`
-- check existence with `BucketExists` and `ObjectExists`
-- generate a client-side presigned URL
-- create, list, fetch, and optionally delete server-side presigned URLs
+This directory contains several standalone Go programs that demonstrate how to use the in-repo Beamdrop Go client.
 
 ## Prerequisites
 
@@ -36,24 +27,45 @@ Required variables:
 Optional variables:
 
 - `BEAMDROP_BUCKET` defaults to `beamdrop-go-example`
-- `BEAMDROP_CLEANUP=true` deletes the demo objects and the server-side presigned URL at the end
+- `BEAMDROP_CLEANUP=true` deletes the demo objects at the end of the main and presigned-download examples
 
-## Run
+## Examples
 
-From the repository root:
+### basic-s3 — S3-style CRUD (`go run ./examples/go-usage`)
 
-```bash
-go run ./examples/go-usage
-```
+Covers the core storage flows:
 
-## What It Does
+- create or reuse a bucket
+- upload objects with both `PutObject` and `PutObjectReader`
+- list buckets and objects
+- read metadata with `HeadObject`
+- download objects with `GetObject`
+- check existence with `BucketExists` and `ObjectExists`
+- generate a client-side presigned URL
+- create, list, fetch, and optionally delete server-side presigned URLs
 
-The example uses one bucket and writes two objects under the `demo/` prefix. It prints the uploaded object details, fetches metadata, downloads one object, creates both kinds of presigned URLs, and lists the server-side presigned URL registry.
+### presigned-download — Presigned URL download (`go run ./examples/go-usage/presigned-download`)
 
-If you set `BEAMDROP_CLEANUP=true`, it removes the created presigned URL and the demo objects before exiting.
+Shows how to share private files without exposing API keys:
+
+1. Upload a private object to the authenticated client.
+2. Create a server-side presigned URL with a download limit (`MaxDownloads`).
+3. Download the object using only the presigned URL (plain HTTP client, no auth).
+4. Attempt a direct (non-presigned) download to confirm it fails with 401.
+
+### bucket-lifecycle — Bucket lifecycle (`go run ./examples/go-usage/bucket-lifecycle`)
+
+Demonstrates full bucket management with proper error handling:
+
+- strict creation (`CreateBucket`) — fails with 409 if the bucket exists
+- idempotent creation (`CreateBucketIfNotExists`)
+- listing and existence checks (`ListBuckets`, `BucketExists`)
+- deletion rejection when the bucket is non-empty (409)
+- object cleanup followed by bucket deletion
+- deletion verification
 
 ## Notes
 
-- The example intentionally uses environment variables instead of hard-coded credentials.
+- The examples intentionally use environment variables instead of hard-coded credentials.
 - The client-side presigned URL is generated locally using your API secret.
 - The server-side presigned URL is created through Beamdrop's `/api/v1/presign` endpoint.

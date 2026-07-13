@@ -78,7 +78,7 @@ func isUploadRequest(r *http.Request) bool {
 
 	path := r.URL.Path
 	return path == "/upload" ||
-		(len(path) > 14 && path[:14] == "/api/v1/buckets" && r.Method == http.MethodPut)
+		(len(path) >= 15 && path[:15] == "/api/v1/buckets" && r.Method == http.MethodPut)
 }
 
 // isDownloadRequest checks if the request is a download operation
@@ -89,7 +89,7 @@ func isDownloadRequest(r *http.Request) bool {
 
 	path := r.URL.Path
 	return path == "/download" ||
-		(len(path) > 14 && path[:14] == "/api/v1/buckets")
+		(len(path) >= 15 && path[:15] == "/api/v1/buckets")
 }
 
 // responseWriterWrapper wraps http.ResponseWriter to track if response was written

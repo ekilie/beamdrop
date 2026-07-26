@@ -8,14 +8,16 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
-  X,
+  AlertCircle,
   Download,
-  ZoomIn,
-  ZoomOut,
   FileText,
-  Edit,
+  Loader2,
   Maximize,
   Minimize,
+  Pencil,
+  RotateCcw,
+  ZoomIn,
+  ZoomOut,
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import Prism from "prismjs";
@@ -149,6 +151,9 @@ export function FilePreview({
       "docker-compose.yaml",
     ].includes(fileName);
 
+  const isTextLike = isText || isCode || isConfig;
+  const language = getLanguageFromExtension(fileExt);
+
   useEffect(() => {
     if (isCode && fileContent) {
       setTimeout(() => {
@@ -217,6 +222,24 @@ export function FilePreview({
     }
   };
 
+  const typeLabel = isImage
+    ? "Image"
+    : isPdf
+      ? "PDF"
+      : isVideo
+        ? "Video"
+        : isAudio
+          ? "Audio"
+          : isCode
+            ? "Code"
+            : isText
+              ? "Text"
+              : isConfig
+                ? "Config"
+                : fileExt
+                  ? fileExt.toUpperCase()
+                  : "File";
+
   const renderPreviewContent = () => {
     const filePath =
       currentPath === "." ? fileName : `${currentPath}/${fileName}`;
@@ -224,20 +247,21 @@ export function FilePreview({
 
     if (isImage) {
       return (
-        <div className="flex flex-col items-center space-y-4 animate-fade-in">
-          <div className="flex items-center gap-2 bg-secondary/50 rounded-lg px-4 py-2 border border-border">
+        <div className="flex flex-col items-center gap-4 animate-fade-in">
+          <div className="flex items-center gap-1 bg-secondary/60 rounded-md border border-border p-1 shadow-subtle">
             <Button
               variant="ghost"
               size="sm"
               onClick={() => setZoom(Math.max(25, zoom - 25))}
               disabled={zoom <= 25}
-              className="h-8"
+              className="h-8 w-8 p-0"
+              aria-label="Zoom out"
             >
               <ZoomOut className="w-4 h-4" />
             </Button>
             <Badge
               variant="secondary"
-              className="font-mono text-xs min-w-[4rem] text-center"
+              className="font-mono text-xs min-w-[3.5rem] text-center justify-center"
             >
               {zoom}%
             </Badge>
@@ -246,17 +270,29 @@ export function FilePreview({
               size="sm"
               onClick={() => setZoom(Math.min(200, zoom + 25))}
               disabled={zoom >= 200}
-              className="h-8"
+              className="h-8 w-8 p-0"
+              aria-label="Zoom in"
             >
               <ZoomIn className="w-4 h-4" />
             </Button>
+            <div className="w-px h-5 bg-border mx-1" />
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setZoom(100)}
+              disabled={zoom === 100}
+              className="h-8 w-8 p-0"
+              aria-label="Reset zoom"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+            </Button>
           </div>
-          <div className="max-h-[65vh] overflow-auto rounded-lg border border-border bg-muted/30 p-4 scrollbar-thin">
+          <div className="max-h-[65vh] overflow-auto rounded-lg border border-border bg-[repeating-conic-gradient(hsl(var(--muted))_0%_25%,transparent_0%_50%)] bg-[length:16px_16px] p-4 scrollbar-thin">
             <img
               src={previewUrl}
               alt={fileName}
               style={{ transform: `scale(${zoom / 100})` }}
-              className="max-w-full h-auto transition-transform origin-center rounded"
+              className="max-w-full h-auto transition-transform origin-center rounded shadow-medium"
               onLoad={() => setLoading(false)}
               onError={() => {
                 setError("Failed to load image");
@@ -270,10 +306,16 @@ export function FilePreview({
 
     if (isPdf) {
       return (
-        <div className="w-full h-[70vh] animate-fade-in">
+        <div className="flex flex-col gap-3 animate-fade-in">
+          <div className="flex items-center justify-between gap-2 px-3 py-2 rounded-md bg-secondary/50 border border-border text-xs font-mono text-muted-foreground">
+            <span className="truncate">{fileName}</span>
+            <Badge variant="outline" className="font-mono text-[0.65rem]">
+              PDF
+            </Badge>
+          </div>
           <iframe
             src={previewUrl}
-            className="w-full h-full border-2 border-border rounded-lg shadow-lg"
+            className="w-full h-[70vh] border border-border rounded-lg shadow-subtle"
             onLoad={() => setLoading(false)}
             onError={() => {
               setError("Failed to load PDF");
@@ -312,39 +354,38 @@ export function FilePreview({
       );
     }
 
-    if (isText || isCode || isConfig) {
+    if (isTextLike) {
       return (
-        <div className="w-full">
-          <TextFilePreview
-            key={refreshKey}
-            fileName={fileName}
-            currentPath={currentPath}
-            onLoad={() => setLoading(false)}
-            onError={(err) => {
-              setError(err);
-              setLoading(false);
-            }}
-            onContentLoaded={(content) => setFileContent(content)}
-          />
-        </div>
+        <TextFilePreview
+          key={refreshKey}
+          fileName={fileName}
+          currentPath={currentPath}
+          onLoad={() => setLoading(false)}
+          onError={(err) => {
+            setError(err);
+            setLoading(false);
+          }}
+          onContentLoaded={(content) => setFileContent(content)}
+        />
       );
     }
 
     // Unsupported file type
     setTimeout(() => setLoading(false), 0);
     return (
-      <div className="text-center py-12">
-        <div className="w-16 h-16 mx-auto mb-4 bg-muted rounded-full flex items-center justify-center">
-          <FileText className="w-8 h-8 text-muted-foreground" />
+      <div className="flex flex-col items-center text-center py-16 px-4 animate-fade-in">
+        <div className="w-20 h-20 mx-auto mb-5 rounded-2xl bg-secondary/70 border border-border flex items-center justify-center shadow-subtle">
+          <FileText className="w-9 h-9 text-muted-foreground" />
         </div>
-        <h3 className="font-mono font-bold text-foreground mb-2">
-          PREVIEW NOT AVAILABLE
+        <h3 className="font-mono font-bold text-foreground mb-1.5 tracking-tight">
+          Preview not available
         </h3>
-        <p className="text-muted-foreground font-mono text-sm mb-4">
-          This file type cannot be previewed in the browser
+        <p className="text-muted-foreground font-mono text-sm mb-6 max-w-sm">
+          This file type can't be rendered in the browser. Download it to view
+          its contents.
         </p>
-        <Button onClick={handleDownload} variant="default">
-          <Download className="w-4 h-4 mr-2" />
+        <Button onClick={handleDownload} variant="default" className="gap-2">
+          <Download className="w-4 h-4" />
           Download File
         </Button>
       </div>
@@ -358,26 +399,34 @@ export function FilePreview({
         className="w-[calc(100%-2rem)] max-w-5xl max-h-[85vh] bg-card border-2 border-border overflow-y-auto [&>button]:hidden sm:max-h-[90vh]"
       >
         <DialogHeader className="border-b border-border pb-3 sm:pb-4">
-          <div className="flex items-center justify-between gap-2">
-            <DialogTitle className="font-mono font-bold text-foreground truncate flex items-center gap-2 text-sm sm:text-base">
-              {getFileIcon(fileName, "w-4 h-4 sm:w-5 sm:h-5")}
+          <div className="flex items-center justify-between gap-3">
+            <DialogTitle className="font-mono font-bold text-foreground truncate flex items-center gap-2.5 text-sm sm:text-base min-w-0">
+              <span className="flex items-center justify-center w-8 h-8 rounded-md bg-secondary/70 border border-border shrink-0">
+                {getFileIcon(fileName, "w-4 h-4 text-primary")}
+              </span>
               <span className="truncate">{fileName}</span>
+              <Badge
+                variant="outline"
+                className="font-mono text-[0.65rem] uppercase tracking-wide shrink-0 hidden sm:inline-flex"
+              >
+                {typeLabel}
+              </Badge>
             </DialogTitle>
-            <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
+            <div className="flex items-center gap-1 flex-shrink-0">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={toggleFullscreen}
-                className="shrink-0 hidden sm:flex"
+                className="shrink-0 hidden sm:flex gap-2"
               >
                 {isFullscreen ? (
                   <>
-                    <Minimize className="w-4 h-4 mr-2" />
+                    <Minimize className="w-4 h-4" />
                     Exit
                   </>
                 ) : (
                   <>
-                    <Maximize className="w-4 h-4 mr-2" />
+                    <Maximize className="w-4 h-4" />
                     Fullscreen
                   </>
                 )}
@@ -399,14 +448,13 @@ export function FilePreview({
                   <Maximize className="w-4 h-4" />
                 )}
               </Button>
-              {(isText || isCode || isConfig) && (
+              {isTextLike && (
                 <CodeEditorDialog
                   currentPath={currentPath}
                   initialFileName={fileName}
                   initialContent={fileContent}
                   mode="edit"
                   onSaveSuccess={() => {
-                    // Refresh the preview by updating the refresh key
                     setRefreshKey((prev) => prev + 1);
                     setLoading(true);
                     setError(null);
@@ -417,9 +465,9 @@ export function FilePreview({
                       <Button
                         variant="outline"
                         size="sm"
-                        className="shrink-0 hidden sm:flex"
+                        className="shrink-0 hidden sm:flex gap-2"
                       >
-                        <Edit className="w-4 h-4 mr-2" />
+                        <Pencil className="w-4 h-4" />
                         Edit
                       </Button>
                       <Button
@@ -428,7 +476,7 @@ export function FilePreview({
                         className="shrink-0 sm:hidden p-2"
                         aria-label="Edit file"
                       >
-                        <Edit className="w-4 h-4" />
+                        <Pencil className="w-4 h-4" />
                       </Button>
                     </>
                   }
@@ -438,9 +486,9 @@ export function FilePreview({
                 variant="outline"
                 size="sm"
                 onClick={handleDownload}
-                className="shrink-0 hidden sm:flex"
+                className="shrink-0 hidden sm:flex gap-2"
               >
-                <Download className="w-4 h-4 mr-2" />
+                <Download className="w-4 h-4" />
                 Download
               </Button>
               <Button
@@ -458,32 +506,21 @@ export function FilePreview({
 
         <div className="mt-4 overflow-auto max-h-[calc(90vh-8rem)] sm:max-h-[calc(95vh-8rem)] scrollbar-thin">
           {loading && !error && (
-            <div className="flex items-center justify-center py-16">
-              <div className="text-center space-y-4 animate-fade-in">
-                <div className="relative">
-                  <div className="w-12 h-12 border-4 border-primary/30 border-t-primary animate-spin rounded-full mx-auto"></div>
-                  <div
-                    className="w-12 h-12 border-4 border-accent/30 border-b-accent animate-spin rounded-full mx-auto absolute top-0 left-1/2 -translate-x-1/2"
-                    style={{
-                      animationDirection: "reverse",
-                      animationDuration: "0.8s",
-                    }}
-                  ></div>
-                </div>
-                <p className="font-mono text-sm text-muted-foreground font-semibold">
-                  LOADING PREVIEW...
-                </p>
-              </div>
+            <div className="flex flex-col items-center justify-center py-16 animate-fade-in">
+              <Loader2 className="w-10 h-10 animate-spin text-primary" />
+              <p className="font-mono text-xs text-muted-foreground mt-4 uppercase tracking-widest">
+                Loading preview
+              </p>
             </div>
           )}
 
           {error && (
-            <div className="text-center py-16 animate-fade-in">
-              <div className="w-20 h-20 mx-auto mb-4 bg-destructive/10 rounded-full flex items-center justify-center border-2 border-destructive/30 animate-bounce-slow">
-                <X className="w-10 h-10 text-destructive" />
+            <div className="flex flex-col items-center text-center py-16 px-4 animate-fade-in">
+              <div className="w-20 h-20 mx-auto mb-5 rounded-2xl bg-destructive/10 border border-destructive/30 flex items-center justify-center">
+                <AlertCircle className="w-10 h-10 text-destructive" />
               </div>
-              <h3 className="font-mono font-bold text-foreground mb-2 text-lg">
-                PREVIEW ERROR
+              <h3 className="font-mono font-bold text-foreground mb-1.5 tracking-tight text-lg">
+                Preview error
               </h3>
               <p className="text-muted-foreground font-mono text-sm mb-6 max-w-md mx-auto">
                 {error}
@@ -491,16 +528,19 @@ export function FilePreview({
               <Button
                 onClick={handleDownload}
                 variant="default"
-                className="hover-lift"
+                className="gap-2"
               >
-                <Download className="w-4 h-4 mr-2" />
+                <Download className="w-4 h-4" />
                 Download File
               </Button>
             </div>
           )}
 
           {!error && (
-            <div style={{ display: loading ? "none" : "block" }}>
+            <div
+              className={loading ? "" : "animate-fade-in"}
+              style={{ display: loading ? "none" : "block" }}
+            >
               {renderPreviewContent()}
             </div>
           )}
@@ -590,7 +630,11 @@ function TextFilePreview({
   onContentLoaded?: (content: string) => void;
 }) {
   const [content, setContent] = useState<string>("");
+  const [contentError, setContentError] = useState<boolean>(false);
+  const [loadingContent, setLoadingContent] = useState<boolean>(true);
+
   useEffect(() => {
+    let cancelled = false;
     const fetchContent = async () => {
       try {
         const filePath =
@@ -602,18 +646,27 @@ function TextFilePreview({
           throw new Error("Failed to fetch file content");
         }
         const text = await response.text();
+        if (cancelled) return;
         setContent(text);
+        setLoadingContent(false);
         if (onContentLoaded) {
           onContentLoaded(text);
         }
         onLoad();
       } catch (error) {
+        if (cancelled) return;
+        setContentError(true);
+        setLoadingContent(false);
         onError("Failed to load text file");
       }
     };
 
     fetchContent();
-  }, [fileName, currentPath, onLoad, onError]);
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fileName, currentPath]);
 
   const fileExt = fileName.split(".").pop()?.toLowerCase() || "";
   const isCode = [
@@ -677,37 +730,68 @@ function TextFilePreview({
     "conf",
   ].includes(fileExt);
 
-  // Get the appropriate icon from the getFileIcon function
-  const fileIcon = getFileIcon(fileName);
-
+  const fileIcon = getFileIcon(fileName, "w-4 h-4 text-primary");
   const language = getLanguageFromExtension(fileExt);
 
+  const lineCount =
+    content && !loadingContent && !contentError
+      ? content.split("\n").length
+      : 0;
+
   return (
-    <div className="bg-secondary/30 border-2 border-border rounded-lg p-4 animate-fade-in">
-      <div className="flex items-center gap-2 mb-4 pb-3 border-b border-border">
-        <div className="flex items-center justify-center w-5 h-5">
-          {fileIcon}
+    <div className="rounded-lg border border-border bg-secondary/20 overflow-hidden animate-fade-in">
+      <div className="flex items-center justify-between gap-2 px-4 py-2 bg-secondary/50 border-b border-border">
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="flex items-center justify-center w-5 h-5 shrink-0">
+            {fileIcon}
+          </span>
+          <span className="font-mono text-xs text-muted-foreground truncate">
+            {fileName}
+          </span>
         </div>
-        {/* <Badge variant="outline" className="font-mono text-xs">
-          {fileExt.toUpperCase()}
-        </Badge> */}
-        {isCode && (
-          <Badge variant="secondary" className="font-mono text-xs">
-            {language.toUpperCase()}
-          </Badge>
-        )}
-      </div>
-      <div className="bg-background border-2 border-border rounded-lg overflow-hidden shadow-sm">
-        <div className="p-4 max-h-[50vh] overflow-auto scrollbar-thin bg-muted/30">
-          <pre
-            className={`text-sm font-mono ${isCode ? "language-" + language : ""} whitespace-pre-wrap`}
-          >
-            <code className={isCode ? `language-${language}` : undefined}>
-              {content}
-            </code>
-          </pre>
+        <div className="flex items-center gap-2 shrink-0">
+          {isCode && (
+            <Badge variant="secondary" className="font-mono text-[0.65rem]">
+              {language.toUpperCase()}
+            </Badge>
+          )}
+          {!loadingContent && !contentError && (
+            <Badge
+              variant="outline"
+              className="font-mono text-[0.65rem] text-muted-foreground"
+            >
+              {lineCount} {lineCount === 1 ? "line" : "lines"}
+            </Badge>
+          )}
         </div>
       </div>
+      {loadingContent ? (
+        <div className="p-4 space-y-2 bg-background">
+          {[...Array(8)].map((_, i) => (
+            <div
+              key={i}
+              className="h-3 rounded bg-muted animate-pulse"
+              style={{ width: `${85 - (i % 5) * 12}%` }}
+            />
+          ))}
+        </div>
+      ) : contentError ? (
+        <div className="p-4 bg-background text-sm font-mono text-destructive">
+          Failed to load file content.
+        </div>
+      ) : (
+        <div className="bg-background">
+          <div className="max-h-[55vh] overflow-auto scrollbar-thin">
+            <pre
+              className={`text-sm font-mono p-4 whitespace-pre-wrap break-words leading-relaxed ${isCode ? "language-" + language : ""}`}
+            >
+              <code className={isCode ? `language-${language}` : undefined}>
+                {content}
+              </code>
+            </pre>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
